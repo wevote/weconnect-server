@@ -4,13 +4,17 @@
 Table of Contents
 -----------------
 
-- [Features](#features)
-- [Prerequisites](#prerequisites)
+- [Getting Started](#getting-started)
+  - [Step1: Virtual Environment](#step-1-install-virtual-environment-system-macintosh)
+  - [Step2: Clone Repository](#step-2-clone-the-repository-to-your-machine)
+  - [Step3: Configuration Variables](#step-3-configuration-variables)
+- [Credit & Thanks](#credits--thanks)
+- [License](#license)
 
 Getting Started
 ---------------
 
-**Step 1:** Install virtual environment system (Macintosh):
+### **Step 1:** Install virtual environment system (Macintosh):
 
 ```bash
 # Change to your personal directory
@@ -33,10 +37,10 @@ sudo -H pip3 install nodeenv
 # at least at these minimum versions:
 
 node -v
-# Should show: v10.12.0
+# Should show this or higher: v10.12.0
 
 npm -v
-# Should show: 6.4.1
+# Should show this or higher: 6.4.1
     
 # If you find that your Mac, does not have Node installed, install it with brew. (If you want to have
 # a fresh install of Node you can `brew unlink node` first.)  A fresh or initial install of Node,
@@ -66,7 +70,7 @@ cd ~/NodeEnvironments/WeConnectEnv/
 cd ~/MyProjects/weconnect-server
 ```
 
-**Step 2:** Clone the repository to your machine:
+### **Step 2:** Clone the repository to your machine:
 
 ```bash
 # Change into directory where you want to keep the code
@@ -84,6 +88,19 @@ npm install
 # Then simply start your app
 node app.js
 ```
+
+### **Step 3:** Configuration variables
+
+```bash
+# Change into directory where you keep code
+cd ~/MyProjects/weconnect-server
+
+# Get the latest snapshot
+cp .env.config-template .env.config
+
+# Make edits TBD
+```
+
 
 Credits &amp; Thanks
 ---------------
