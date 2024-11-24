@@ -1,10 +1,10 @@
-// Old Mongoose user schema, feel free to delete in 2025
+// Old Mongoose user object, feel free to delete in 2025
+/* eslint-disable consistent-return */
+const crypto = require('crypto');
+const bcrypt = require('@node-rs/bcrypt');
+// eslint-disable-next-line import/no-unresolved
+const mongoose = require('mongoose');
 
-// const crypto = require('crypto');
-// const bcrypt = require('@node-rs/bcrypt');
-// const mongoose = require('mongoose');
-
-/*
 const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String,
@@ -29,14 +29,13 @@ const userSchema = new mongoose.Schema({
     gender: String,
     location: String,
     website: String,
-    picture: String
-  }
+    picture: String,
+  },
 }, { timestamps: true });
-*/
+
 /**
  * Password hash middleware.
  */
-/*
 userSchema.pre('save', async function save(next) {
   const user = this;
   if (!user.isModified('password')) { return next(); }
@@ -47,11 +46,10 @@ userSchema.pre('save', async function save(next) {
     next(err);
   }
 });
-*/
+
 /**
  * Helper method for validating user's password.
  */
-/*
 userSchema.methods.comparePassword = async function comparePassword(candidatePassword, cb) {
   try {
     cb(null, await bcrypt.verify(candidatePassword, this.password));
@@ -59,13 +57,13 @@ userSchema.methods.comparePassword = async function comparePassword(candidatePas
     cb(err);
   }
 };
-*/
+
 /**
  * Helper method for getting user's gravatar.
  */
-/*
 userSchema.methods.gravatar = function gravatar(size) {
   if (!size) {
+    // eslint-disable-next-line no-param-reassign
     size = 200;
   }
   if (!this.email) {
@@ -78,4 +76,3 @@ userSchema.methods.gravatar = function gravatar(size) {
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
-*/

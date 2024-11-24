@@ -23,11 +23,11 @@
 //        else
 //          li.dropdown(class=(title === 'Account Management') ? 'active' : undefined).nav-item
 //            a.dropdown-toggle.nav-link(href='#', data-toggle='dropdown')
-//              if user.profile.picture
-//                img(src=user.profile.picture)
+//              if user.picture
+//                img(src=user.picture)
 //              else
 //                img(src=user.gravatar(60))
-//              span= user.profile.name || user.email || user.id
+//              span= user.name || user.email || user.id
 //              i.caret
 //            div.dropdown-menu
 //              a.dropdown-item(href='/account') My Account
@@ -41,7 +41,7 @@ nav.navbar.navbar-expand-lg.navbar-dark.bg-dark
   .container
     a.navbar-brand(href='/')
       img.d-inline-block.align-text-top(src='/bootstrap-logo.svg' alt='' width='30' height='24')
-      |  Hackathon Starter
+      |  WeConnect (from Hackathon Starter)
     button.navbar-toggler(type='button' data-bs-toggle='collapse' data-bs-target='#navbarColor01' aria-controls='navbarColor01' aria-expanded='false' aria-label='Toggle navigation')
       span.navbar-toggler-icon
     #navbarColor01.collapse.navbar-collapse

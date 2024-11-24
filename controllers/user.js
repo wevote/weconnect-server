@@ -1,3 +1,5 @@
+/* eslint-disable no-param-reassign */
+/* eslint-disable consistent-return */
 const { promisify } = require('util');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -5,7 +7,9 @@ const passport = require('passport');
 const _ = require('lodash');
 const validator = require('validator');
 const mailChecker = require('mailchecker');
-const User = require('../models/User');
+const bcrypt = require('@node-rs/bcrypt');
+const { findUserById, deleteOne, findOneByEmail,
+  saveUser, findOneUser, createUser } = require('../models/prismaUser');
 
 const randomBytesAsync = promisify(crypto.randomBytes);
 
@@ -19,8 +23,8 @@ const sendMail = (settings) => {
     secure: true,
     auth: {
       user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASSWORD
-    }
+      pass: process.env.SMTP_PASSWORD,
+    },
   };
 
   let transporter = nodemailer.createTransport(transportConfig);
@@ -55,7 +59,7 @@ exports.getLogin = (req, res) => {
     return res.redirect('/');
   }
   res.render('account/login', {
-    title: 'Login'
+    title: 'Login',
   });
 };
 
@@ -80,8 +84,8 @@ exports.postLogin = (req, res, next) => {
       req.flash('errors', info);
       return res.redirect('/login');
     }
-    req.logIn(user, (err) => {
-      if (err) { return next(err); }
+    req.logIn(user, (err2) => {
+      if (err2) { return next(err2); }
       req.flash('success', { msg: 'Success! You are logged in.' });
       res.redirect(req.session.returnTo || '/');
     });
@@ -95,8 +99,8 @@ exports.postLogin = (req, res, next) => {
 exports.logout = (req, res) => {
   req.logout((err) => {
     if (err) console.log('Error : Failed to logout.', err);
-    req.session.destroy((err) => {
-      if (err) console.log('Error : Failed to destroy the session during logout.', err);
+    req.session.destroy((err2) => {
+      if (err2) console.log('Error : Failed to destroy the session during logout.', err2);
       req.user = null;
       res.redirect('/');
     });
@@ -112,7 +116,7 @@ exports.getSignup = (req, res) => {
     return res.redirect('/');
   }
   res.render('account/signup', {
-    title: 'Create Account'
+    title: 'Create Account',
   });
 };
 
@@ -131,16 +135,16 @@ exports.postSignup = async (req, res, next) => {
   }
   req.body.email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
   try {
-    const existingUser = await User.findOne({ email: req.body.email });
+    const existingUser = await findOneUser({ email: req.body.email });
     if (existingUser) {
       req.flash('errors', { msg: 'Account with that email address already exists.' });
       return res.redirect('/signup');
     }
-    const user = new User({
+    const encryptedPwd = await bcrypt.hash(req.body.password, 10);
+    const user = await createUser({
       email: req.body.email,
-      password: req.body.password
+      password: encryptedPwd,
     });
-    await user.save();
     req.logIn(user, (err) => {
       if (err) {
         return next(err);
@@ -158,7 +162,7 @@ exports.postSignup = async (req, res, next) => {
  */
 exports.getAccount = (req, res) => {
   res.render('account/profile', {
-    title: 'Account Management'
+    title: 'Account Management',
   });
 };
 
@@ -176,14 +180,14 @@ exports.postUpdateProfile = async (req, res, next) => {
   }
   req.body.email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
   try {
-    const user = await User.findById(req.user.id);
+    const user = await findUserById(req.user.id);
     if (user.email !== req.body.email) user.emailVerified = false;
     user.email = req.body.email || '';
-    user.profile.name = req.body.name || '';
-    user.profile.gender = req.body.gender || '';
-    user.profile.location = req.body.location || '';
-    user.profile.website = req.body.website || '';
-    await user.save();
+    user.name = req.body.name || '';
+    user.gender = req.body.gender || '';
+    user.location = req.body.location || '';
+    user.website = req.body.website || '';
+    await saveUser(user);
     req.flash('success', { msg: 'Profile information has been updated.' });
     res.redirect('/account');
   } catch (err) {
@@ -209,9 +213,9 @@ exports.postUpdatePassword = async (req, res, next) => {
     return res.redirect('/account');
   }
   try {
-    const user = await User.findById(req.user.id);
+    const user = await findUserById(req.user.id);
     user.password = req.body.password;
-    await user.save();
+    await saveUser(user);
     req.flash('success', { msg: 'Password has been changed.' });
     res.redirect('/account');
   } catch (err) {
@@ -225,11 +229,11 @@ exports.postUpdatePassword = async (req, res, next) => {
  */
 exports.postDeleteAccount = async (req, res, next) => {
   try {
-    await User.deleteOne({ _id: req.user.id });
+    await deleteOne(req.user.id);
     req.logout((err) => {
       if (err) console.log('Error: Failed to logout.', err);
-      req.session.destroy((err) => {
-        if (err) console.log('Error: Failed to destroy the session during account deletion.', err);
+      req.session.destroy((err2) => {
+        if (err2) console.log('Error: Failed to destroy the session during account deletion.', err2);
         req.user = null;
         res.redirect('/');
       });
@@ -247,25 +251,24 @@ exports.getOauthUnlink = async (req, res, next) => {
   try {
     let { provider } = req.params;
     provider = validator.escape(provider);
-    const user = await User.findById(req.user.id);
+    const user = await findUserById(req.user.id);
     user[provider.toLowerCase()] = undefined;
-    const tokensWithoutProviderToUnlink = user.tokens.filter((token) =>
-      token.kind !== provider.toLowerCase());
+    const tokensWithoutProviderToUnlink = user.tokens.filter((token) => token.kind !== provider.toLowerCase());
     // Some auth providers do not provide an email address in the user profile.
     // As a result, we need to verify that unlinking the provider is safe by ensuring
     // that another login method exists.
     if (
-      !(user.email && user.password)
-      && tokensWithoutProviderToUnlink.length === 0
+      !(user.email && user.password) &&
+      tokensWithoutProviderToUnlink.length === 0
     ) {
       req.flash('errors', {
-        msg: `The ${_.startCase(_.toLower(provider))} account cannot be unlinked without another form of login enabled.`
-        + ' Please link another account or add an email address and password.'
+        msg: `The ${_.startCase(_.toLower(provider))} account cannot be unlinked without another form of login enabled.` +
+        ' Please link another account or add an email address and password.',
       });
       return res.redirect('/account');
     }
     user.tokens = tokensWithoutProviderToUnlink;
-    await user.save();
+    await saveUser(user);
     req.flash('info', {
       msg: `${_.startCase(_.toLower(provider))} account has been unlinked.`,
     });
@@ -291,16 +294,16 @@ exports.getReset = async (req, res, next) => {
       return res.redirect('/forgot');
     }
 
-    const user = await User.findOne({
+    const user = await findOneUser({
       passwordResetToken: req.params.token,
-      passwordResetExpires: { $gt: Date.now() }
+      passwordResetExpires: { $gt: Date.now() },
     }).exec();
     if (!user) {
       req.flash('errors', { msg: 'Password reset token is invalid or has expired.' });
       return res.redirect('/forgot');
     }
     res.render('account/reset', {
-      title: 'Password Reset'
+      title: 'Password Reset',
     });
   } catch (err) {
     return next(err);
@@ -312,6 +315,7 @@ exports.getReset = async (req, res, next) => {
  * Verify email address
  */
 exports.getVerifyEmailToken = (req, res, next) => {
+  console.log(next);  // temporary lint hack
   if (req.user.emailVerified) {
     req.flash('info', { msg: 'The email address has been verified.' });
     return res.redirect('/account');
@@ -325,8 +329,7 @@ exports.getVerifyEmailToken = (req, res, next) => {
   }
 
   if (req.params.token === req.user.emailVerificationToken) {
-    User
-      .findOne({ email: req.user.email })
+    findOneByEmail(req.user.email)
       .then((user) => {
         if (!user) {
           req.flash('errors', { msg: 'There was an error in loading your profile.' });
@@ -334,7 +337,7 @@ exports.getVerifyEmailToken = (req, res, next) => {
         }
         user.emailVerificationToken = '';
         user.emailVerified = true;
-        user = user.save();
+        saveUser(user);
         req.flash('info', { msg: 'Thank you for verifying your email address.' });
         return res.redirect('/account');
       })
@@ -368,11 +371,10 @@ exports.getVerifyEmail = (req, res, next) => {
     .then((buf) => buf.toString('hex'));
 
   const setRandomToken = (token) => {
-    User
-      .findOne({ email: req.user.email })
+    findOneUser({ email: req.user.email })
       .then((user) => {
         user.emailVerificationToken = token;
-        user = user.save();
+        saveUser(user);
       });
     return token;
   };
@@ -386,7 +388,7 @@ exports.getVerifyEmail = (req, res, next) => {
         This verify your email address please click on the following link, or paste this into your browser:\n\n
         http://${req.headers.host}/account/verify/${token}\n\n
         \n\n
-        Thank you!`
+        Thank you!`,
     };
     const mailSettings = {
       successfulType: 'info',
@@ -395,7 +397,7 @@ exports.getVerifyEmail = (req, res, next) => {
       errorType: 'errors',
       errorMsg: 'Error sending the email verification message. Please try again shortly.',
       mailOptions,
-      req
+      req,
     };
     return sendMail(mailSettings);
   };
@@ -422,25 +424,23 @@ exports.postReset = (req, res, next) => {
     return res.redirect('back');
   }
 
-  const resetPassword = () =>
-    User
-      .findOne({ passwordResetToken: req.params.token })
-      .where('passwordResetExpires').gt(Date.now())
-      .then((user) => {
-        if (!user) {
-          req.flash('errors', { msg: 'Password reset token is invalid or has expired.' });
-          return res.redirect('back');
-        }
-        user.password = req.body.password;
-        user.passwordResetToken = undefined;
-        user.passwordResetExpires = undefined;
-        return user.save().then(() => new Promise((resolve, reject) => {
-          req.logIn(user, (err) => {
-            if (err) { return reject(err); }
-            resolve(user);
-          });
-        }));
-      });
+  const resetPassword = () => findOneUser({ passwordResetToken: req.params.token })
+    .where('passwordResetExpires').gt(Date.now())
+    .then((user) => {
+      if (!user) {
+        req.flash('errors', { msg: 'Password reset token is invalid or has expired.' });
+        return res.redirect('back');
+      }
+      user.password = req.body.password;
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      return saveUser(user).then(() => new Promise((resolve, reject) => {
+        req.logIn(user, (err) => {
+          if (err) { return reject(err); }
+          resolve(user);
+        });
+      }));
+    });
 
   const sendResetPasswordEmail = (user) => {
     if (!user) { return; }
@@ -448,7 +448,7 @@ exports.postReset = (req, res, next) => {
       to: user.email,
       from: process.env.SITE_CONTACT_EMAIL,
       subject: 'Your Hackathon Starter password has been changed',
-      text: `Hello,\n\nThis is a confirmation that the password for your account ${user.email} has just been changed.\n`
+      text: `Hello,\n\nThis is a confirmation that the password for your account ${user.email} has just been changed.\n`,
     };
     const mailSettings = {
       successfulType: 'success',
@@ -457,7 +457,7 @@ exports.postReset = (req, res, next) => {
       errorType: 'warning',
       errorMsg: 'Your password has been changed, however we were unable to send you a confirmation email. We will be looking into it shortly.',
       mailOptions,
-      req
+      req,
     };
     return sendMail(mailSettings);
   };
@@ -477,7 +477,7 @@ exports.getForgot = (req, res) => {
     return res.redirect('/');
   }
   res.render('account/forgot', {
-    title: 'Forgot Password'
+    title: 'Forgot Password',
   });
 };
 
@@ -498,9 +498,8 @@ exports.postForgot = (req, res, next) => {
   const createRandomToken = randomBytesAsync(16)
     .then((buf) => buf.toString('hex'));
 
-  const setRandomToken = (token) =>
-    User
-      .findOne({ email: req.body.email })
+  const setRandomToken = (token) => {
+    findOneUser({ email: req.body.email })
       .then((user) => {
         if (!user) {
           req.flash('errors', { msg: 'Account with that email address does not exist.' });
@@ -511,7 +510,7 @@ exports.postForgot = (req, res, next) => {
         }
         return user;
       });
-
+  };
   const sendForgotPasswordEmail = (user) => {
     if (!user) { return; }
     const token = user.passwordResetToken;
@@ -522,7 +521,7 @@ exports.postForgot = (req, res, next) => {
       text: `You are receiving this email because you (or someone else) have requested the reset of the password for your account.\n\n
         Please click on the following link, or paste this into your browser to complete the process:\n\n
         http://${req.headers.host}/reset/${token}\n\n
-        If you did not request this, please ignore this email and your password will remain unchanged.\n`
+        If you did not request this, please ignore this email and your password will remain unchanged.\n`,
     };
     const mailSettings = {
       successfulType: 'info',
@@ -531,7 +530,7 @@ exports.postForgot = (req, res, next) => {
       errorType: 'errors',
       errorMsg: 'Error sending the password reset message. Please try again shortly.',
       mailOptions,
-      req
+      req,
     };
     return sendMail(mailSettings);
   };

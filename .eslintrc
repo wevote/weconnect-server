@@ -7,17 +7,32 @@
   },
   "plugins": ["chai-friendly"],
   "rules": {
-    "comma-dangle": 0,
-    "consistent-return": 0,
-    "function-paren-newline": ["error", "never"],
-    "implicit-arrow-linebreak": ["off"],
-    "no-param-reassign": 0,
-    "no-underscore-dangle": 0,
-    "no-shadow": 0,
-    "no-console": 0,
-    "no-plusplus": 0,
-    "no-unused-expressions": 0,
-    "no-unused-vars": ["error", { "argsIgnorePattern": "next" }],
+    "array-bracket-spacing": [1, "never"],
+    "camelcase": [1],
+    "class-methods-use-this": 0,                  // We want to allow helper functions that don't use 'this' in classes
+    "linebreak-style": 0,
+    "max-len": [0, 80, 4],
+    "no-console": [0],
+    "no-else-return": [0],
+    "no-multi-spaces": [0],
+    "no-multiple-empty-lines": [0],               // allow indented comments (like this one)
+    "no-plusplus": [0],
+    "no-underscore-dangle": [0],
+    "object-curly-newline": 0,
+    "object-curly-spacing": [1,
+      "always", {
+        "arraysInObjects": false,
+        "objectsInObjects": true
+      }
+    ],
+    "operator-linebreak": [1, "after"],
+    "padded-blocks": [1],
+    "prefer-destructuring": 1,
+    "quotes": [1, "single", "avoid-escape"],
+    "radix": 0,                                   // Dec 2018: We always use base 10, so specifying it each time seems excessive
+    "space-before-function-paren": [1, {"anonymous": "always", "named": "always"}],
+    "space-in-parens": [1],
+    "template-curly-spacing": ["warn", "never"],
     "chai-friendly/no-unused-expressions": 2
   }
 }

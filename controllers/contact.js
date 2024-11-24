@@ -53,7 +53,7 @@ exports.postContact = async (req, res) => {
       fromName = req.body.name;
       fromEmail = req.body.email;
     } else {
-      fromName = req.user.profile.name || '';
+      fromName = req.user.name || '';
       fromEmail = req.user.email;
     }
 
