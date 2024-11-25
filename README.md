@@ -32,7 +32,7 @@ cd ~
 
 <!-- 11/24/24:  This seems like an unnecessary complication... bringing in python and their venv.  See [jetbrains]&#40;https://intellij-support.jetbrains.com/hc/en-us/community/posts/4405137278610-How-do-I-create-and-activate-a-virtual-environment-in-WebStorm&#41;) -->
 <!-- All the environment variables for this project are set in .env.config, all that leaves you with is the latest Node.js, which should be installed globally  -->
-<!-- (We should come up with a "simplified" WebStorm based install. Now that WebStorm is free for WeVote developers.  WebStorm is a great Node.js editor. -->
+<!-- (We should come up with a "simplified" WebStorm based install. Now that WebStorm is free for WeVote developers.  WebStorm is a great Node.js editor and debugger. -->
 
 ```
 brew install python
