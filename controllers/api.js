@@ -3,7 +3,8 @@ const cheerio = require('cheerio');
 const { LastFmNode } = require('lastfm');
 const { Octokit } = require('@octokit/rest');
 const stripe = require('stripe')(process.env.STRIPE_SKEY);
-const twilio = require('twilio')(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);
+// Note 11/24/24: The following line fails if you don't have a TWILIO_SID, so leave commented out for now
+// const twilio = require('twilio')(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);
 const paypal = require('paypal-rest-sdk');
 const axios = require('axios');
 const googledrive = require('@googleapis/drive');
@@ -576,7 +577,7 @@ exports.getLob = async (req, res, next) => {
   });
 
   let recipientName;
-  if (req.user) { recipientName = req.user.profile.name; } else { recipientName = 'John Doe'; }
+  if (req.user) { recipientName = req.user.name; } else { recipientName = 'John Doe'; }
   const addressTo = {
     name: recipientName || 'Developer',
     address_line1: '123 Main Street',
