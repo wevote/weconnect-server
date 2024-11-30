@@ -1,0 +1,88 @@
+// weconnect-server/prisma/schema/team.prisma, parallel to /models/Team.js
+
+/// One team that has specific members and meeting time
+model Team {
+  id           Int     @id @default(autoincrement())
+  teamName     String
+  description  String
+  meetingDay   String // Monday, Tues, etc.
+  meetingTime  String // 10am, Noon etc. in Pacific time TODO: how is this stored to be time zone independent?
+  statusActive Boolean /// This is a team that is active
+}
+
+/// Examples: New team member, project manager, etc. added to the team
+model TeamChangeLog {
+  id                Int    @id @default(autoincrement())
+  changeDescription String
+  doneByPersonId    Int /// The person triggering the change
+  personId          Int /// Id of the person this log entry is related to
+  teamId            Int /// Id of the team this log entry is related to
+
+  dateCreated     DateTime @default(now())
+  dateLastUpdated DateTime @updatedAt
+  statusDone      Boolean
+  statusToDo      Boolean
+}
+
+/// A group of teams, could be considered department. Ex/ Engineering Dept
+model TeamGroup {
+  id            Int     @id @default(autoincrement())
+  teamGroupName String
+  description   String
+  statusActive  Boolean /// This is a team group that is active
+}
+
+model TeamMember {
+  id             Int     @id @default(autoincrement())
+  personId       Int /// Id of the person on the team
+  teamName       String
+  teamMemberName String
+  isTeamLead     Boolean /// Can run the team meetings on their own
+
+  statusIsActive             Boolean /// True if participating with this team
+  statusIsOnboardingBasic    Boolean /// New to the team and going through onboarding process
+  statusIsOnboardingAdvanced Boolean /// Has some advanced onboarding to review
+  statusIsListening          Boolean /// True if the person wants to get notifications from the team
+  statusOfferLetterSigned    Boolean
+
+  dateStartDate DateTime /// Date they ended service, or for interns, the planned end date
+  dateEndDate   DateTime /// Date they ended service, or for interns, the planned end date
+}
+
+/// This table holds people who were active for a stretch of time, but are no longer active
+/// If a volunteer starts, then stops, then starts again and stops again, they would have two entries
+model TeamMemberFormer {
+  id             Int    @id @default(autoincrement())
+  personId       Int /// Id of the person who was on the team
+  teamName       String
+  teamMemberName String
+
+  dateStartDate DateTime /// Date they started service
+  dateEndDate   DateTime /// Date they ended service
+}
+
+model TeamRole {
+  id           Int    @id @default(autoincrement())
+  teamRoleName String
+}
+
+model TeamRoleToPersonLink {
+  id           Int    @id @default(autoincrement())
+  personId     Int /// Id of the person who was on the team
+  teamId       Int
+  teamRoleId   Int
+  teamRoleName String
+
+  statusIsActive Boolean /// True if the person is currently in this team role
+  dateStartDate  DateTime /// Date they started service
+  dateEndDate    DateTime /// Date they ended service
+}
+
+model TeamToTeamRoleLink {
+  id           Int    @id @default(autoincrement())
+  teamId       Int
+  teamRoleId   Int
+  teamRoleName String
+
+  statusIsActive Boolean /// True if this team is using this role right now
+}

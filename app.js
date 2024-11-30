@@ -47,6 +47,7 @@ if (secureTransfer) numberOfProxies = 1; else numberOfProxies = 0;
 const homeController = require('./controllers/home');
 const userController = require('./controllers/user');
 const apiController = require('./controllers/api');
+const teamApiController = require('./controllers/teamApiController');
 const contactController = require('./controllers/contact');
 
 /**
@@ -165,6 +166,11 @@ app.post('/account/profile', passportConfig.isAuthenticated, userController.post
 app.post('/account/password', passportConfig.isAuthenticated, userController.postUpdatePassword);
 app.post('/account/delete', passportConfig.isAuthenticated, userController.postDeleteAccount);
 app.get('/account/unlink/:provider', passportConfig.isAuthenticated, userController.getOauthUnlink);
+
+/**
+ * WeConnect API routes.
+ */
+app.get('/api/v1/retrieve-team', teamApiController.retrieveTeam);
 
 /**
  * API examples routes.
