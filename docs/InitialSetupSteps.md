@@ -6,7 +6,7 @@ npx prisma db push                      # creates the User table in postgres
 npx prisma migrate dev --name init      # created migration files on the postgres server... ????, removed the table
 npx prisma db push                      # Recreated the User table in postgres
 npm install
-node app.js                           # run it
+node app.js                             # run it
 
     stevepodell@Steves-MBP-M1-Dec2021 weconnect-server % node index.js                
     []

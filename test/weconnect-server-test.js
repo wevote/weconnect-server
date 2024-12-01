@@ -1,5 +1,6 @@
 const request = require('supertest');
 
+// eslint-disable-next-line import/no-unresolved
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
 (async () => {
@@ -8,7 +9,7 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
   process.env.MONGODB_URI = mockMongoDBUri;
 
   /* eslint-disable global-require */
-  const app = require('../app');
+  const app = require('../weconnect-server');
   /* eslint-enable global-require */
 
   describe('GET /', () => {

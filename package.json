@@ -13,12 +13,12 @@
     "Yashar Fakhari (https://github.com/YasharF)"
   ],
   "scripts": {
-    "postinstall": "patch-package && npm run scss",
-    "start": "npm run scss && nodemon app.js",
+    "postinstall": "patch-package",
+    "start": "nodemon weconnect-server.js",
+    "prod": "node weconnect-server.js",
     "test": "nyc mocha --timeout=60000 --exit",
     "lint": "eslint \"**/*.js\"",
     "prepare": "if [ \"$NODE_ENV\" != \"production\" ]; then husky install; fi",
-    "scss": "sass --no-source-map --load-path=./ --update ./public/css:./public/css",
     "lintStage": "node_modules/.bin/lint-staged"
   },
   "lint-staged": {
