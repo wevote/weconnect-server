@@ -1,0 +1,107 @@
+// weconnect-server/prisma/schema/person.prisma, parallel to /models/personModel.js
+
+model Person {
+  id Int @id @default(autoincrement())
+
+  birthdayMonthAndDay    String?
+  emailOfficial          String  @unique
+  emailOfficialAlternate String?
+  emailPersonal          String  @unique
+  emailPersonalAlternate String?
+  emailPreferred         String  @unique
+  firstName              String
+  firstNamePreferred     String?
+  gender                 String?
+  hoursPerWeekEstimate   Int?
+  hoursVolunteered       Int? /// Estimate of total hours volunteered
+  howLongAtOrg           Int? /// Stored as number of calendar days, but displayed in years, months & weeks
+  jobTitle               String?
+  lastName               String?
+  location               String? /// City, State -- not full address
+  staffKind              String? /// c3 / c4
+  stateCode              String?
+  uploadedImageUrlLarge  String?
+  uploadedImageUrlSmall  String?
+
+  password               String?
+  passwordResetToken     String?
+  passwordResetExpires   DateTime?
+  emailVerificationToken String?
+  emailVerified          Boolean?
+
+  bluesky       String?
+  facebookUrl   String?
+  githubUrl     String?
+  jazzHrUrl     String?
+  linkedInUrl   String?
+  portfolioUrl  String?
+  snapchat      String?
+  tokens        Json?
+  twitch        String?
+  twitterHandle String?
+  websiteUrl    String?
+
+  dateCreated            DateTime  @default(now())
+  dateEmailCreated       DateTime?
+  dateEndDate            DateTime? /// Date they ended service, or for interns, the planned end date
+  dateLastActive         DateTime?
+  dateLastOnLeave        DateTime?
+  dateLastUpdated        DateTime  @default(now()) @updatedAt
+  dateLastResigned       DateTime?
+  dateOfferLetterCreated DateTime?
+  dateOfferLetterSigned  DateTime?
+  dateStarted            DateTime?
+  isAdmin                Boolean? /// This person has admin rights
+  isHiringManager        Boolean? /// Has hiring manager rights
+  isIntern               Boolean?
+  isTeamLead             Boolean? /// Has team lead rights
+
+  statusActive             Boolean?
+  statusEmailCreated       Boolean?
+  statusActiveInLast90Days Boolean?
+  statusOfferLetterCreated Boolean?
+  statusOfferLetterSigned  Boolean?
+  statusOnLeave            Boolean?
+  statusResigned           Boolean?
+  QuestionnaireAnswer      QuestionnaireAnswer[]
+}
+
+model Questionnaire {
+  id                  Int                     @id @default(autoincrement())
+  name                String
+  description         String
+  questions           QuestionnaireQuestion[]
+  // TODO: Consider associating with team(s), so it gets included if you are headed for a particular team
+  QuestionnaireAnswer QuestionnaireAnswer[]
+}
+
+model QuestionnaireQuestion {
+  id                  Int                   @id @default(autoincrement())
+  answerType          String // TODO: How do we add constants to this field?
+  /// When Person is created based on these questionnaire answers, in which field do we put the data
+  /// ex/ Person.firstName
+  fieldMappingRule    String
+  order               Int
+  question            String
+  questionDetails     String
+  questionnaireId     Int
+  questionnaire       Questionnaire?        @relation(fields: [questionnaireId], references: [id])
+  QuestionnaireAnswer QuestionnaireAnswer[]
+}
+
+model QuestionnaireAnswer {
+  id            Int      @id @default(autoincrement())
+  answerBoolean Boolean?
+  answerInteger Int
+  answerString  String
+
+  personId        Int?
+  person          Person?                @relation(fields: [personId], references: [id])
+  questionId      Int
+  question        QuestionnaireQuestion? @relation(fields: [questionId], references: [id])
+  questionnaireId Int
+  questionnaire   Questionnaire?         @relation(fields: [questionnaireId], references: [id])
+
+  dateCreated   DateTime  @default(now())
+  dateSubmitted DateTime?
+}
