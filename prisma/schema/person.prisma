@@ -1,68 +1,68 @@
-// weconnect-server/prisma/schema/person.prisma, parallel to /models/Person.js
+// weconnect-server/prisma/schema/person.prisma, parallel to /models/personModel.js
 
 model Person {
   id Int @id @default(autoincrement())
 
-  birthdayMonthAndDay    String
-  emailOfficial          String @unique
-  emailOfficialAlternate String
-  emailPersonal          String @unique
-  emailPersonalAlternate String
-  emailPreferred         String @unique
+  birthdayMonthAndDay    String?
+  emailOfficial          String  @unique
+  emailOfficialAlternate String?
+  emailPersonal          String  @unique
+  emailPersonalAlternate String?
+  emailPreferred         String  @unique
   firstName              String
-  firstNamePreferred     String
-  gender                 String
-  hoursPerWeekEstimate   Int
-  hoursVolunteered       Int /// Estimate of total hours volunteered
-  howLongAtOrg           Int /// Stored as number of calendar days, but displayed in years, months & weeks
-  jobTitle               String
-  lastName               String
-  location               String /// City, State -- not full address
-  staffKind              String /// c3 / c4
-  stateCode              String
-  uploadedImageUrlLarge  String
-  uploadedImageUrlSmall  String
+  firstNamePreferred     String?
+  gender                 String?
+  hoursPerWeekEstimate   Int?
+  hoursVolunteered       Int? /// Estimate of total hours volunteered
+  howLongAtOrg           Int? /// Stored as number of calendar days, but displayed in years, months & weeks
+  jobTitle               String?
+  lastName               String?
+  location               String? /// City, State -- not full address
+  staffKind              String? /// c3 / c4
+  stateCode              String?
+  uploadedImageUrlLarge  String?
+  uploadedImageUrlSmall  String?
 
-  password               String
-  passwordResetToken     String
-  passwordResetExpires   DateTime
-  emailVerificationToken String
-  emailVerified          Boolean
+  password               String?
+  passwordResetToken     String?
+  passwordResetExpires   DateTime?
+  emailVerificationToken String?
+  emailVerified          Boolean?
 
-  bluesky       String
-  facebookUrl   String
-  githubUrl     String
-  jazzHrUrl     String
-  linkedInUrl   String
-  portfolioUrl  String
-  snapchat      String
-  tokens        Json
-  twitch        String
-  twitterHandle String
-  websiteUrl    String
+  bluesky       String?
+  facebookUrl   String?
+  githubUrl     String?
+  jazzHrUrl     String?
+  linkedInUrl   String?
+  portfolioUrl  String?
+  snapchat      String?
+  tokens        Json?
+  twitch        String?
+  twitterHandle String?
+  websiteUrl    String?
 
-  dateCreated            DateTime @default(now())
-  dateEmailCreated       DateTime
-  dateEndDate            DateTime /// Date they ended service, or for interns, the planned end date
-  dateLastActive         DateTime
-  dateLastOnLeave        DateTime
-  dateLastUpdated        DateTime @updatedAt
-  dateLastResigned       DateTime
-  dateOfferLetterCreated DateTime
-  dateOfferLetterSigned  DateTime
-  dateStarted            DateTime
-  isAdmin                Boolean /// This person has admin rights
-  isHiringManager        Boolean /// Has hiring manager rights
-  isIntern               Boolean
-  isTeamLead             Boolean /// Has team lead rights
+  dateCreated            DateTime  @default(now())
+  dateEmailCreated       DateTime?
+  dateEndDate            DateTime? /// Date they ended service, or for interns, the planned end date
+  dateLastActive         DateTime?
+  dateLastOnLeave        DateTime?
+  dateLastUpdated        DateTime  @default(now()) @updatedAt
+  dateLastResigned       DateTime?
+  dateOfferLetterCreated DateTime?
+  dateOfferLetterSigned  DateTime?
+  dateStarted            DateTime?
+  isAdmin                Boolean? /// This person has admin rights
+  isHiringManager        Boolean? /// Has hiring manager rights
+  isIntern               Boolean?
+  isTeamLead             Boolean? /// Has team lead rights
 
-  statusActive             Boolean
-  statusEmailCreated       Boolean
-  statusActiveInLast90Days Boolean
-  statusOfferLetterCreated Boolean
-  statusOfferLetterSigned  Boolean
-  statusOnLeave            Boolean
-  statusResigned           Boolean
+  statusActive             Boolean?
+  statusEmailCreated       Boolean?
+  statusActiveInLast90Days Boolean?
+  statusOfferLetterCreated Boolean?
+  statusOfferLetterSigned  Boolean?
+  statusOnLeave            Boolean?
+  statusResigned           Boolean?
   QuestionnaireAnswer      QuestionnaireAnswer[]
 }
 
@@ -90,8 +90,8 @@ model QuestionnaireQuestion {
 }
 
 model QuestionnaireAnswer {
-  id            Int     @id @default(autoincrement())
-  answerBoolean Boolean
+  id            Int      @id @default(autoincrement())
+  answerBoolean Boolean?
   answerInteger Int
   answerString  String
 
@@ -102,6 +102,6 @@ model QuestionnaireAnswer {
   questionnaireId Int
   questionnaire   Questionnaire?         @relation(fields: [questionnaireId], references: [id])
 
-  dateCreated   DateTime @default(now())
-  dateSubmitted DateTime
+  dateCreated   DateTime  @default(now())
+  dateSubmitted DateTime?
 }
