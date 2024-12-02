@@ -166,13 +166,13 @@ stevepodell@Steves-MacBook-Air weconnect-server % npm install
 You can run this command as often as you want, and it will cause no harm.
 <br><br>
 
-### Make a live copy of .env.config-template to the .env.config file
+### Make a live copy of .env-template to the .env file
 
-Right-click on the `.env.config-template` file in Webstorm, and paste it as `.env.config`
+Right-click on the `.env-template` file in Webstorm, and paste it as `.env`
 
 <img src="docs/images/WebstormPasteConfig.png" alt="Alt Text" width="1200" >
 
-Open `.env.config` in WebStorm by double-clicking on it
+Open `.env` in WebStorm by double-clicking on it
 
 <img src="docs/images/EnvConfigEditing.png" alt="Alt Text" width="1200" >
 
@@ -186,13 +186,8 @@ DATABASE_URL=postgresql://jerrygarcia:jerryspassword@localhost:5432/WeConnectDB?
 <br><br>
 
 ### Use the Prisma ORM to "migrate" the database and table definitions to the postgres server
-First make a copy of the DATABASE_URL in a new .env file (which is needed for the prisma command line interface)
-```
-stevepodell@Steves-MacBook-Air weconnect-server % grep DATABASE_URL .env.config > .env
-```
-<br><br>
 
-### Generate the schema from prisma/schema.prisma to node_modules
+Generate the schema from prisma/schema.prisma to node_modules
 ```
 stevepodell@Steves-MacBook-Air weconnect-server % prisma generate
 Prisma schema loaded from prisma/schema.prisma
