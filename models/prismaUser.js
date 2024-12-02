@@ -1,6 +1,3 @@
-// TODO: This would be better as an object with functions, than a group of functions that receive an object.
-// TODO: Low prority, but consider this if you are going to copy this file as a base for a new table.
-
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('@node-rs/bcrypt');
 
