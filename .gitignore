@@ -21,6 +21,7 @@ tmp
 #Build
 public/css/main.css
 .nyc_output/*
+prisma/migrations/*
 
 # API keys and secrets
 .env
