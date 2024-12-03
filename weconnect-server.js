@@ -1,6 +1,7 @@
 /**
  * Module dependencies.
  */
+const cors = require('cors');
 const path = require('path');
 const express = require('express');
 const compression = require('compression');
@@ -79,6 +80,7 @@ weconnectServer.set('views', path.join(__dirname, 'views'));
 weconnectServer.set('view engine', 'pug');
 weconnectServer.set('trust proxy', numberOfProxies);
 weconnectServer.use(compression());
+weconnectServer.use(cors());
 weconnectServer.use(logger('dev'));
 weconnectServer.use(bodyParser.json());
 weconnectServer.use(bodyParser.urlencoded({ extended: true }));
@@ -92,14 +94,18 @@ weconnectServer.use(session({
   cookie: {
     maxAge: 1209600000, // Two weeks in milliseconds
     secure: secureTransfer,
-    allowlist: [{ path: '/localhost', type: 'exact' }, { path: '/summary', type: 'startWith' }],
+    allowlist: [
+      { path: '/apis/v1', type: 'startWith' },
+      { path: '/localhost', type: 'exact' },
+      { path: '/summary', type: 'startWith' },
+    ],
   },
   // store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI })
 }));
 weconnectServer.use(passport.initialize());
 weconnectServer.use(passport.session());
 weconnectServer.use(flash());
-dotenv.config({ path: '.env.config' });
+dotenv.config({ path: '.env' });
 // TODO: This allowlist is a hack around a csrf.js issue, where login was blocked by a csrf mismatch.  I suspect that we have an unresolved Lusca setup issue.
 weconnectServer.use(lusca({
   allowlist: ['/login', '/signup'],
@@ -169,7 +175,7 @@ weconnectServer.get('/account/unlink/:provider', passportConfig.isAuthenticated,
 /**
  * WeConnect API routes.
  */
-weconnectServer.get('/api/v1/retrieve-team', teamApiController.retrieveTeam);
+weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
 
 /**
  * API examples routes.
