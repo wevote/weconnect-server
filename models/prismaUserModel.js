@@ -51,6 +51,7 @@ const userObjTemplate = {
   gender: '',
   location: '',
   email: '',
+  email2: '',
   website: '',
   picture: '',
   password: '',

@@ -45,7 +45,7 @@ Enter the URL and press the Clone button.
 
 Now the latest code is on your machine.
 
-<img src="docs/images/CodeInstalledInWebstorm.png" alt="Alt Text" width="1200" >
+<img src="docs/images/CodeInstalledInWebStorm.png" alt="Alt Text" width="1200" >
 <br><br>
 
 ### Configure the WebStorm display mode
@@ -224,6 +224,15 @@ Your database is now in sync with your schema.
 stevepodell@Steves-MacBook-Air weconnect-server % 
 ```
 <br><br>
+
+### Not now, but when you want to add a column in the future
+**Don't do this now!**  
+
+But someday, when you add a column or a new schema (table)...
+
+After editing or creating your schema/?.prisma file
+
+run `prisma migrate dev`
 
 ### Add a Run Configuration in WebStorm to start the weconnect-server
 

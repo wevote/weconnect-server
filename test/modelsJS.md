@@ -1,6 +1,6 @@
 const { expect } = require('chai');
 const sinon = require('sinon');
-const User = require('../models/prismaUser');
+const User = require('../models/prismaUserModel');
 
 describe('User Model', () => {
   it('should create a new user', (done) => {

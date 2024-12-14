@@ -25,7 +25,8 @@ model User {
   website  String
   picture  String
 
-  email String @unique
+  email    String @unique
+  email2   String?
 
   password               String
   passwordResetToken     String
