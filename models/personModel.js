@@ -5,6 +5,17 @@ const bcrypt = require('@node-rs/bcrypt');
 
 const prisma = new PrismaClient();
 
+const PERSON_FIELDS_ACCEPTED = [
+  'firstName',
+  'firstNamePreferred',
+  'emailPersonal',
+  'jobTitle',
+  'lastName',
+  'location',
+  'stateCode',
+  'zipCode',
+];
+
 async function findPersonById (id) {
   const person = await prisma.person.findUnique({
     where: {
@@ -12,6 +23,21 @@ async function findPersonById (id) {
     },
   });
   return person;
+}
+
+function extractPersonVariablesToChange (queryParams) {
+  let keyWithoutToBeSaved = '';
+  const updateDict = {};
+  for (const [key, value] of queryParams) {
+    // console.log('==== key:', key, ', value:', value);
+    keyWithoutToBeSaved = key.replace('ToBeSaved', '');
+    if (PERSON_FIELDS_ACCEPTED.includes(keyWithoutToBeSaved) && value) {
+      if (queryParams && queryParams.get(`${keyWithoutToBeSaved}Changed`) === 'true') {
+        updateDict[keyWithoutToBeSaved] = value;
+      }
+    }
+  }
+  return updateDict;
 }
 
 function removeProtectedFieldsFromPerson (person) {
@@ -42,9 +68,26 @@ async function findPersonListByIdList (idList, includeAllData = false) {
   return modifiedPersonList;
 }
 
-async function findOnePerson (prms) {   // Find one with array
+async function findPersonListByParams (params = {}, includeAllData = false) {
+  const personList = await prisma.person.findMany({
+    where: params,
+  });
+  let modifiedPerson = {};
+  let modifiedPersonList = [];
+  if (includeAllData) {
+    modifiedPersonList = personList;
+  } else {
+    personList.forEach((person) => {
+      modifiedPerson = removeProtectedFieldsFromPerson(person);
+      modifiedPersonList.push(modifiedPerson);
+    });
+  }
+  return modifiedPersonList;
+}
+
+async function findOnePerson (params) {   // Find one with array
   const person = await prisma.person.findUnique({
-    where: prms,
+    where: params,
   });
   return person;
 }
@@ -76,34 +119,51 @@ function isoFutureDate () {
   return oneYearFromNow;
 }
 
+// For required fields that we want to include, even if not passed from the interface.
 const personObjTemplate = {
-  name: '',
-  gender: '',
-  location: '',
-  email: '',
-  website: '',
-  picture: '',
+  // birthdayMonthAndDay: '',
+  // emailOfficial: '',
+  // emailOfficialAlternate: '',
+  // emailPersonal: '',
+  // emailPersonalAlternate: '',
+  // emailPreferred: '',
+  firstName: '',
+  // firstNamePreferred: '',
+  // gender: '',
+  // hoursPerWeekEstimate: 0,
+  // hoursVolunteered: 0,
+  // howLongAtOrg: 0,
+  // jobTitle: '',
+  lastName: '',
+  // location: '',
+  // staffKind: '',
+  // stateCode: '',
+  // uploadedImageUrlLarge: '',
+  // uploadedImageUrlSmall: '',
+  // zipCode: '',
+
   password: '',
   passwordResetToken: '',
   passwordResetExpires: isoFutureDate(),
   emailVerificationToken: '',
   emailVerified: false,
 
-  snapchat: '',
-  facebook: '',
-  twitter: '',
-  google: '',
-  github: '',
-  linkedin: '',
-  steam: '',
-  twitch: '',
-  quickbooks: '',
-  tokens: {},
+  // bluesky: '',
+  // facebookUrl: '',
+  // githubUrl: '',
+  // jazzHrUrl: '',
+  // linkedInUrl: '',
+  // portfolioUrl: '',
+  // snapchat: '',
+  // tokens: {},
+  // twitch: '',
+  // twitterHandle: '',
+  // websiteUrl: '',
 };
 
-async function createPerson (prms) {
+async function createPerson (updateDict) {
   // eslint-disable-next-line prefer-object-spread
-  const mergedPerson = Object.assign({}, personObjTemplate, prms);
+  const mergedPerson = Object.assign({}, personObjTemplate, updateDict);
   const person = await prisma.person.create({ data: mergedPerson });
   return person;
 }
@@ -121,8 +181,12 @@ module.exports = {
   comparePassword,
   createPerson,
   deleteOne,
+  extractPersonVariablesToChange,
   findPersonById,
   findPersonListByIdList,
+  findPersonListByParams,
   findOnePerson,
+  PERSON_FIELDS_ACCEPTED,
+  removeProtectedFieldsFromPerson,
   savePerson,
 }; // Export the functions

@@ -48,6 +48,7 @@ if (secureTransfer) numberOfProxies = 1; else numberOfProxies = 0;
 const homeController = require('./controllers/home');
 const prismaUserController = require('./controllers/userController');
 const apiController = require('./controllers/api');
+const personApiController = require('./controllers/personApiController');
 const teamApiController = require('./controllers/teamApiController');
 const contactController = require('./controllers/contact');
 
@@ -172,6 +173,11 @@ weconnectServer.get('/account/unlink/:provider', passportConfig.isAuthenticated,
 /**
  * WeConnect API routes.
  */
+weconnectServer.get('/apis/v1/add-person-to-team', teamApiController.addPersonToTeam);
+weconnectServer.get('/apis/v1/person-list-retrieve', personApiController.personListRetrieve);
+weconnectServer.get('/apis/v1/person-save', personApiController.personSave);
+weconnectServer.get('/apis/v1/team-list-retrieve', teamApiController.teamListRetrieve);
+weconnectServer.get('/apis/v1/team-save', teamApiController.teamSave);
 weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
 weconnectServer.get('/apis/v1/secret-retrieve', prismaUserController.getSignup);
 weconnectServer.post('/apis/v1/login', prismaUserController.postLogin);

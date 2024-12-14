@@ -37,6 +37,7 @@ model TeamGroup {
 model TeamMember {
   id             Int      @id @default(autoincrement())
   personId       Int /// Id of the person on the team
+  teamId         Int /// Id of the team
   teamName       String?
   teamMemberName String
   isTeamLead     Boolean? /// Can run the team meetings on their own
@@ -47,7 +48,7 @@ model TeamMember {
   statusIsListening          Boolean? /// True if the person wants to get notifications from the team
   statusOfferLetterSigned    Boolean?
 
-  dateStartDate DateTime? /// Date they ended service, or for interns, the planned end date
+  dateStartDate DateTime? /// Date they started service
   dateEndDate   DateTime? /// Date they ended service, or for interns, the planned end date
 }
 
@@ -56,6 +57,7 @@ model TeamMember {
 model TeamMemberFormer {
   id             Int    @id @default(autoincrement())
   personId       Int /// Id of the person who was on the team
+  teamId         Int /// Id of the team
   teamName       String
   teamMemberName String
 
