@@ -1,6 +1,4 @@
 // weconnect-server/models/personModel.js, parallel to /prisma/schema/person.prisma
-// Dale 2024-12-01 I saw your comment Steve -- I'm just duplicating this for now to get some data to front end
-// These can be refactored at will.
 
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('@node-rs/bcrypt');

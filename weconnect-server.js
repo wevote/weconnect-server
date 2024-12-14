@@ -46,7 +46,7 @@ if (secureTransfer) numberOfProxies = 1; else numberOfProxies = 0;
  * Controllers (route handlers).
  */
 const homeController = require('./controllers/home');
-const userController = require('./controllers/user');
+const prismaUserController = require('./controllers/userController');
 const apiController = require('./controllers/api');
 const teamApiController = require('./controllers/teamApiController');
 const contactController = require('./controllers/contact');
@@ -62,20 +62,10 @@ const passportConfig = require('./config/passport');
 const weconnectServer = express();
 
 /**
- * Connect to MongoDB.
- */
-// mongoose.connect(process.env.MONGODB_URI);
-// mongoose.connection.on('error', (err) => {
-//   console.error(err);
-//   console.log('%s MongoDB connection error. Please make sure MongoDB is running.');
-//   process.exit();
-// });
-
-/**
  * Express configuration.
  */
-weconnectServer.set('host', process.env.OPENSHIFT_NODEJS_IP || '0.0.0.0');
-weconnectServer.set('port', process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 3000);
+weconnectServer.set('host', process.env.HOST || '0.0.0.0');
+weconnectServer.set('port', process.env.PORT || 4500);
 weconnectServer.set('views', path.join(__dirname, 'views'));
 weconnectServer.set('view engine', 'pug');
 weconnectServer.set('trust proxy', numberOfProxies);
@@ -90,7 +80,7 @@ weconnectServer.use(session({
   resave: true,
   saveUninitialized: true,
   secret: process.env.SESSION_SECRET,
-  name: 'startercookie', // change the cookie name for additional security in production
+  name: 'weconnect_cookie',
   cookie: {
     maxAge: 1209600000, // Two weeks in milliseconds
     secure: secureTransfer,
@@ -121,8 +111,8 @@ weconnectServer.use((req, res, next) => {
     // lusca.csrf()(req, res, next);
   }
 });
-weconnectServer.use(lusca.xframe('SAMEORIGIN'));
-weconnectServer.use(lusca.xssProtection(true));
+// weconnectServer.use(lusca.xframe('SAMEORIGIN'));
+// weconnectServer.use(lusca.xssProtection(true));
 weconnectServer.disable('x-powered-by');
 weconnectServer.use((req, res, next) => {
   res.locals.user = req.user;
@@ -149,33 +139,43 @@ weconnectServer.use('/js/lib', express.static(path.join(__dirname, 'node_modules
 weconnectServer.use('/js/lib', express.static(path.join(__dirname, 'node_modules/jquery/dist'), { maxAge: 31557600000 }));
 weconnectServer.use('/webfonts', express.static(path.join(__dirname, 'node_modules/@fortawesome/fontawesome-free/webfonts'), { maxAge: 31557600000 }));
 
+// Middleware function to log requests
+weconnectServer.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next(); // Call next middleware
+});
+
+
 /**
  * Primary app routes.
  */
 weconnectServer.get('/', homeController.index);
-weconnectServer.get('/login', userController.getLogin);
-weconnectServer.post('/login', userController.postLogin);
-weconnectServer.get('/logout', userController.logout);
-weconnectServer.get('/forgot', userController.getForgot);
-weconnectServer.post('/forgot', userController.postForgot);
-weconnectServer.get('/reset/:token', userController.getReset);
-weconnectServer.post('/reset/:token', userController.postReset);
-weconnectServer.get('/signup', userController.getSignup);
-weconnectServer.post('/signup', userController.postSignup);
+weconnectServer.get('/login', prismaUserController.getLogin);
+weconnectServer.post('/login', prismaUserController.postLogin);
+weconnectServer.get('/logout', prismaUserController.logout);
+weconnectServer.get('/forgot', prismaUserController.getForgot);
+weconnectServer.post('/forgot', prismaUserController.postForgot);
+weconnectServer.get('/reset/:token', prismaUserController.getReset);
+weconnectServer.post('/reset/:token', prismaUserController.postReset);
+weconnectServer.get('/signup', prismaUserController.getSignup);
+weconnectServer.post('/signup', prismaUserController.postSignup);
 weconnectServer.get('/contact', contactController.getContact);
 weconnectServer.post('/contact', contactController.postContact);
-weconnectServer.get('/account/verify', passportConfig.isAuthenticated, userController.getVerifyEmail);
-weconnectServer.get('/account/verify/:token', passportConfig.isAuthenticated, userController.getVerifyEmailToken);
-weconnectServer.get('/account', passportConfig.isAuthenticated, userController.getAccount);
-weconnectServer.post('/account/profile', passportConfig.isAuthenticated, userController.postUpdateProfile);
-weconnectServer.post('/account/password', passportConfig.isAuthenticated, userController.postUpdatePassword);
-weconnectServer.post('/account/delete', passportConfig.isAuthenticated, userController.postDeleteAccount);
-weconnectServer.get('/account/unlink/:provider', passportConfig.isAuthenticated, userController.getOauthUnlink);
+weconnectServer.get('/account/verify', passportConfig.isAuthenticated, prismaUserController.getVerifyEmail);
+weconnectServer.get('/account/verify/:token', passportConfig.isAuthenticated, prismaUserController.getVerifyEmailToken);
+weconnectServer.get('/account', passportConfig.isAuthenticated, prismaUserController.getAccount);
+weconnectServer.post('/account/profile', passportConfig.isAuthenticated, prismaUserController.postUpdateProfile);
+weconnectServer.post('/account/password', passportConfig.isAuthenticated, prismaUserController.postUpdatePassword);
+weconnectServer.post('/account/delete', passportConfig.isAuthenticated, prismaUserController.postDeleteAccount);
+weconnectServer.get('/account/unlink/:provider', passportConfig.isAuthenticated, prismaUserController.getOauthUnlink);
 
 /**
  * WeConnect API routes.
  */
 weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
+weconnectServer.get('/apis/v1/secret-retrieve', prismaUserController.getSignup);
+weconnectServer.post('/apis/v1/login', prismaUserController.postLogin);
+weconnectServer.post('/apis/v1/signup', prismaUserController.postSignup);
 
 /**
  * API examples routes.

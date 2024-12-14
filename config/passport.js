@@ -16,7 +16,7 @@ const { OAuthStrategy } = require('passport-oauth');
 const { OAuth2Strategy } = require('passport-oauth');
 const _ = require('lodash');
 const moment = require('moment');
-const { findUserById, findOneUser, comparePassword, createUser, saveUser } = require('../models/prismaUser');
+const { findUserById, findOneUser, comparePassword, createUser, saveUser } = require('../models/prismaUserModel');
 
 
 passport.serializeUser((user, done) => {
