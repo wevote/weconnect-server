@@ -4,11 +4,11 @@ model Person {
   id Int @id @default(autoincrement())
 
   birthdayMonthAndDay    String?
-  emailOfficial          String  @unique
+  emailOfficial          String? @unique
   emailOfficialAlternate String?
   emailPersonal          String  @unique
   emailPersonalAlternate String?
-  emailPreferred         String  @unique
+  emailPreferred         String? @unique
   firstName              String
   firstNamePreferred     String?
   gender                 String?
@@ -22,6 +22,7 @@ model Person {
   stateCode              String?
   uploadedImageUrlLarge  String?
   uploadedImageUrlSmall  String?
+  zipCode                String?
 
   password               String?
   passwordResetToken     String?
