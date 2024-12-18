@@ -2,6 +2,8 @@
 const bcrypt = require('@node-rs/bcrypt');
 const { createPerson, findPersonListByParams, PERSON_FIELDS_ACCEPTED, removeProtectedFieldsFromPerson } = require('../models/personModel');
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
+const { updateOrCreateTeamMember } = require('../models/teamModel');
+const { convertToInteger } = require('../utils/convertToInteger');
 
 /**
  * GET /api/v1/person-list-retrieve
@@ -13,14 +15,22 @@ exports.personListRetrieve = async (request, response) => {
   const searchText = queryParams.get('searchText');
 
   const jSonData = {
-    isSearching: true,
+    isSearching: false,
     personList: [],
     success: false,
     status: '',
   };
   try {
     const params = {};
-
+    if (searchText) {
+      jSonData.isSearching = true;
+      params.OR = [
+        { firstName: { contains: searchText, mode: 'insensitive' } },
+        { firstNamePreferred: { contains: searchText, mode: 'insensitive' } },
+        { lastName: { contains: searchText, mode: 'insensitive' } },
+        { emailPersonal: { contains: searchText, mode: 'insensitive' } },
+      ];
+    }
     const personList = await findPersonListByParams(params);
     jSonData.success = true;
     if (personList) {
@@ -45,11 +55,15 @@ exports.personSave = async (request, response) => {
 
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
-  let personId = queryParams.get('personId');
-  const teamId = queryParams.get('teamId');
-  const changeDict = extractVariablesToChangeFromIncomingParams(queryParams, PERSON_FIELDS_ACCEPTED);
+  let personId = convertToInteger(queryParams.get('personId'));
+  const teamId = convertToInteger(queryParams.get('teamId'));
+  const teamName = queryParams.get('teamName');
+  const teamMemberFirstName = queryParams.get('firstNameToBeSaved');
+  const teamMemberLastName = queryParams.get('lastNameToBeSaved');
+  const personChangeDict = extractVariablesToChangeFromIncomingParams(queryParams, PERSON_FIELDS_ACCEPTED);
   // Set up the default JSON response.
   const jSonData = {
+    addPersonToTeamSuccessful: false,
     personCreated: false,
     personId: '-1',
     success: false,
@@ -59,8 +73,8 @@ exports.personSave = async (request, response) => {
   try {
     jSonData.personId = personId;
     jSonData.success = true;
-    const keys = Object.keys(changeDict);
-    const values = Object.values(changeDict);
+    const keys = Object.keys(personChangeDict);
+    const values = Object.values(personChangeDict);
     for (let i = 0; i < keys.length; i++) {
       jSonData[keys[i]] = values[i];
     }
@@ -81,8 +95,8 @@ exports.personSave = async (request, response) => {
     if (shouldCreatePerson) {
       //
       const tempPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      changeDict.password = await bcrypt.hash(tempPassword, 10);
-      const person = await createPerson(changeDict);
+      personChangeDict.password = await bcrypt.hash(tempPassword, 10);
+      const person = await createPerson(personChangeDict);
       personId = person.id;
       console.log('Created new person:', person);
       jSonData.personCreated = true;
@@ -103,8 +117,15 @@ exports.personSave = async (request, response) => {
   }
   try {
     //
-    if (personId >= 0 && teamId >= 0) {
+    if (personId >= 0 && teamId >= 0 && jSonData.personCreated) {
       // Add the person to the team
+      const teamMemberChangeDict = {
+        teamMemberFirstName,
+        teamMemberLastName,
+        teamName,
+      };
+      await updateOrCreateTeamMember(personId, teamId, teamMemberChangeDict);
+      jSonData.addPersonToTeamSuccessful = true;
     }
   } catch (err) {
     console.error('Error while adding person to team:', err);

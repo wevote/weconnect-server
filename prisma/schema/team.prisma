@@ -9,6 +9,7 @@ model Team {
   statusActive    Boolean        @default(true) /// This is a team that is active
   PersonProcess   PersonProcess? @relation(fields: [personProcessId], references: [id])
   personProcessId Int?
+  TeamMember      TeamMember[]
   teamName        String
 }
 
@@ -35,12 +36,12 @@ model TeamGroup {
 }
 
 model TeamMember {
-  id             Int      @id @default(autoincrement())
-  personId       Int /// Id of the person on the team
-  teamId         Int /// Id of the team
-  teamName       String?
-  teamMemberName String
-  isTeamLead     Boolean? /// Can run the team meetings on their own
+  isTeamLead          Boolean? /// Can run the team meetings on their own
+  personId            Int /// Id of the person on the team
+  teamId              Int /// Id of the team
+  teamMemberFirstName String?
+  teamMemberLastName  String?
+  teamName            String?
 
   statusIsActive             Boolean  @default(true) /// True if participating with this team
   statusIsOnboardingBasic    Boolean? /// New to the team and going through onboarding process
@@ -48,18 +49,25 @@ model TeamMember {
   statusIsListening          Boolean? /// True if the person wants to get notifications from the team
   statusOfferLetterSigned    Boolean?
 
-  dateStartDate DateTime? /// Date they started service
+  // To consider -- do we really need this data?
+  dateStartDate DateTime? /// Date they joined this team
   dateEndDate   DateTime? /// Date they ended service, or for interns, the planned end date
+
+  Person Person @relation(fields: [personId], references: [id])
+  Team   Team   @relation(fields: [teamId], references: [id])
+
+  @@id(name: "teamMemberId", [personId, teamId])
 }
 
 /// This table holds people who were active for a stretch of time, but are no longer active
 /// If a volunteer starts, then stops, then starts again and stops again, they would have two entries
 model TeamMemberFormer {
-  id             Int    @id @default(autoincrement())
-  personId       Int /// Id of the person who was on the team
-  teamId         Int /// Id of the team
-  teamName       String
-  teamMemberName String
+  id                  Int    @id @default(autoincrement())
+  personId            Int /// Id of the person who was on the team
+  teamId              Int /// Id of the team
+  teamName            String
+  teamMemberFirstName String
+  teamMemberLastName  String
 
   dateStartDate DateTime? /// Date they started service
   dateEndDate   DateTime? /// Date they ended service

@@ -62,6 +62,7 @@ async function findPersonListByIdList (idList, includeAllData = false) {
   } else {
     personList.forEach((person) => {
       modifiedPerson = removeProtectedFieldsFromPerson(person);
+      modifiedPerson.personId = person.id;
       modifiedPersonList.push(modifiedPerson);
     });
   }
@@ -79,6 +80,7 @@ async function findPersonListByParams (params = {}, includeAllData = false) {
   } else {
     personList.forEach((person) => {
       modifiedPerson = removeProtectedFieldsFromPerson(person);
+      modifiedPerson.personId = person.id;
       modifiedPersonList.push(modifiedPerson);
     });
   }
