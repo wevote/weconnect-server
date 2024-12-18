@@ -45,6 +45,7 @@ async function findTeamListByParams (params = {}, includeAllData = false) {
   } else {
     teamList.forEach((team) => {
       modifiedTeam = removeProtectedFieldsFromTeam(team);
+      modifiedTeam.teamId = team.id;
       modifiedTeamList.push(modifiedTeam);
     });
   }
@@ -62,6 +63,17 @@ async function deleteOne (id) {
   await prisma.team.delete({
     where: {
       id,
+    },
+  });
+}
+
+async function deleteOneTeamMember (personId, teamId) {
+  await prisma.teamMember.delete({
+    where: {
+      teamMemberId: {
+        personId,
+        teamId,
+      },
     },
   });
 }
@@ -86,25 +98,41 @@ const teamObjTemplate = {
 async function createTeam (updateDict) {
   // eslint-disable-next-line prefer-object-spread
   const mergedTeam = Object.assign({}, teamObjTemplate, updateDict);
-  const team = await prisma.team.create({ data: mergedTeam });
-  return team;
+  return prisma.team.create({ data: mergedTeam });
 }
 
 async function createTeamMember (updateDict) {
   // eslint-disable-next-line prefer-object-spread
   const mergedTeam = Object.assign({}, teamObjTemplate, updateDict);
-  const teamMember = await prisma.teamMember.create({ data: mergedTeam });
-  return teamMember;
+  return prisma.teamMember.create({ data: mergedTeam });
+}
+
+function updateOrCreateTeamMember (personId, teamId, updateDict) {
+  // eslint-disable-next-line prefer-object-spread
+  const createDict = Object.assign({}, { personId, teamId }, updateDict);
+  return prisma.teamMember.upsert({
+    where: {
+      teamMemberId: {
+        personId,
+        teamId,
+      },
+    },
+    update: { ...updateDict },
+    create: { ...createDict },
+  });
 }
 
 module.exports = {
   createTeam,
   createTeamMember,
   deleteOne,
+  deleteOneTeamMember,
   findOneTeam,
   findTeamById,
   findTeamListByParams,
+  findTeamMemberListByParams,
   removeProtectedFieldsFromTeam,
   saveTeam,
   TEAM_FIELDS_ACCEPTED,
+  updateOrCreateTeamMember,
 }; // Export the functions

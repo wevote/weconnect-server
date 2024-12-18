@@ -8,7 +8,7 @@ function extractVariablesToChangeFromIncomingParams (queryParams, fieldsAccepted
     keyWithoutToBeSaved = key.replace('ToBeSaved', '');
     if (fieldsAccepted.includes(keyWithoutToBeSaved) && value) {
       if (queryParams && queryParams.get(`${keyWithoutToBeSaved}Changed`) === 'true') {
-        updateDict[keyWithoutToBeSaved] = value;
+        updateDict[keyWithoutToBeSaved] = value.trim();
       }
     }
   }
