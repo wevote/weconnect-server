@@ -83,9 +83,7 @@ async function saveTeam (team) {
     where: {
       id: team.id,
     },
-    data: {
-      team,
-    },
+    data: team,
   });
   console.log(updateTeam);
 }

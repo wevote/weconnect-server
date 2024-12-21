@@ -1,6 +1,7 @@
 // weconnect-server/controllers/personApiController.js
 const bcrypt = require('@node-rs/bcrypt');
-const { createPerson, findPersonListByParams, PERSON_FIELDS_ACCEPTED, removeProtectedFieldsFromPerson } = require('../models/personModel');
+const { createPerson, findPersonById, findPersonListByParams, PERSON_FIELDS_ACCEPTED,
+  removeProtectedFieldsFromPerson, savePerson } = require('../models/personModel');
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { updateOrCreateTeamMember } = require('../models/teamModel');
 const { convertToInteger } = require('../utils/convertToInteger');
@@ -14,16 +15,16 @@ exports.personListRetrieve = async (request, response) => {
   const queryParams = new URLSearchParams(parsedUrl.search);
   const searchText = queryParams.get('searchText');
 
-  const jSonData = {
+  const jsonData = {
     isSearching: false,
     personList: [],
-    success: false,
+    success: true,
     status: '',
   };
   try {
     const params = {};
     if (searchText) {
-      jSonData.isSearching = true;
+      jsonData.isSearching = true;
       params.OR = [
         { firstName: { contains: searchText, mode: 'insensitive' } },
         { firstNamePreferred: { contains: searchText, mode: 'insensitive' } },
@@ -32,18 +33,63 @@ exports.personListRetrieve = async (request, response) => {
       ];
     }
     const personList = await findPersonListByParams(params);
-    jSonData.success = true;
+    jsonData.success = true;
     if (personList) {
-      jSonData.personList = personList;
-      jSonData.status += 'PERSON_LIST_FOUND ';
+      jsonData.personList = personList;
+      jsonData.status += 'PERSON_LIST_FOUND ';
     } else {
-      jSonData.status += 'PERSON_LIST_NOT_FOUND ';
+      jsonData.status += 'PERSON_LIST_NOT_FOUND ';
     }
   } catch (err) {
-    jSonData.status += err.message;
-    jSonData.success = false;
+    jsonData.status += err.message;
+    jsonData.success = false;
   }
-  response.json(jSonData);
+  response.json(jsonData);
+};
+
+/**
+ * GET /api/v1/person-retrieve
+ * Retrieve one person.
+ */
+exports.personRetrieve = async (request, response) => {
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const queryParams = new URLSearchParams(parsedUrl.search);
+  const personId = convertToInteger(queryParams.get('personId'));
+  const searchText = queryParams.get('searchText');
+
+  const jsonData = {
+    success: true,
+    status: '',
+  };
+  try {
+    const params = {};
+    if (searchText) {
+      jsonData.isSearching = true;
+      params.OR = [
+        { firstName: { contains: searchText, mode: 'insensitive' } },
+        { firstNamePreferred: { contains: searchText, mode: 'insensitive' } },
+        { lastName: { contains: searchText, mode: 'insensitive' } },
+        { emailPersonal: { contains: searchText, mode: 'insensitive' } },
+      ];
+    }
+    const person = await findPersonById(personId);
+    jsonData.success = true;
+    if (person) {
+      jsonData.personId = person.id;
+      const keys = Object.keys(person);
+      const values = Object.values(person);
+      for (let i = 0; i < keys.length; i++) {
+        jsonData[keys[i]] = values[i];
+      }
+      jsonData.status += 'PERSON_FOUND ';
+    } else {
+      jsonData.status += 'PERSON_NOT_FOUND ';
+    }
+  } catch (err) {
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+  response.json(jsonData);
 };
 
 /**
@@ -52,6 +98,7 @@ exports.personListRetrieve = async (request, response) => {
  */
 exports.personSave = async (request, response) => {
   let shouldCreatePerson = false;
+  let shouldSavePerson = false;
 
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
@@ -62,7 +109,7 @@ exports.personSave = async (request, response) => {
   const teamMemberLastName = queryParams.get('lastNameToBeSaved');
   const personChangeDict = extractVariablesToChangeFromIncomingParams(queryParams, PERSON_FIELDS_ACCEPTED);
   // Set up the default JSON response.
-  const jSonData = {
+  const jsonData = {
     addPersonToTeamSuccessful: false,
     personCreated: false,
     personId: '-1',
@@ -71,24 +118,25 @@ exports.personSave = async (request, response) => {
     updateErrors: [],
   };
   try {
-    jSonData.personId = personId;
-    jSonData.success = true;
+    jsonData.personId = personId;
+    jsonData.success = true;
     const keys = Object.keys(personChangeDict);
     const values = Object.values(personChangeDict);
     for (let i = 0; i < keys.length; i++) {
-      jSonData[keys[i]] = values[i];
+      jsonData[keys[i]] = values[i];
     }
   } catch (err) {
-    jSonData.status += err.message;
-    jSonData.success = false;
+    jsonData.status += err.message;
+    jsonData.success = false;
   }
 
   try {
     if (personId >= 0) {
-      jSonData.status += 'PERSON_FOUND ';
+      jsonData.status += 'PERSON_FOUND ';
+      shouldSavePerson = true;
     } else {
       // TODO make sure a person with exact firstName/lastName or emailPersonal doesn't already exist in the database
-      jSonData.status += 'PERSON_TO_BE_CREATED ';
+      jsonData.status += 'PERSON_TO_BE_CREATED ';
       shouldCreatePerson = true;
     }
 
@@ -98,26 +146,39 @@ exports.personSave = async (request, response) => {
       personChangeDict.password = await bcrypt.hash(tempPassword, 10);
       const person = await createPerson(personChangeDict);
       personId = person.id;
-      console.log('Created new person:', person);
-      jSonData.personCreated = true;
-      jSonData.personId = person.id;
-      jSonData.status += 'PERSON_CREATED ';
+      // console.log('Created new person:', person);
+      jsonData.personCreated = true;
+      jsonData.personId = person.id;
+      jsonData.status += 'PERSON_CREATED ';
       const modifiedPersonDict = removeProtectedFieldsFromPerson(person);
       const personKeys = Object.keys(modifiedPersonDict);
       const personValues = Object.values(modifiedPersonDict);
       for (let i = 0; i < personKeys.length; i++) {
-        jSonData[personKeys[i]] = personValues[i];
+        jsonData[personKeys[i]] = personValues[i];
+      }
+    } else if (shouldSavePerson) {
+      personChangeDict.id = personId;
+      // console.log('Updating person:', personChangeDict);
+      const person = await savePerson(personChangeDict);
+      jsonData.personSaved = true;
+      jsonData.personId = person.id;
+      jsonData.status += 'PERSON_UPDATED ';
+      const modifiedPersonDict = removeProtectedFieldsFromPerson(person);
+      const personKeys = Object.keys(modifiedPersonDict);
+      const personValues = Object.values(modifiedPersonDict);
+      for (let i = 0; i < personKeys.length; i++) {
+        jsonData[personKeys[i]] = personValues[i];
       }
     }
   } catch (err) {
     console.error('Error while saving person:', err);
-    jSonData.status += err.message;
-    jSonData.success = false;
-    jSonData.updateErrors.push('Missing required field: emailPersonal');
+    jsonData.status += err.message;
+    jsonData.success = false;
+    jsonData.updateErrors.push('Missing required field: emailPersonal');
   }
   try {
     //
-    if (personId >= 0 && teamId >= 0 && jSonData.personCreated) {
+    if (personId >= 0 && teamId >= 0 && jsonData.personCreated) {
       // Add the person to the team
       const teamMemberChangeDict = {
         teamMemberFirstName,
@@ -125,13 +186,13 @@ exports.personSave = async (request, response) => {
         teamName,
       };
       await updateOrCreateTeamMember(personId, teamId, teamMemberChangeDict);
-      jSonData.addPersonToTeamSuccessful = true;
+      jsonData.addPersonToTeamSuccessful = true;
     }
   } catch (err) {
     console.error('Error while adding person to team:', err);
-    jSonData.status += err.message;
-    jSonData.success = false;
+    jsonData.status += err.message;
+    jsonData.success = false;
   }
 
-  response.json(jSonData);
+  response.json(jsonData);
 };
