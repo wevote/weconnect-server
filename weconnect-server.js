@@ -175,6 +175,7 @@ weconnectServer.get('/account/unlink/:provider', passportConfig.isAuthenticated,
  */
 weconnectServer.get('/apis/v1/add-person-to-team', teamApiController.addPersonToTeam);
 weconnectServer.get('/apis/v1/person-list-retrieve', personApiController.personListRetrieve);
+weconnectServer.get('/apis/v1/person-retrieve', personApiController.personRetrieve);
 weconnectServer.get('/apis/v1/person-save', personApiController.personSave);
 weconnectServer.get('/apis/v1/remove-person-from-team', teamApiController.removePersonFromTeam);
 weconnectServer.get('/apis/v1/team-list-retrieve', teamApiController.teamListRetrieve);

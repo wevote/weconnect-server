@@ -16,13 +16,29 @@ const PERSON_FIELDS_ACCEPTED = [
   'zipCode',
 ];
 
-async function findPersonById (id) {
+function removeProtectedFieldsFromPerson (person) {
+  const modifiedPerson = { ...person };
+  delete modifiedPerson.emailVerificationToken;
+  delete modifiedPerson.password;
+  delete modifiedPerson.passwordResetExpires;
+  delete modifiedPerson.passwordResetToken;
+  return modifiedPerson;
+}
+
+async function findPersonById (id, includeAllData = false) {
   const person = await prisma.person.findUnique({
     where: {
       id,
     },
   });
-  return person;
+  let modifiedPerson = {};
+  if (includeAllData) {
+    modifiedPerson = person;
+  } else {
+    modifiedPerson = removeProtectedFieldsFromPerson(person);
+  }
+  modifiedPerson.personId = person.id;
+  return modifiedPerson;
 }
 
 function extractPersonVariablesToChange (queryParams) {
@@ -40,21 +56,13 @@ function extractPersonVariablesToChange (queryParams) {
   return updateDict;
 }
 
-function removeProtectedFieldsFromPerson (person) {
-  const modifiedPerson = { ...person };
-  delete modifiedPerson.emailVerificationToken;
-  delete modifiedPerson.password;
-  delete modifiedPerson.passwordResetExpires;
-  delete modifiedPerson.passwordResetToken;
-  return modifiedPerson;
-}
-
 async function findPersonListByIdList (idList, includeAllData = false) {
   const personList = await prisma.person.findMany({
     where: {
       id: { in: idList },
     },
   });
+  // console.log('findPersonListByIdList personList:', personList);
   let modifiedPerson = {};
   let modifiedPersonList = [];
   if (includeAllData) {
@@ -66,6 +74,7 @@ async function findPersonListByIdList (idList, includeAllData = false) {
       modifiedPersonList.push(modifiedPerson);
     });
   }
+  // console.log('findPersonListByIdList modifiedPersonList:', modifiedPersonList);
   return modifiedPersonList;
 }
 
@@ -87,11 +96,18 @@ async function findPersonListByParams (params = {}, includeAllData = false) {
   return modifiedPersonList;
 }
 
-async function findOnePerson (params) {   // Find one with array
+async function findOnePerson (params, includeAllData = false) {   // Find one with array
   const person = await prisma.person.findUnique({
     where: params,
   });
-  return person;
+  let modifiedPerson = {};
+  if (includeAllData) {
+    modifiedPerson = person;
+  } else {
+    modifiedPerson = removeProtectedFieldsFromPerson(person);
+  }
+  modifiedPerson.personId = person.id;
+  return modifiedPerson;
 }
 
 async function deleteOne (id) {
@@ -103,15 +119,15 @@ async function deleteOne (id) {
 }
 
 async function savePerson (person) {
+  // console.log('savePerson person:', person);
   const updatePerson = await prisma.person.update({
     where: {
       id: person.id,
     },
-    data: {
-      person,
-    },
+    data: person,
   });
-  console.log(updatePerson);
+  // console.log(updatePerson);
+  return updatePerson;
 }
 
 function isoFutureDate () {
