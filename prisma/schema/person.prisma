@@ -4,11 +4,11 @@ model Person {
   id Int @id @default(autoincrement())
 
   birthdayMonthAndDay    String?
-  emailOfficial          String? @unique
+  emailOfficial          String?   // This can't be set to unique, since it would make it non-optional ... eg: the field blank on two rows
   emailOfficialAlternate String?
   emailPersonal          String  @unique
   emailPersonalAlternate String?
-  emailPreferred         String? @unique
+  emailPreferred         String?
   firstName              String
   firstNamePreferred     String?
   gender                 String?

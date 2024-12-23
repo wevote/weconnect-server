@@ -56,7 +56,7 @@ model TeamMember {
   Person Person @relation(fields: [personId], references: [id])
   Team   Team   @relation(fields: [teamId], references: [id])
 
-  @@id(name: "teamMemberId", [personId, teamId])
+  @@id(name: "teamMemberId", fields: [personId, teamId])
 }
 
 /// This table holds people who were active for a stretch of time, but are no longer active

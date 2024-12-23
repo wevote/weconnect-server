@@ -16,26 +16,51 @@ const { OAuthStrategy } = require('passport-oauth');
 const { OAuth2Strategy } = require('passport-oauth');
 const _ = require('lodash');
 const moment = require('moment');
-const { findUserById, findOneUser, comparePassword, createUser, saveUser } = require('../models/prismaUserModel');
+const { findPersonById, findOnePerson, comparePassword, createUser, saveUser } = require('../models/personModel');
 
+// https://medium.com/@prashantramnyc/node-js-with-passport-authentication-simplified-76ca65ee91e5#id_token=eyJhbGciOiJSUzI1NiIsImtpZCI6IjU2NGZlYWNlYzNlYmRmYWE3MzExYjlkOGU3M2M0MjgxOGYyOTEyNjQiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIyMTYyOTYwMzU4MzQtazFrNnFlMDYwczJ0cDJhMmphbTRsamRjbXMwMHN0dGcuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIyMTYyOTYwMzU4MzQtazFrNnFlMDYwczJ0cDJhMmphbTRsamRjbXMwMHN0dGcuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDIzOTA2NDQ0MjQ4MzM3NzQ5MzciLCJlbWFpbCI6InN0ZXZlcG9kZWxsMzdAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIm5iZiI6MTczNDg5ODgxNSwibmFtZSI6IlN0ZXZlIFBvZGVsbCIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NKMlJPWVd6RjVfdGhIbnA5UzVmYndFRy1idGN5T1lOdmFVRktuNmEwN2JYcWI1eXZndz1zOTYtYyIsImdpdmVuX25hbWUiOiJTdGV2ZSIsImZhbWlseV9uYW1lIjoiUG9kZWxsIiwiaWF0IjoxNzM0ODk5MTE1LCJleHAiOjE3MzQ5MDI3MTUsImp0aSI6IjhmYWE2NDU3ZTdmMGFiOGRjOWIzZjgzNjU1OTkxNzA4NTcyYTRjMWUifQ.BiNYnXFRCB2u_p7mOWev-cVeVBvHXArS30fgGLh09apwOZZiIdUrjfXA94twoaLhtrYWG9Op02-CliCV-ddgby6Ej8vrXHYK4hnGlAsaUbsjxB-6ayaj_LTP3C2eBIaU5n2yRoee3K30qR5Br8_ZGrYbObjEz8ESUVgM-_YSIbnTZlZFNrM5eL4q_SwAMfNjS4aIRpfRtOuCjn_4VbTBNTA6dQfPvPF3vh2BIE9uGVsoOVWbML-H5YdJIOGiGNOt-VbdTChusNraAgrrhClYdlJVaHl3diJgzqXLZPfnzRzbcpb0a3XLO62PXtOHxl3sW6_oF_xqUATOFcgb6SR4ug
 
+/* Convert a user object into a session object, passport should be storing this object on the server
+1. "express-session" creates a "req.session" object, when it is invoked via app.use(session({..}))
+2. "passport" then adds an additional object "req.session.passport" to this "req.session".
+3. All the serializeUser() function does is, receives the "authenticated user" object from the "Strategy" framework, and attach the authenticated user to "req.session.passport.user.{..}"
+*/
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
+/* retrieve user data from session
+  1. Passport JS conveniently populates the "userObj" value in the deserializeUser() with the object attached at the end of "req.session.passport.user.{..}"
+  2. When the done (null, user) function is called in the deserializeUser(), Passport JS takes this last object attached to "req.session.passport.user.{..}",
+     and attaches it to "req.user" i.e "req.user.{..}"
+     In our case, since after calling the done() in "serializeUser" we had req.session.passport.user.{id: 123, email: "kyle@wevote.us"},
+     calling the done() in the "deserializeUser" will take that last object that was attached to req.session.passport.user.{..} and attach to req.user.{..}
+     i.e. req.user.{id: 123, email: "kyle@wevote.us"}
+  3. So "req.user" will contain the authenticated user object for that session, and you can use it in any of the routes in the Node JS app.
+*/
 passport.deserializeUser(async (id, done) => {
   try {
-    return done(null, await findUserById(id));
+    return done(null, await findPersonById(id));
   } catch (error) {
     return done(error);
   }
 });
 
+exports.ensureAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated()) {
+    return next();
+  } else {
+    return res.send(401);
+  }
+};
+
+
 /**
  * Sign in using Email and Password.
+ * authenticate a user, and return the "authenticated user".
  */
 passport.use(new LocalStrategy({ usernameField: 'email' }, (email, password, done) => {
-  findOneUser({ email: email.toLowerCase() })
+  findOnePerson({ emailPersonal: email.toLowerCase() }, true)
     .then((user) => {
       if (!user) {
         return done(null, false, { msg: `Email ${email} not found.` });
@@ -46,6 +71,7 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, (email, password, don
       comparePassword(user, password, (err, isMatch) => {
         if (err) { return done(err); }
         if (isMatch) {
+          // The “done()” function is then used to pass the “{authenticated_user}” to the serializeUser() function.
           return done(null, user);
         }
         return done(null, false, { msg: 'Invalid email or password.' });
@@ -53,6 +79,15 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, (email, password, don
     })
     .catch((err) => done(err));
 }));
+
+
+
+
+
+// =================== not currently used ==============
+
+
+
 
 /**
  * OAuth Strategy Overview
@@ -82,12 +117,12 @@ passport.use(new SnapchatStrategy({
 }, async (req, accessToken, refreshToken, profile, done) => {
   try {
     if (req.user) {
-      const existingUser = await findOneUser({ snapchat: profile.id });
+      const existingUser = await findOnePerson({ snapchat: profile.id });
       if (existingUser) {
         req.flash('errors', { msg: 'There is already a Snapchat account that belongs to you. Sign in with that account or delete it, then link it with your current account.' });
         return done(null, existingUser);
       }
-      const user = await findUserById(req.user.id);
+      const user = await findPersonById(req.user.id);
       user.snapchat = profile.id;
       user.tokens.push({ kind: 'snapchat', accessToken });
       user.name = user.name || profile.displayName;
@@ -96,7 +131,7 @@ passport.use(new SnapchatStrategy({
       req.flash('info', { msg: 'Snapchat account has been linked.' });
       return done(null, user);
     }
-    const existingUser = await findOneUser({ snapchat: profile.id });
+    const existingUser = await findOnePerson({ snapchat: profile.id });
     if (existingUser) {
       return done(null, existingUser);
     }
@@ -128,12 +163,12 @@ passport.use(new FacebookStrategy({
 }, async (req, accessToken, refreshToken, profile, done) => {
   try {
     if (req.user) {
-      const existingUser = await findOneUser({ facebook: profile.id });
+      const existingUser = await findOnePerson({ facebook: profile.id });
       if (existingUser) {
         req.flash('errors', { msg: 'There is already a Facebook account that belongs to you. Sign in with that account or delete it, then link it with your current account.' });
         return done(null, existingUser);
       }
-      const user = await findUserById(req.user.id);
+      const user = await findPersonById(req.user.id);
       user.facebook = profile.id;
       user.tokens.push({ kind: 'facebook', accessToken });
       user.name = user.name || `${profile.name.givenName} ${profile.name.familyName}`;
@@ -143,11 +178,11 @@ passport.use(new FacebookStrategy({
       req.flash('info', { msg: 'Facebook account has been linked.' });
       return done(null, user);
     }
-    const existingUser = await findOneUser({ facebook: profile.id });
+    const existingUser = await findOnePerson({ facebook: profile.id });
     if (existingUser) {
       return done(null, existingUser);
     }
-    const existingEmailUser = await findOneUser({ email: profile._json.email });
+    const existingEmailUser = await findOnePerson({ email: profile._json.email });
     if (existingEmailUser) {
       req.flash('errors', { msg: 'There is already an account using this email address. Sign in to that account and link it with Facebook manually from Account Settings.' });
       return done(null, existingEmailUser);
@@ -179,12 +214,12 @@ passport.use(new GitHubStrategy({
 }, async (req, accessToken, refreshToken, profile, done) => {
   try {
     if (req.user) {
-      const existingUser = await findOneUser({ github: profile.id });
+      const existingUser = await findOnePerson({ github: profile.id });
       if (existingUser) {
         req.flash('errors', { msg: 'There is already a GitHub account that belongs to you. Sign in with that account or delete it, then link it with your current account.' });
         return done(null, existingUser);
       }
-      const user = await findUserById(req.user.id);
+      const user = await findPersonById(req.user.id);
       user.github = profile.id;
       user.tokens.push({ kind: 'github', accessToken });
       user.name = user.name || profile.displayName;
@@ -195,20 +230,20 @@ passport.use(new GitHubStrategy({
       req.flash('info', { msg: 'GitHub account has been linked.' });
       return done(null, user);
     }
-    const existingUser = await findOneUser({ github: profile.id });
+    const existingUser = await findOnePerson({ github: profile.id });
     if (existingUser) {
       return done(null, existingUser);
     }
     const emailValue = _.get(_.orderBy(profile.emails, ['primary', 'verified'], ['desc', 'desc']), [0, 'value'], null);
     if (profile._json.email === null) {
-      const existingEmailUser = await findOneUser({ email: emailValue });
+      const existingEmailUser = await findOnePerson({ email: emailValue });
 
       if (existingEmailUser) {
         req.flash('errors', { msg: 'There is already an account using this email address. Sign in to that account and link it with GitHub manually from Account Settings.' });
         return done(null, existingEmailUser);
       }
     } else {
-      const existingEmailUser = await findOneUser({ email: profile._json.email });
+      const existingEmailUser = await findOnePerson({ email: profile._json.email });
       if (existingEmailUser) {
         req.flash('errors', { msg: 'There is already an account using this email address. Sign in to that account and link it with GitHub manually from Account Settings.' });
         return done(null, existingEmailUser);
@@ -240,12 +275,12 @@ passport.use(new TwitterStrategy({
 }, async (req, accessToken, tokenSecret, profile, done) => {
   try {
     if (req.user) {
-      const existingUser = await findOneUser({ twitter: profile.id });
+      const existingUser = await findOnePerson({ twitter: profile.id });
       if (existingUser) {
         req.flash('errors', { msg: 'There is already a Twitter account that belongs to you. Sign in with that account or delete it, then link it with your current account.' });
         return done(null, existingUser);
       }
-      const user = await findUserById(req.user.id);
+      const user = await findPersonById(req.user.id);
       user.twitter = profile.id;
       user.tokens.push({ kind: 'twitter', accessToken, tokenSecret });
       user.name = user.name || profile.displayName;
@@ -255,7 +290,7 @@ passport.use(new TwitterStrategy({
       req.flash('info', { msg: 'Twitter account has been linked.' });
       return done(null, user);
     }
-    const existingUser = await findOneUser({ twitter: profile.id });
+    const existingUser = await findOnePerson({ twitter: profile.id });
     if (existingUser) {
       return done(null, existingUser);
     }
@@ -287,12 +322,12 @@ const googleStrategyConfig = new GoogleStrategy({
 }, async (req, accessToken, refreshToken, params, profile, done) => {
   try {
     if (req.user) {
-      const existingUser = await findOneUser({ google: profile.id });
+      const existingUser = await findOnePerson({ google: profile.id });
       if (existingUser && (existingUser.id !== req.user.id)) {
         req.flash('errors', { msg: 'There is already a Google account that belongs to you. Sign in with that account or delete it, then link it with your current account.' });
         return done(null, existingUser);
       }
-      const user = await findUserById(req.user.id);
+      const user = await findPersonById(req.user.id);
       user.google = profile.id;
       user.tokens.push({
         kind: 'google',
@@ -307,11 +342,11 @@ const googleStrategyConfig = new GoogleStrategy({
       req.flash('info', { msg: 'Google account has been linked.' });
       return done(null, user);
     }
-    const existingUser = await findOneUser({ google: profile.id });
+    const existingUser = await findOnePerson({ google: profile.id });
     if (existingUser) {
       return done(null, existingUser);
     }
-    const existingEmailUser = await findOneUser({ email: profile.emails[0].value });
+    const existingEmailUser = await findOnePerson({ email: profile.emails[0].value });
     if (existingEmailUser) {
       req.flash('errors', { msg: 'There is already an account using this email address. Sign in to that account and link it with Google manually from Account Settings.' });
       return done(null, existingEmailUser);
@@ -349,12 +384,12 @@ passport.use(new LinkedInStrategy({
 }, async (req, accessToken, refreshToken, profile, done) => {
   try {
     if (req.user) {
-      const existingUser = await findOneUser({ linkedin: profile.id });
+      const existingUser = await findOnePerson({ linkedin: profile.id });
       if (existingUser) {
         req.flash('errors', { msg: 'There is already a LinkedIn account that belongs to you. Sign in with that account or delete it, then link it with your current account.' });
         return done(null, existingUser);
       }
-      const user = await findUserById(req.user.id);
+      const user = await findPersonById(req.user.id);
       user.linkedin = profile.id;
       user.tokens.push({ kind: 'linkedin', accessToken });
       user.name = user.name || profile.displayName;
@@ -363,11 +398,11 @@ passport.use(new LinkedInStrategy({
       req.flash('info', { msg: 'LinkedIn account has been linked.' });
       return done(null, user);
     }
-    const existingUser = await findOneUser({ linkedin: profile.id });
+    const existingUser = await findOnePerson({ linkedin: profile.id });
     if (existingUser) {
       return done(null, existingUser);
     }
-    const existingEmailUser = await findOneUser({ email: profile.emails[0].value });
+    const existingEmailUser = await findOnePerson({ email: profile.emails[0].value });
     if (existingEmailUser) {
       req.flash('errors', { msg: 'There is already an account using this email address. Sign in to that account and link it with LinkedIn manually from Account Settings.' });
       return done(null, existingEmailUser);
@@ -397,12 +432,12 @@ const twitchStrategyConfig = new TwitchStrategy({
 }, async (req, accessToken, refreshToken, params, profile, done) => {
   try {
     if (req.user) {
-      const existingUser = await findOneUser({ twitch: profile.id });
+      const existingUser = await findOnePerson({ twitch: profile.id });
       if (existingUser && existingUser.id !== req.user.id) {
         req.flash('errors', { msg: 'There is already a Twitch account that belongs to you. Sign in with that account or delete it, then link it with your current account.' });
         return done(null, existingUser);
       }
-      const user = await findUserById(req.user.id);
+      const user = await findPersonById(req.user.id);
       user.twitch = profile.id;
       user.tokens.push({
         kind: 'twitch',
@@ -417,11 +452,11 @@ const twitchStrategyConfig = new TwitchStrategy({
       req.flash('info', { msg: 'Twitch account has been linked.' });
       return done(null, user);
     }
-    const existingUser = await findOneUser({ twitch: profile.id });
+    const existingUser = await findOnePerson({ twitch: profile.id });
     if (existingUser) {
       return done(null, existingUser);
     }
-    const existingEmailUser = await findOneUser({ email: profile.email });
+    const existingEmailUser = await findOnePerson({ email: profile.email });
     if (existingEmailUser) {
       req.flash('errors', { msg: 'There is already an account using this email address. Sign in to that account and link it with Twitch manually from Account Settings.' });
       return done(null, existingEmailUser);
@@ -462,7 +497,7 @@ passport.use('tumblr', new OAuthStrategy(
   },
   async (req, token, tokenSecret, profile, done) => {
     try {
-      const user = await findUserById(req.user._id);
+      const user = await findPersonById(req.user._id);
       user.tokens.push({ kind: 'tumblr', accessToken: token, tokenSecret });
       await saveUser(user);
       return done(null, user);
@@ -486,7 +521,7 @@ passport.use('foursquare', new OAuth2Strategy(
   },
   async (req, accessToken, refreshToken, profile, done) => {
     try {
-      const user = await findUserById(req.user._id);
+      const user = await findPersonById(req.user._id);
       user.tokens.push({ kind: 'foursquare', accessToken });
       await saveUser(user);
       return done(null, user);
@@ -508,12 +543,12 @@ passport.use(new SteamOpenIdStrategy({
   const profileURL = `http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${process.env.STEAM_KEY}&steamids=${steamId}`;
   try {
     if (req.user) {
-      const existingUser = await findOneUser({ steam: steamId });
+      const existingUser = await findOnePerson({ steam: steamId });
       if (existingUser) {
         req.flash('errors', { msg: 'There is already an account associated with the SteamID. Sign in with that account or delete it, then link it with your current account.' });
         return done(null, existingUser);
       }
-      const user = await findUserById(req.user.id);
+      const user = await findPersonById(req.user.id);
       user.steam = steamId;
       user.tokens.push({ kind: 'steam', accessToken: steamId });
       try {
@@ -563,7 +598,7 @@ passport.use('pinterest', new OAuth2Strategy(
   },
   async (req, accessToken, refreshToken, profile, done) => {
     try {
-      const user = await findOneUser(req.user._id);
+      const user = await findOnePerson(req.user._id);
       user.tokens.push({ kind: 'pinterest', accessToken });
       await saveUser();
       return done(null, user);
@@ -587,7 +622,7 @@ const quickbooksStrategyConfig = new OAuth2Strategy(
   },
   async (req, accessToken, refreshToken, params, profile, done) => {
     try {
-      const user = await findUserById(req.user._id);
+      const user = await findPersonById(req.user._id);
       user.quickbooks = req.query.realmId;
       const quickbooksToken = user.tokens.find((vendor) => vendor.kind === 'quickbooks');
       if (quickbooksToken) {
