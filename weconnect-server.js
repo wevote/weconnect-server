@@ -6,6 +6,7 @@ const path = require('path');
 const express = require('express');
 const compression = require('compression');
 const session = require('express-session');
+const connectPgSimple = require('connect-pg-simple');
 const bodyParser = require('body-parser');
 const logger = require('morgan');
 const errorHandler = require('errorhandler');
@@ -71,17 +72,24 @@ weconnectServer.set('views', path.join(__dirname, 'views'));
 weconnectServer.set('view engine', 'pug');
 weconnectServer.set('trust proxy', numberOfProxies);
 weconnectServer.use(compression());
-weconnectServer.use(cors());
+const corsConfig = {
+  credentials: true,
+  origin: true,
+};
+weconnectServer.use(cors(corsConfig));
 weconnectServer.use(logger('dev'));
 weconnectServer.use(bodyParser.json());
 weconnectServer.use(bodyParser.urlencoded({ extended: true }));
 weconnectServer.use(limiter);
 
+// TODO: Move to auth.js
+
+// This is the basic express session({..}) initialization.
 weconnectServer.use(session({
-  resave: true,
-  saveUninitialized: true,
   secret: process.env.SESSION_SECRET,
-  name: 'weconnect_cookie',
+  resave: false,
+  saveUninitialized: true,
+  name: 'WeConnectSession',
   cookie: {
     maxAge: 1209600000, // Two weeks in milliseconds
     secure: secureTransfer,
@@ -91,17 +99,22 @@ weconnectServer.use(session({
       { path: '/summary', type: 'startWith' },
     ],
   },
-  // store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI })
+  store: new (connectPgSimple(session))({
+    createTableIfMissing: true,
+  }),
+  // store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI })    WHAT ABOUT POSTGRES??????
 }));
-weconnectServer.use(passport.initialize());
-weconnectServer.use(passport.session());
-weconnectServer.use(flash());
-dotenv.config({ path: '.env' });
+
+weconnectServer.use(passport.initialize());   // init passport on every route call.
+weconnectServer.use(passport.session());      // allow passport to use "express-session".
+weconnectServer.use(flash());   // TODO: probably not needed or wanted
+dotenv.config({ path: '.env' });              // reads text in '.env' file into process.env global variables
 // TODO: This allowlist is a hack around a csrf.js issue, where login was blocked by a csrf mismatch.  I suspect that we have an unresolved Lusca setup issue.
 weconnectServer.use(lusca({
   allowlist: ['/login', '/signup'],
 }));
 
+// END move to auth js
 
 weconnectServer.use((req, res, next) => {
   if (req.path === '/api/upload') {
@@ -119,8 +132,9 @@ weconnectServer.use((req, res, next) => {
   res.locals.user = req.user;
   next();
 });
+
+// After successful login, redirect back to the intended page
 weconnectServer.use((req, res, next) => {
-  // After successful login, redirect back to the intended page
   if (!req.user &&
     req.path !== '/login' &&
     req.path !== '/signup' &&
@@ -130,9 +144,19 @@ weconnectServer.use((req, res, next) => {
   } else if (req.user &&
     (req.path === '/account' || req.path.match(/^\/api/))) {
     req.session.returnTo = req.originalUrl;
+    console.log('test in weconnect-server isAuthenticated: ', req.isAuthenticated());
   }
   next();
 });
+
+// make the req.user available globally to be able to check logged in status
+weconnectServer.use((req, res, next) => {
+  res.locals.login = req.user;
+  next();
+});
+
+
+
 weconnectServer.use('/', express.static(path.join(__dirname, 'public'), { maxAge: 31557600000 }));
 weconnectServer.use('/js/lib', express.static(path.join(__dirname, 'node_modules/chart.js/dist'), { maxAge: 31557600000 }));
 weconnectServer.use('/js/lib', express.static(path.join(__dirname, 'node_modules/popper.js/dist/umd'), { maxAge: 31557600000 }));
@@ -151,15 +175,15 @@ weconnectServer.use((req, res, next) => {
  * Primary app routes.
  */
 weconnectServer.get('/', homeController.index);
-weconnectServer.get('/login', prismaUserController.getLogin);
-weconnectServer.post('/login', prismaUserController.postLogin);
+// weconnectServer.get('/login', prismaUserController.getLogin);
+// weconnectServer.post('/login', prismaUserController.postLogin);
 weconnectServer.get('/logout', prismaUserController.logout);
 weconnectServer.get('/forgot', prismaUserController.getForgot);
 weconnectServer.post('/forgot', prismaUserController.postForgot);
 weconnectServer.get('/reset/:token', prismaUserController.getReset);
 weconnectServer.post('/reset/:token', prismaUserController.postReset);
-weconnectServer.get('/signup', prismaUserController.getSignup);
-weconnectServer.post('/signup', prismaUserController.postSignup);
+// weconnectServer.get('/signup', prismaUserController.getSignup);
+// weconnectServer.post('/signup', prismaUserController.postSignup);
 weconnectServer.get('/contact', contactController.getContact);
 weconnectServer.post('/contact', contactController.postContact);
 weconnectServer.get('/account/verify', passportConfig.isAuthenticated, prismaUserController.getVerifyEmail);
@@ -182,8 +206,11 @@ weconnectServer.get('/apis/v1/team-list-retrieve', teamApiController.teamListRet
 weconnectServer.get('/apis/v1/team-save', teamApiController.teamSave);
 weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
 weconnectServer.get('/apis/v1/secret-retrieve', prismaUserController.getSignup);
-weconnectServer.post('/apis/v1/login', prismaUserController.postLogin);
-weconnectServer.post('/apis/v1/signup', prismaUserController.postSignup);
+
+// weconnectServer.post('/apis/v1/auth-test', passportConfig.isAuthenticated, personApiController.postTestAuth);
+weconnectServer.post('/apis/v1/auth-test', personApiController.postTestAuth);
+weconnectServer.post('/apis/v1/login', personApiController.postLogin);
+weconnectServer.post('/apis/v1/signup', personApiController.postSignup);
 
 /**
  * API examples routes.
@@ -276,8 +303,7 @@ weconnectServer.get('/auth/quickbooks/callback', passport.authorize('quickbooks'
 /**
  * Error Handler.
  */
-// eslint-disable-next-line no-unused-vars
-weconnectServer.use((req, res, next) => {
+weconnectServer.use((req, res) => {
   const err = new Error('Not Found');
   err.status = 404;
   res.status(404).send('Page Not Found');

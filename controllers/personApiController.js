@@ -1,10 +1,14 @@
 // weconnect-server/controllers/personApiController.js
 const bcrypt = require('@node-rs/bcrypt');
-const { createPerson, findPersonById, findPersonListByParams, PERSON_FIELDS_ACCEPTED,
-  removeProtectedFieldsFromPerson, savePerson } = require('../models/personModel');
+const validator = require('validator');
+const passport = require('passport');
+const { createPerson, findPersonListByParams, PERSON_FIELDS_ACCEPTED, removeProtectedFieldsFromPerson,
+  findOnePerson, findPersonById, savePerson,
+} = require('../models/personModel');
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { updateOrCreateTeamMember } = require('../models/teamModel');
 const { convertToInteger } = require('../utils/convertToInteger');
+
 
 /**
  * GET /api/v1/person-list-retrieve
@@ -195,4 +199,165 @@ exports.personSave = async (request, response) => {
   }
 
   response.json(jsonData);
+};
+
+/**
+ * POST /signup
+ * Create a new local account.
+ */
+// eslint-disable-next-line consistent-return
+exports.postSignup = async (req, res) => {
+  const validationErrors = [];
+  if (!validator.isEmail(req.body.emailPersonal)) validationErrors.push({ msg: 'Please enter a valid primary email address.' });
+  // This is optional!   if (!validator.isEmail(req.body.emailOfficial)) validationErrors.push({ msg: 'Please enter a valid secondary email address.' });
+  if (!validator.isLength(req.body.password, { min: 8 })) validationErrors.push({ msg: 'Password must be at least 8 characters long' });
+  if (validator.escape(req.body.password) !== validator.escape(req.body.confirmPassword)) validationErrors.push({ msg: 'Passwords do not match' });
+  if (validationErrors.length) {
+    // req.flash('errors', validationErrors);
+    // return res.redirect('/signup');
+    return res.json({
+      personCreated: false,
+      errors: validationErrors,
+      userId: -1,
+      signedIn: false,
+    });
+  }
+  req.body.email = validator.normalizeEmail(req.body.emailPersonal, { gmail_remove_dots: false });
+  try {
+    const existingUser = await findOnePerson({ emailPersonal: req.body.emailPersonal }, true);
+    if (existingUser) {
+      validationErrors.push({ msg: 'A user with the same primary email already exists' });
+      return res.json({
+        personCreated: false,
+        errors: validationErrors,
+        userId: -1,
+        signedIn: false,
+      });
+    }
+    const encryptedPwd = await bcrypt.hash(req.body.password, 10);
+    const user = await createPerson({
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      location: req.body.location,
+      emailPersonal: req.body.emailPersonal,
+      emailOfficial: req.body.emailOfficial,
+      password: encryptedPwd,
+    });
+    req.logIn(user, (err) => {
+      if (err) {
+        validationErrors.push({ msg: err });
+        // return next(err);
+        return res.json({
+          personCreated: false,
+          errors: validationErrors,
+          userId: -1,
+          signedIn: false,
+        });
+      }
+      return res.json({
+        personCreated: true,
+        errors: validationErrors,
+        userId: user.id,
+        signedIn: true,
+      });
+    });
+  } catch (err) {
+    // next(err);
+    validationErrors.push({ msg: err });
+    res.json({
+      personCreated: false,
+      errors: validationErrors,
+      userId: -1,
+      signedIn: false,
+    });
+  }
+};
+
+/**
+ * POST /apis/v1/login
+ * Sign in using email and password.
+ */
+exports.postLogin = (req, res, next) => {
+  console.log('test top in postLogin isAuthenticated: ', req.isAuthenticated());
+
+  req.body.email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
+  req.body.personalEmail = req.body.email;
+  // eslint-disable-next-line consistent-return
+  passport.authenticate('local', (err, user, info) => {
+    if (err) { return next(err); }
+    if (!user) {
+      // Converting from a pug redirect to an API response ... req.flash('errors', info);
+      // Converting from a pug redirect to an API response ... return res.redirect('/login');
+      return res.json({
+        signedIn: false,
+        errors: info,
+        userId: -1,
+        name: '',
+      });
+    }
+    req.logIn(user, (err2) => {
+      if (err2) {
+        res.json({
+          signedIn: false,
+          errors: info + err2,
+          userId: -1,
+          name: '',
+        });
+      }
+
+      res.json({
+        signedIn: true,
+        userId: user.id,
+        name: user.name,
+      });
+      console.log('test at bottom in postLogin isAuthenticated: ', req.isAuthenticated());
+    });
+  })(req, res, next);
+};
+
+/**
+ * GET /logout
+ * Log out.
+ */
+exports.logout = (req, res) => {
+  req.logout((err) => {
+    if (err) console.log('Error : Failed to logout.', err);
+    req.session.destroy((err2) => {
+      if (err2) console.log('Error : Failed to destroy the session during logout.', err2);
+      req.user = null;
+      res.redirect('/');
+    });
+  });
+};
+
+exports.postTestAuth = (req, res, next) => {
+  /* Passport JS conveniently provides a “req.isAuthenticated()” function, that
+       returns “true” in case an authenticated user is present in “req.session.passport.user”, or
+       returns “false” in case no authenticated user is present in “req.session.passport.user”.
+   */
+  console.log('test top in postTestAuth isAuthenticated: ', req.isAuthenticated());
+
+  // eslint-disable-next-line consistent-return
+  passport.authenticate('local', (err, user, info) => {
+    if (err) { return next(err); }
+    if (!user) {
+      return res.json({
+        signedIn: false,
+        errors: info,
+        userId: -1,
+        name: '',
+        email: '',
+        authenticated: false,
+      });
+    }
+
+    console.log('test after passport.authenticate() postTestAuth isAuthenticated: ', req.isAuthenticated());
+    return res.json({
+      signedIn: true,
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      authenticated: req.isAuthenticated(),
+    });
+  });
 };

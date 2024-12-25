@@ -108,16 +108,22 @@ async function createTeamMember (updateDict) {
 function updateOrCreateTeamMember (personId, teamId, updateDict) {
   // eslint-disable-next-line prefer-object-spread
   const createDict = Object.assign({}, { personId, teamId }, updateDict);
-  return prisma.teamMember.upsert({
-    where: {
-      teamMemberId: {
-        personId,
-        teamId,
+  try {
+    const upResult =  prisma.teamMember.upsert({
+      where: {
+        teamMemberId: {
+          personId,
+          teamId,
+        },
       },
-    },
-    update: { ...updateDict },
-    create: { ...createDict },
-  });
+      update: { ...updateDict },
+      create: { ...createDict },
+    });
+    return upResult;
+  } catch (err) {
+    console.log('updateOrCreateTeamMember: ERROR ', err);
+    return null;
+  }
 }
 
 module.exports = {

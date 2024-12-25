@@ -185,45 +185,6 @@ DATABASE_URL=postgresql://jerrygarcia:jerryspassword@localhost:5432/WeConnectDB?
 ```
 <br><br>
 
-### Use the Prisma ORM to "migrate" the database and table definitions to the postgres server
-
-Generate the schema from prisma/schema.prisma to node_modules
-```
-stevepodell@Steves-MacBook-Air weconnect-server % prisma generate
-Prisma schema loaded from prisma/schema.prisma
-
-✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 73ms
-
-Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
-
-Help us improve the Prisma ORM for everyone. Share your feedback in a short 2-min survey: https://pris.ly/orm/survey/release-5-22
-
-stevepodell@Steves-MacBook-Air weconnect-server % 
-```
-
-Initialize the generated schema into the postgres database server.
-```
-stevepodell@Steves-MacBook-Air weconnect-server %  prisma migrate dev --name init
-Environment variables loaded from .env
-Prisma schema loaded from prisma/schema.prisma
-Datasource "db": PostgreSQL database "WeConnectDB", schema "public" at "localhost:5432"
-
-Applying migration `20241126190549_init`
-
-The following migration(s) have been created and applied from new schema changes:
-
-migrations/
-  └─ 20241126190549_init/
-    └─ migration.sql
-
-Your database is now in sync with your schema.
-
-✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 104ms
-
-
-stevepodell@Steves-MacBook-Air weconnect-server % 
-```
-<br><br>
 
 ### Not now, but when you want to add a column in the future
 **Don't do this now!**  
@@ -282,6 +243,49 @@ And in the Connection tab set the Host name as localhost — also add your postg
 
 <img src="docs/images/RegisterPgAdminHost.png" alt="Alt Text" width="600" >
 <br><br>
+
+On the left pane "Object Explorer" right click on "Databases" and add the "WeConnectDB"
+
+### Use the Prisma ORM to "migrate" the database and table definitions to the postgres server
+
+Generate the schema from prisma/schema.prisma to node_modules
+```
+stevepodell@Steves-MacBook-Air weconnect-server % prisma generate
+Prisma schema loaded from prisma/schema.prisma
+
+✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 73ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Help us improve the Prisma ORM for everyone. Share your feedback in a short 2-min survey: https://pris.ly/orm/survey/release-5-22
+
+stevepodell@Steves-MacBook-Air weconnect-server % 
+```
+
+Initialize the generated schema into the postgres database server.
+```
+stevepodell@Steves-MacBook-Air weconnect-server %  prisma migrate dev --name init
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "WeConnectDB", schema "public" at "localhost:5432"
+
+Applying migration `20241126190549_init`
+
+The following migration(s) have been created and applied from new schema changes:
+
+migrations/
+  └─ 20241126190549_init/
+    └─ migration.sql
+
+Your database is now in sync with your schema.
+
+✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 104ms
+
+
+stevepodell@Steves-MacBook-Air weconnect-server % 
+```
+<br><br>
+
 
 ### Start the app!
 First start postgres via the run configuration
