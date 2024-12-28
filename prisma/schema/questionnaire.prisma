@@ -1,0 +1,76 @@
+// weconnect-server/prisma/schema/questionnaire.prisma, parallel to /models/questionnaireModel.js
+
+model Questionnaire {
+  id                        Int                     @id @default(autoincrement())
+  questionnaireInstructions String?
+  questionnaireName         String
+  questionnaireTitle        String?
+  questions                 QuestionnaireQuestion[]
+  /// statusActive is true if a questionnaire is in use
+  statusActive              Boolean                 @default(true)
+}
+
+enum AnswerType {
+  BOOLEAN
+  INTEGER
+  MULTIPLE_CHOICE
+  STRING
+  TEXT
+}
+
+model QuestionnaireQuestion {
+  id                   Int              @id @default(autoincrement())
+  answerType           AnswerType       @default(STRING)
+  /// When Person is created based on these questionnaire answers, fieldMappingRule tells us which field
+  ///  we want to put the data in: ex/ Person.firstName
+  fieldMappingRule     String?
+  questionInstructions String?
+  questionOrder        Int              @default(0)
+  questionPlaceholder  String? // This is the prompt text that shows in the input box when it is empty
+  questionText         String
+  questionVersion      Int              @default(0)
+  questionnaireId      Int
+  questionnaire        Questionnaire?   @relation(fields: [questionnaireId], references: [id])
+  QuestionAnswer       QuestionAnswer[]
+  requireAnswer        Boolean          @default(false)
+  /// statusActive is true if the question is in use
+  statusActive         Boolean          @default(true)
+}
+
+// When a question is changed, we keep a former version of the question, so we can always tie a person's answer to
+//  the question they were actually asked.
+model QuestionnaireQuestionFormer {
+  id                      Int        @id @default(autoincrement())
+  answerType              AnswerType @default(STRING)
+  /// When Person is created based on these questionnaire answers, in which field do we put the data
+  /// ex/ Person.firstName
+  fieldMappingRule        String?
+  questionInstructions    String?
+  questionOrder           Int        @default(0)
+  questionText            String
+  questionVersion         Int        @default(0)
+  questionnaireId         Int
+  questionnaireQuestionId Int
+  requireAnswer           Boolean    @default(false)
+  /// statusActive is true if the question was in use
+  statusActive            Boolean    @default(true)
+}
+
+model QuestionAnswer {
+  answerBoolean Boolean?
+  answerInteger Int?
+  answerString  String?
+  answerType    AnswerType @default(STRING)
+
+  personId        Int
+  person          Person?                @relation(fields: [personId], references: [id])
+  questionId      Int
+  question        QuestionnaireQuestion? @relation(fields: [questionId], references: [id])
+  questionnaireId Int
+  questionVersion Int                    @default(0)
+
+  dateCreated   DateTime  @default(now())
+  dateSubmitted DateTime?
+
+  @@id(name: "questionIdPersonId", [questionId, personId])
+}

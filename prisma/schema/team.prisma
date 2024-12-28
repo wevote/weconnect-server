@@ -1,30 +1,34 @@
-// weconnect-server/prisma/schema/team.prisma, parallel to /models/Team.js
-
 /// One team that has specific members and meeting time
 model Team {
   id              Int            @id @default(autoincrement())
-  description     String?
-  meetingDay      String? // Monday, Tues, etc.
-  meetingTime     String? // 10am, Noon etc. in Pacific time TODO: how is this stored to be time zone independent?
-  statusActive    Boolean        @default(true) /// This is a team that is active
-  PersonProcess   PersonProcess? @relation(fields: [personProcessId], references: [id])
-  personProcessId Int?
-  TeamMember      TeamMember[]
   teamName        String
+  description     String?
+  /// Monday, Tues, etc.
+  meetingDay      String?
+  /// 10am, Noon etc. in Pacific time
+  // TODO: how is this stored to be time zone independent?
+  meetingTime     String?
+  /// This is a team that is active
+  statusActive    Boolean        @default(true)
+  personProcessId Int?
+  PersonProcess   PersonProcess? @relation(fields: [personProcessId], references: [id])
+  TeamMember      TeamMember[]
 }
 
 /// Examples: New team member, project manager, etc. added to the team
 model TeamChangeLog {
-  id                Int    @id @default(autoincrement())
+  id                Int      @id @default(autoincrement())
   changeDescription String
-  doneByPersonId    Int? /// The person triggering the change
-  personId          Int? /// Id of the person this log entry is related to
-  teamId            Int /// Id of the team this log entry is related to
-
-  dateCreated     DateTime @default(now())
-  dateLastUpdated DateTime @default(now()) @updatedAt
-  statusDone      Boolean?
-  statusToDo      Boolean?
+  /// The person triggering the change
+  doneByPersonId    Int?
+  /// Id of the person this log entry is related to
+  personId          Int?
+  /// Id of the team this log entry is related to
+  teamId            Int
+  dateCreated       DateTime @default(now())
+  dateLastUpdated   DateTime @default(now()) @updatedAt
+  statusDone        Boolean?
+  statusToDo        Boolean?
 }
 
 /// A group of teams, could be considered department. Ex/ Engineering Dept
@@ -32,45 +36,54 @@ model TeamGroup {
   id            Int     @id @default(autoincrement())
   teamGroupName String
   description   String?
-  statusActive  Boolean @default(true) /// This is a team group that is active
+  /// This is a team group that is active
+  statusActive  Boolean @default(true)
 }
 
 model TeamMember {
-  isTeamLead          Boolean? /// Can run the team meetings on their own
-  personId            Int /// Id of the person on the team
-  teamId              Int /// Id of the team
-  teamMemberFirstName String?
-  teamMemberLastName  String?
-  teamName            String?
-
-  statusIsActive             Boolean  @default(true) /// True if participating with this team
-  statusIsOnboardingBasic    Boolean? /// New to the team and going through onboarding process
-  statusIsOnboardingAdvanced Boolean? /// Has some advanced onboarding to review
-  statusIsListening          Boolean? /// True if the person wants to get notifications from the team
+  /// Id of the person on the team
+  personId                   Int
+  teamName                   String?
+  /// Can run the team meetings on their own
+  isTeamLead                 Boolean?
+  /// True if participating with this team
+  statusIsActive             Boolean   @default(true)
+  /// New to the team and going through onboarding process
+  statusIsOnboardingBasic    Boolean?
+  /// Has some advanced onboarding to review
+  statusIsOnboardingAdvanced Boolean?
+  /// True if the person wants to get notifications from the team
+  statusIsListening          Boolean?
   statusOfferLetterSigned    Boolean?
+  /// Date they joined this team
+  dateStartDate              DateTime?
+  /// Date they ended service, or for interns, the planned end date
+  dateEndDate                DateTime?
+  /// Id of the team
+  teamId                     Int
+  teamMemberFirstName        String?
+  teamMemberLastName         String?
+  Person                     Person    @relation(fields: [personId], references: [id])
+  Team                       Team      @relation(fields: [teamId], references: [id])
 
-  // To consider -- do we really need this data?
-  dateStartDate DateTime? /// Date they joined this team
-  dateEndDate   DateTime? /// Date they ended service, or for interns, the planned end date
-
-  Person Person @relation(fields: [personId], references: [id])
-  Team   Team   @relation(fields: [teamId], references: [id])
-
-  @@id(name: "teamMemberId", fields: [personId, teamId])
+  @@id([personId, teamId], name: "teamMemberId")
 }
 
 /// This table holds people who were active for a stretch of time, but are no longer active
 /// If a volunteer starts, then stops, then starts again and stops again, they would have two entries
 model TeamMemberFormer {
-  id                  Int    @id @default(autoincrement())
-  personId            Int /// Id of the person who was on the team
-  teamId              Int /// Id of the team
-  teamName            String
-  teamMemberFirstName String
-  teamMemberLastName  String
-
-  dateStartDate DateTime? /// Date they started service
-  dateEndDate   DateTime? /// Date they ended service
+  id                  Int       @id @default(autoincrement())
+  /// Id of the person who was on the team
+  personId            Int
+  teamName            String?
+  /// Date they started service
+  dateStartDate       DateTime?
+  /// Date they ended service
+  dateEndDate         DateTime?
+  /// Id of the team
+  teamId              Int
+  teamMemberFirstName String?
+  teamMemberLastName  String?
 }
 
 model TeamRole {
@@ -79,22 +92,25 @@ model TeamRole {
 }
 
 model TeamRoleToPersonLink {
-  id           Int    @id @default(autoincrement())
-  personId     Int /// Id of the person who was on the team
-  teamId       Int
-  teamRoleId   Int
-  teamRoleName String
-
-  statusIsActive Boolean   @default(true) /// True if the person is currently in this team role
-  dateStartDate  DateTime? /// Date they started service
-  dateEndDate    DateTime? /// Date they ended service
+  id             Int       @id @default(autoincrement())
+  /// Id of the person who was on the team
+  personId       Int
+  teamId         Int
+  teamRoleId     Int
+  teamRoleName   String?
+  /// True if the person is currently in this team role
+  statusIsActive Boolean   @default(true)
+  /// Date they started service
+  dateStartDate  DateTime?
+  /// Date they ended service
+  dateEndDate    DateTime?
 }
 
 model TeamToTeamRoleLink {
-  id           Int    @id @default(autoincrement())
-  teamId       Int
-  teamRoleId   Int
-  teamRoleName String
-
-  statusIsActive Boolean @default(true) /// True if this team is using this role right now
+  id             Int     @id @default(autoincrement())
+  teamId         Int
+  teamRoleId     Int
+  teamRoleName   String?
+  /// True if this team is using this role right now
+  statusIsActive Boolean @default(true)
 }

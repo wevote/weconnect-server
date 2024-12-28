@@ -44,8 +44,7 @@ async function findPersonById (id, includeAllData = false) {
 function extractPersonVariablesToChange (queryParams) {
   let keyWithoutToBeSaved = '';
   const updateDict = {};
-  // eslint-disable-next-line no-restricted-syntax
-  for (const [key, value] of queryParams) {
+  Object.entries(queryParams).forEach(([key, value]) => {
     // console.log('==== key:', key, ', value:', value);
     keyWithoutToBeSaved = key.replace('ToBeSaved', '');
     if (PERSON_FIELDS_ACCEPTED.includes(keyWithoutToBeSaved) && value) {
@@ -53,7 +52,7 @@ function extractPersonVariablesToChange (queryParams) {
         updateDict[keyWithoutToBeSaved] = value;
       }
     }
-  }
+  });
   return updateDict;
 }
 
