@@ -29,10 +29,10 @@ exports.addPersonToTeam = async (request, response) => {
   // Set up the default JSON response.
   const jsonData = {
     addPersonToTeamSuccessful: false,
-    personId: '-1',
-    success: false,
+    personId: -1,
     status: '',
-    teamId: '-1',
+    success: true,
+    teamId: -1,
     updateErrors: [],
   };
   try {
@@ -94,10 +94,10 @@ exports.removePersonFromTeam = async (request, response) => {
   // Set up the default JSON response.
   const jsonData = {
     removePersonFromTeamSuccessful: false,
-    personId: '-1',
-    success: false,
+    personId: -1,
     status: '',
-    teamId: '-1',
+    success: true,
+    teamId: -1,
     updateErrors: [],
   };
   try {
@@ -147,8 +147,8 @@ exports.removePersonFromTeam = async (request, response) => {
  */
 exports.teamListRetrieve = async (request, response) => {
   const jsonData = {
-    success: false,
     status: '',
+    success: true,
     teamList: [],
   };
   // let results;
@@ -189,8 +189,8 @@ exports.teamListRetrieve = async (request, response) => {
  */
 exports.teamRetrieve = async (request, response) => {
   const jsonData = {
-    success: false,
     status: '',
+    success: true,
     teamId: -1, // We send -1 when a team doesn't exist
     teamMemberList: [],
   };
@@ -215,7 +215,7 @@ exports.teamRetrieve = async (request, response) => {
       }
       try {
         const results = await retrieveTeamMemberList(teamId);
-        console.log('teamRetrieve retrieveTeamMemberList results:', results);
+        // console.log('teamRetrieve retrieveTeamMemberList results:', results);
         jsonData.teamMemberList = results.teamMemberList;
         jsonData.status += results.status;
       } catch (err) {
@@ -248,9 +248,9 @@ exports.teamSave = async (request, response) => {
   // Set up the default JSON response.
   const jsonData = {
     teamCreated: false,
-    teamId: '-1',
-    success: false,
+    teamId: -1,
     status: '',
+    success: true,
     updateErrors: [],
   };
   try {

@@ -1,10 +1,3 @@
-// weconnect-server/prisma/schema/schema.prisma
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider        = "prisma-client-js"
   // Multifile support: https://www.prisma.io/blog/organize-your-prisma-schema-with-multi-file-support
@@ -44,4 +37,22 @@ model User {
   twitch     String
   quickbooks String
   tokens     Json
+}
+
+// 2024-12-27 Dale added this session table because otherwise Prisma gives the following error every couple of days:
+// Drift detected: Your database schema is not in sync with your migration history.
+// The following is a summary of the differences between the expected database schema given your migrations files, and the actual schema of the database.
+// It should be understood as the set of changes to get from the expected schema to the actual schema.
+// [+] Added tables
+//   - session
+// [*] Changed the `session` table
+//   [+] Added index on columns (expire)
+// ✔ We need to reset the "public" schema at "localhost:5432"
+// Do you want to continue? All data will be lost
+model session {
+  sid    String   @id @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "IDX_session_expire")
 }

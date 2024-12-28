@@ -1,57 +1,61 @@
-// weconnect-server/prisma/schema/personProcess.prisma, parallel to /models/PersonProcess.js
-
 /// An ordered series of steps to accomplish an onboarding goal
 model PersonProcess {
   id           Int      @id @default(autoincrement())
   processName  String
   description  String?
-  isForTeam    Boolean? /// To be completed based on team(s) the volunteer is in
-  // TODO figure out how to do this
-  // necessaryPriorProcesses PersonProcess[] /// Requires these other processes are completed first
-  statusActive Boolean  @default(false) /// This is a process that is in use
-  teams        Team[] /// Is a process used for team(s)
+  /// To be completed based on team(s) the volunteer is in
+  isForTeam    Boolean?
+  /// This is a process that is in use
+  statusActive Boolean  @default(false)
+  teams        Team[]
 }
 
 /// One step in a PersonProcess
 model PersonProcessStep {
   id                          Int      @id @default(autoincrement())
-  actionUrl                   String? /// Where HR team goes to do this step
+  /// Where HR team goes to do this step
+  actionUrl                   String?
   description                 String?
   googleDriveFolderId         String?
-  infoUrl                     String? /// Documentation for this step
+  /// Documentation for this step
+  infoUrl                     String?
   isGoogleDrivePermissionStep Boolean?
-  // TODO figure out how to do this
-  // necessaryPriorSteps         PersonProcessStep[] /// Requires that these other steps are completed first
-  order                       Int      @default(0) /// What step is this in the process
-  processId                   Int /// Id of the process this step is a part of
+  /// What step is this in the process
+  order                       Int      @default(0)
+  /// Id of the process this step is a part of
+  processId                   Int
   stepName                    String
 }
 
 /// The status of one step in an onboarding process, for one person
 model PersonProcessStepStatus {
-  id Int @id @default(autoincrement())
-
+  id                    Int      @id @default(autoincrement())
   dateLastUpdated       DateTime @default(now()) @updatedAt
-  doneByPersonId        Int? /// The HR team member triggering the completion of the step
+  /// The HR team member triggering the completion of the step
+  doneByPersonId        Int?
   googleDriveSuccess    Boolean?
-  personId              Int /// Id of the person being taking through this process
+  /// Id of the person being taking through this process
+  personId              Int
   statusDone            Boolean  @default(false)
   statusError           Boolean?
-  statusErrorResolved   Boolean? /// If there was an issue, it has been resolved
+  /// If there was an issue, it has been resolved
+  statusErrorResolved   Boolean?
   statusResolvedComment String?
   statusToDo            Boolean?
 }
 
 ///
 model PersonProcessStepChangeLog {
-  id Int @id @default(autoincrement())
-
+  id                Int      @id @default(autoincrement())
+  changeDescription String
   dateCreated       DateTime @default(now())
   dateLastUpdated   DateTime @default(now()) @updatedAt
-  doneByPersonId    Int? /// The HR team member triggering the completion of the step
-  personId          Int /// Id of the person this log entry is related to
-  changeDescription String
+  /// The HR team member triggering the completion of the step
+  doneByPersonId    Int?
+  /// Id of the person this log entry is related to
+  personId          Int
   statusDone        Boolean?
   statusToDo        Boolean?
-  stepStatusId      Int /// PersonProcessStepStatus this is related to
+  /// PersonProcessStepStatus this is related to
+  stepStatusId      Int
 }

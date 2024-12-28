@@ -22,8 +22,8 @@ exports.personListRetrieve = async (request, response) => {
   const jsonData = {
     isSearching: false,
     personList: [],
-    success: true,
     status: '',
+    success: true,
   };
   try {
     const params = {};
@@ -62,8 +62,8 @@ exports.personRetrieve = async (request, response) => {
   const searchText = queryParams.get('searchText');
 
   const jsonData = {
-    success: true,
     status: '',
+    success: true,
   };
   try {
     const params = {};
@@ -102,7 +102,7 @@ exports.personRetrieve = async (request, response) => {
  */
 exports.personSave = async (request, response) => {
   let shouldCreatePerson = false;
-  let shouldSavePerson = false;
+  let shouldUpdatePerson = false;
 
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
@@ -116,9 +116,10 @@ exports.personSave = async (request, response) => {
   const jsonData = {
     addPersonToTeamSuccessful: false,
     personCreated: false,
-    personId: '-1',
-    success: false,
+    personId: -1,
+    personUpdated: false,
     status: '',
+    success: true,
     updateErrors: [],
   };
   try {
@@ -137,7 +138,7 @@ exports.personSave = async (request, response) => {
   try {
     if (personId >= 0) {
       jsonData.status += 'PERSON_FOUND ';
-      shouldSavePerson = true;
+      shouldUpdatePerson = true;
     } else {
       // TODO make sure a person with exact firstName/lastName or emailPersonal doesn't already exist in the database
       jsonData.status += 'PERSON_TO_BE_CREATED ';
@@ -160,11 +161,11 @@ exports.personSave = async (request, response) => {
       for (let i = 0; i < personKeys.length; i++) {
         jsonData[personKeys[i]] = personValues[i];
       }
-    } else if (shouldSavePerson) {
+    } else if (shouldUpdatePerson) {
       personChangeDict.id = personId;
       // console.log('Updating person:', personChangeDict);
       const person = await savePerson(personChangeDict);
-      jsonData.personSaved = true;
+      jsonData.personUpdated = true;
       jsonData.personId = person.id;
       jsonData.status += 'PERSON_UPDATED ';
       const modifiedPersonDict = removeProtectedFieldsFromPerson(person);
