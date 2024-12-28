@@ -316,48 +316,26 @@ exports.postLogin = (req, res, next) => {
 };
 
 /**
- * GET /logout
+ * POST /logout
  * Log out.
  */
 exports.logout = (req, res) => {
   req.logout((err) => {
     if (err) console.log('Error : Failed to logout.', err);
-    req.session.destroy((err2) => {
-      if (err2) console.log('Error : Failed to destroy the session during logout.', err2);
-      req.user = null;
-      res.redirect('/');
-    });
+  });
+  return res.json({
+    authenticated: req.isAuthenticated(),
   });
 };
 
-exports.postTestAuth = (req, res, next) => {
+exports.getAuth = (req, res) => {
   /* Passport JS conveniently provides a “req.isAuthenticated()” function, that
        returns “true” in case an authenticated user is present in “req.session.passport.user”, or
        returns “false” in case no authenticated user is present in “req.session.passport.user”.
    */
-  console.log('test top in postTestAuth isAuthenticated: ', req.isAuthenticated());
+  console.log('test top in getAuth isAuthenticated: ', req.isAuthenticated());
 
-  // eslint-disable-next-line consistent-return
-  passport.authenticate('local', (err, user, info) => {
-    if (err) { return next(err); }
-    if (!user) {
-      return res.json({
-        signedIn: false,
-        errors: info,
-        userId: -1,
-        name: '',
-        email: '',
-        authenticated: false,
-      });
-    }
-
-    console.log('test after passport.authenticate() postTestAuth isAuthenticated: ', req.isAuthenticated());
-    return res.json({
-      signedIn: true,
-      userId: user.id,
-      name: user.name,
-      email: user.email,
-      authenticated: req.isAuthenticated(),
-    });
+  return res.json({
+    authenticated: req.isAuthenticated(),
   });
 };
