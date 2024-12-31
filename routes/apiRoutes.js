@@ -5,13 +5,15 @@ const questionnaireApiController = require('../controllers/questionnaireApiContr
 /**
  * WeConnect API routes.
  */
-module.exports = function(weconnectServer) {
+module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/add-person-to-team', teamApiController.addPersonToTeam);
+  weconnectServer.get('/apis/v1/answer-list-save', questionnaireApiController.answerListSave);
   weconnectServer.get('/apis/v1/person-list-retrieve', personApiController.personListRetrieve);
   weconnectServer.get('/apis/v1/person-retrieve', personApiController.personRetrieve);
   weconnectServer.get('/apis/v1/person-save', personApiController.personSave);
   weconnectServer.get('/apis/v1/question-list-retrieve', questionnaireApiController.questionListRetrieve);
   weconnectServer.get('/apis/v1/questionnaire-list-retrieve', questionnaireApiController.questionnaireListRetrieve);
+  weconnectServer.get('/apis/v1/questionnaire-responses-list-retrieve', questionnaireApiController.questionnaireResponsesListRetrieve);
   weconnectServer.get('/apis/v1/questionnaire-save', questionnaireApiController.questionnaireSave);
   weconnectServer.get('/apis/v1/question-save', questionnaireApiController.questionSave);
   weconnectServer.get('/apis/v1/remove-person-from-team', teamApiController.removePersonFromTeam);
