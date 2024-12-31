@@ -1,4 +1,4 @@
-// weconnect-server/controllers/teamControllers.js
+// weconnect-server/controllers/teamController.js
 const { findPersonListByIdList } = require('../models/personModel');
 const { findTeamMemberListByParams } = require('../models/teamModel');
 

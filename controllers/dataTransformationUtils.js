@@ -6,7 +6,7 @@ function extractQuestionAnswersFromIncomingParams (queryParams) {
   const keys = Array.from(queryParams.keys());
   const values = Array.from(queryParams.values());
   for (let i = 0; i < keys.length; i++) {
-    console.log('==== key:', keys[i], ', value:', values[i]);
+    // console.log('==== key:', keys[i], ', value:', values[i]);
     if (keys[i].startsWith('questionAnswer-')) {
       questionId = keys[i].replace('questionAnswer-', '');
       updateDict[questionId] = values[i];

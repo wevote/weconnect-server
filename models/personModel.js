@@ -9,6 +9,7 @@ const PERSON_FIELDS_ACCEPTED = [
   'firstName',
   'firstNamePreferred',
   'emailPersonal',
+  'hoursPerWeekEstimate',
   'jobTitle',
   'lastName',
   'location',

@@ -1,5 +1,5 @@
 // weconnect-server/controllers/teamApiController.js
-const { retrieveTeamMemberList } = require('./teamControllers');
+const { retrieveTeamMemberList } = require('./teamController');
 const {
   createTeam, deleteOneTeamMember, findTeamById, findTeamListByParams,
   removeProtectedFieldsFromTeam, TEAM_FIELDS_ACCEPTED, updateOrCreateTeamMember,

@@ -1,5 +1,5 @@
 // weconnect-server/controllers/questionnaireApiController.js
-const { retrieveQuestionnaireResponseListByPersonIdList } =  require('./questionnaireControllers');
+const { retrieveQuestionnaireResponseListByPersonIdList, saveAnswerToMappedField } =  require('./questionnaireController');
 const { createQuestion, createQuestionnaire, findQuestionListByIdList,
   findQuestionListByParams, findQuestionnaireById, findQuestionnaireListByParams,
   QUESTION_FIELDS_ACCEPTED, QUESTIONNAIRE_FIELDS_ACCEPTED,
@@ -7,6 +7,7 @@ const { createQuestion, createQuestionnaire, findQuestionListByIdList,
   saveQuestion, saveQuestionnaire, updateOrCreateQuestionAnswer } = require('../models/questionnaireModel');
 const { extractQuestionAnswersFromIncomingParams, extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { convertToInteger } = require('../utils/convertToInteger');
+const { getAnswerValueFromAnswerDict } = require('../utils/getAnswerValueFromAnswerDict');
 
 
 /**
@@ -52,9 +53,9 @@ exports.answerListSave = async (request, response) => {
 
       // Now cycle through the questions we expect answers to
       // eslint-disable-next-line no-restricted-syntax
-      for (const question of questionList) {
+      const savePromises = questionList.map(async (question) => {
         // console.log('== question:', question);
-        const { answerType, questionId, questionVersion } = question;
+        const { answerType, fieldMappingRule, questionId, questionVersion } = question;
         if (questionId >= 0) {
           if (question.questionnaireId !== questionnaireId) {
             status += `questionnaireId_MISMATCH_FOR_QUESTION_ID_${questionId} `;
@@ -81,14 +82,28 @@ exports.answerListSave = async (request, response) => {
               // eslint-disable-next-line no-await-in-loop
               await updateOrCreateQuestionAnswer(personId, questionId, questionnaireId, updateDict);
               answersSavedList.push(updateDict);
-              answerListSaved = true;
+              // Now update the other database field based on fieldMappingRule
+              if (fieldMappingRule) {
+                const answerValueTyped = getAnswerValueFromAnswerDict(updateDict);
+                // console.log('answerListSave fieldMappingRule:', fieldMappingRule, ', answerValueTyped:', answerValueTyped);
+                const results = await saveAnswerToMappedField(fieldMappingRule, answerValueTyped, personId);
+                status += results.status;
+              }
+              return true;
             } catch (err) {
               console.log('ERROR saving answer: ', err);
               status += `ERROR_SAVING_ANSWER_FOR_QUESTION_ID: ${questionId}: ${err}`;
+              return false;
             }
           }
         }
-      }
+        return false;
+      });
+
+      const results = await Promise.all(savePromises);
+      answerListSaved = results.some((result) => result);
+    } else {
+      status += 'NO_QUESTIONS_FOUND ';
     }
   }
 

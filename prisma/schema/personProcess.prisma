@@ -10,52 +10,70 @@ model PersonProcess {
   teams        Team[]
 }
 
+/// How is one ProcessStep related to prior steps?
+model ProcessDependencies {
+  id                    Int     @id @default(autoincrement())
+  isBlockedBy           Boolean @default(false)
+  dependencyName        String?
+  previousProcessStepId Int
+  processStepId         Int
+}
+
 /// One step in a PersonProcess
-model PersonProcessStep {
+model ProcessStep {
   id                          Int      @id @default(autoincrement())
-  /// Where HR team goes to do this step
-  actionUrl                   String?
-  description                 String?
+  /// Needed for Google Drive API
   googleDriveFolderId         String?
-  /// Documentation for this step
-  infoUrl                     String?
   isGoogleDrivePermissionStep Boolean?
   /// What step is this in the process
   order                       Int      @default(0)
   /// Id of the process this step is a part of
   processId                   Int
+  /// Where HR team goes to do this step, could be Google drive folder
+  stepActionUrl               String?
   stepName                    String
+  stepDescription             String?
+  stepInstructions            String?
 }
 
 /// The status of one step in an onboarding process, for one person
-model PersonProcessStepStatus {
-  id                    Int      @id @default(autoincrement())
-  dateLastUpdated       DateTime @default(now()) @updatedAt
+model ProcessStepStatus {
+  dateLastUpdated        DateTime @default(now()) @updatedAt
   /// The HR team member triggering the completion of the step
-  doneByPersonId        Int?
-  googleDriveSuccess    Boolean?
+  doneByPersonId         Int?
+  googleDriveSuccess     Boolean?
   /// Id of the person being taking through this process
-  personId              Int
-  statusDone            Boolean  @default(false)
-  statusError           Boolean?
+  personIdBeingOnboarded Int
+  /// Id of the ProcessStep
+  processStepId          Int
+  /// Id of the process this step is a part of
+  processId              Int
+  statusDone             Boolean  @default(false)
+  statusError            Boolean?
   /// If there was an issue, it has been resolved
-  statusErrorResolved   Boolean?
-  statusResolvedComment String?
-  statusToDo            Boolean?
+  statusErrorResolved    Boolean?
+  statusResolvedComment  String?
+  statusToDoByHuman      Boolean?
+
+  @@id(name: "processStepIdPersonId", [processStepId, personIdBeingOnboarded])
 }
 
 ///
-model PersonProcessStepChangeLog {
-  id                Int      @id @default(autoincrement())
-  changeDescription String
-  dateCreated       DateTime @default(now())
-  dateLastUpdated   DateTime @default(now()) @updatedAt
+model ProcessStepChangeLog {
+  id                     Int      @id @default(autoincrement())
+  changeDescription      String
+  dateCreated            DateTime @default(now())
+  dateLastUpdated        DateTime @default(now()) @updatedAt
   /// The HR team member triggering the completion of the step
-  doneByPersonId    Int?
+  doneByPersonId         Int?
   /// Id of the person this log entry is related to
-  personId          Int
-  statusDone        Boolean?
-  statusToDo        Boolean?
-  /// PersonProcessStepStatus this is related to
-  stepStatusId      Int
+  personIdBeingOnboarded Int
+  processId              Int
+  /// Id of the ProcessStep
+  processStepId          Int
+  /// ProcessStepStatus has a hybrid id, so we mimic it here with a string: "processStepId-personId"
+  /// personIdBeingOnboarded is the personId being worked on
+  processStepIdPersonId  String
+  statusDone             Boolean?
+  statusToDo             Boolean?
 }

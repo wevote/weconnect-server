@@ -1,4 +1,5 @@
-// weconnect-server/controllers/questionnaireControllers.js
+// weconnect-server/controllers/questionnaireController.js
+const { PERSON_FIELDS_ACCEPTED, savePerson} = require('../models/personModel');
 const { findQuestionAnswerListByParams, findQuestionListByParams, findQuestionnaireListByIdList } = require('../models/questionnaireModel');
 const { arrayContains } = require('../utils/arrayContains');
 
@@ -89,6 +90,41 @@ exports.retrieveQuestionnaireResponseListByPersonIdList = async (personIdList) =
     questionAnswerList,
     questionList,
     questionnaireList,
+    success,
+    status,
+  };
+};
+
+exports.saveAnswerToMappedField = async (fieldMappingRule, answerValueTyped, personId) => {
+  //
+  const fieldOfInterest = fieldMappingRule.split('.')[1];
+  const personChangeDict = {};
+  let status = '';
+  let success = true;
+  console.log('fieldMappingRule:', fieldMappingRule, ', answerValueTyped:', answerValueTyped, ', personId:', personId);
+  // Find the table
+  try {
+    if (fieldMappingRule.includes('Person.')) {}
+  } catch (err) {
+    status += err.message;
+    success = false;
+  }
+  // Find the field
+  try {
+    if (arrayContains(fieldOfInterest, PERSON_FIELDS_ACCEPTED)) {
+      personChangeDict.id = personId;
+      personChangeDict[fieldOfInterest] = answerValueTyped;
+      console.log('Updating person:', personChangeDict);
+      const person = await savePerson(personChangeDict);
+      status += `PERSON_UPDATED FIELD: ${fieldOfInterest} VALUE: ${answerValueTyped} `;
+    } else {
+      status += `FIELD_NOT_ACCEPTED: ${fieldOfInterest} `;
+    }
+  } catch (err) {
+    status += err.message;
+    success = false;
+  }
+  return {
     success,
     status,
   };
