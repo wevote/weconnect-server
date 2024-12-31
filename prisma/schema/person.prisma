@@ -65,9 +65,13 @@ model Person {
   statusActive             Boolean?
   statusEmailCreated       Boolean?
   statusActiveInLast90Days Boolean?
+  /// Person has stopped responding to inquiries, so we assume they are resigned
+  statusNonresponsive      Boolean?
   statusOfferLetterCreated Boolean?
   statusOfferLetterSigned  Boolean?
+  /// Person notified us they are on leave
   statusOnLeave            Boolean?
+  /// Person notified us they have resigned
   statusResigned           Boolean?
 
   QuestionAnswer QuestionAnswer[]

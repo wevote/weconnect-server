@@ -1,4 +1,4 @@
-// weconnect-server/controllers/person.js
+// weconnect-server/controllers/personController.js
 
 function displayFullNamePreferred (person) {
   let fullName = '';
