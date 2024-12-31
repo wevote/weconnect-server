@@ -1,4 +1,5 @@
 // weconnect-server/controllers/questionnaireApiController.js
+const { retrieveQuestionnaireResponseListByPersonIdList } =  require('./questionnaireControllers');
 const { createQuestion, createQuestionnaire, findQuestionListByIdList,
   findQuestionListByParams, findQuestionnaireById, findQuestionnaireListByParams,
   QUESTION_FIELDS_ACCEPTED, QUESTIONNAIRE_FIELDS_ACCEPTED,
@@ -18,7 +19,7 @@ exports.answerListSave = async (request, response) => {
   const personId = convertToInteger(queryParams.get('personId'));
   // const questionId = convertToInteger(queryParams.get('questionId'));
   const questionnaireId = convertToInteger(queryParams.get('questionnaireId'));
-  console.log('queryParams:', queryParams);
+  // console.log('queryParams:', queryParams);
 
   let answerListSaved = false;
   const answersSavedList = [];
@@ -155,7 +156,6 @@ exports.questionListRetrieve = async (request, response) => {
   response.json(jsonData);
 };
 
-
 /**
  * GET /api/v1/questionnaire-list-retrieve
  * Retrieve a list of questionnaires.
@@ -189,6 +189,43 @@ exports.questionnaireListRetrieve = async (request, response) => {
       jsonData.status += 'QUESTIONNAIRE_LIST_NOT_FOUND ';
     }
   } catch (err) {
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+  response.json(jsonData);
+};
+
+/**
+ * GET /api/v1/questionnaire-responses-list-retrieve
+ * Retrieve a list of responses to questionnaire questions.
+ */
+exports.questionnaireResponsesListRetrieve = async (request, response) => {
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const queryParams = new URLSearchParams(parsedUrl.search);
+  // console.log('queryParams:', queryParams);
+  const personIdListIncoming = queryParams.getAll('personIdList[]');
+  const personIdList = personIdListIncoming.map(convertToInteger);
+  // const personId = convertToInteger(queryParams.get('personId'));
+
+  const jsonData = {
+    isSearching: false,
+    questionAnswerList: [],
+    questionList: [],
+    questionnaireList: [],
+    status: '',
+    success: true,
+  };
+  try {
+    // console.log('questionnaireResponsesListRetrieve personIdList:', personIdList);
+    const results = await retrieveQuestionnaireResponseListByPersonIdList(personIdList);
+    // console.log('results:', results);
+    jsonData.success = true;
+    jsonData.questionAnswerList = results.questionAnswerList;
+    jsonData.questionList = results.questionList;
+    jsonData.questionnaireList = results.questionnaireList;
+    jsonData.status += results.status;
+  } catch (err) {
+    console.log('questionnaireResponsesListRetrieve err:', err);
     jsonData.status += err.message;
     jsonData.success = false;
   }

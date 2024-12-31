@@ -25,6 +25,11 @@ function removeProtectedFieldsFromQuestion (question) {
   return modifiedQuestion;
 }
 
+function removeProtectedFieldsFromQuestionAnswer (questionAnswer) {
+  const modifiedQuestion = { ...questionAnswer };
+  return modifiedQuestion;
+}
+
 function removeProtectedFieldsFromQuestionnaire (questionnaire) {
   const modifiedQuestionnaire = { ...questionnaire };
   return modifiedQuestionnaire;
@@ -59,6 +64,29 @@ function extractQuestionnaireVariablesToChange (queryParams) {
     }
   });
   return updateDict;
+}
+
+async function findQuestionAnswerListByParams (params = {}, includeAllData = false) {
+  const questionAnswerList = await prisma.questionAnswer.findMany({
+    where: params,
+  });
+  // console.log('findQuestionAnswerListByParams questionAnswerList:', questionAnswerList);
+  let modifiedQuestionAnswer = {};
+  const modifiedQuestionAnswerList = [];
+  if (includeAllData) {
+    questionAnswerList.forEach((questionAnswer) => {
+      modifiedQuestionAnswer = { ...questionAnswer };
+      // modifiedQuestionAnswer.questionAnswerId = questionAnswer.id;
+      modifiedQuestionAnswerList.push(modifiedQuestionAnswer);
+    });
+  } else {
+    questionAnswerList.forEach((questionAnswer) => {
+      modifiedQuestionAnswer = removeProtectedFieldsFromQuestionAnswer(questionAnswer);
+      // modifiedQuestionAnswer.questionAnswerId = questionAnswer.id;
+      modifiedQuestionAnswerList.push(modifiedQuestionAnswer);
+    });
+  }
+  return modifiedQuestionAnswerList;
 }
 
 async function findQuestionListByIdList (idList, includeAllData = false) {
@@ -232,6 +260,7 @@ module.exports = {
   createQuestionnaire,
   deleteOne,
   extractQuestionnaireVariablesToChange,
+  findQuestionAnswerListByParams,
   findQuestionListByIdList,
   findQuestionListByParams,
   findQuestionnaireById,
