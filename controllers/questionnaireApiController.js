@@ -153,7 +153,7 @@ exports.questionListRetrieve = async (request, response) => {
       jsonData.isSearching = true;
       params.OR = [
         { questionInstructions: { contains: searchText, mode: 'insensitive' } },
-        { questionDText: { contains: searchText, mode: 'insensitive' } },
+        { questionText: { contains: searchText, mode: 'insensitive' } },
       ];
     }
     const questionList = await findQuestionListByParams(params);

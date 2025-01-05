@@ -1,18 +1,16 @@
 /// One team that has specific members and meeting time
 model Team {
-  id              Int            @id @default(autoincrement())
-  teamName        String
-  description     String?
+  id           Int          @id @default(autoincrement())
+  teamName     String
+  description  String?
   /// Monday, Tues, etc.
-  meetingDay      String?
+  meetingDay   String?
   /// 10am, Noon etc. in Pacific time
   // TODO: how is this stored to be time zone independent?
-  meetingTime     String?
+  meetingTime  String?
   /// This is a team that is active
-  statusActive    Boolean        @default(true)
-  personProcessId Int?
-  PersonProcess   PersonProcess? @relation(fields: [personProcessId], references: [id])
-  TeamMember      TeamMember[]
+  statusActive Boolean      @default(true)
+  TeamMember   TeamMember[]
 }
 
 /// Examples: New team member, project manager, etc. added to the team

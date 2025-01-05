@@ -44,35 +44,40 @@ model Person {
   twitterHandle String?
   websiteUrl    String?
 
-  dateCreated              DateTime  @default(now())
-  dateEmailCreated         DateTime?
+  dateCreated               DateTime  @default(now())
+  dateEmailCreated          DateTime?
   /// Date they ended service, or for interns, the planned end date
-  dateEndDate              DateTime?
-  dateLastActive           DateTime?
-  dateLastOnLeave          DateTime?
-  dateLastUpdated          DateTime  @default(now()) @updatedAt
-  dateLastResigned         DateTime?
-  dateOfferLetterCreated   DateTime?
-  dateOfferLetterSigned    DateTime?
-  dateStarted              DateTime?
+  dateEndDate               DateTime?
+  dateLastActive            DateTime?
+  dateLastOnLeave           DateTime?
+  dateLastUpdated           DateTime  @default(now()) @updatedAt
+  dateLastResigned          DateTime?
+  dateOfferLetterCreated    DateTime?
+  dateOfferLetterSigned     DateTime?
+  dateStarted               DateTime?
   /// This person has admin rights
-  isAdmin                  Boolean?
+  isAdmin                   Boolean?
   /// Has hiring manager rights
-  isHiringManager          Boolean?
-  isIntern                 Boolean?
+  isHiringManager           Boolean?
+  isIntern                  Boolean?
   /// Has team lead rights
-  isTeamLead               Boolean?
-  statusActive             Boolean?
-  statusEmailCreated       Boolean?
-  statusActiveInLast90Days Boolean?
+  isTeamLead                Boolean?
+  statusActive              Boolean?
+  statusEmailCreated        Boolean?
+  statusActiveInLast90Days  Boolean?
   /// Person has stopped responding to inquiries, so we assume they are resigned
-  statusNonresponsive      Boolean?
-  statusOfferLetterCreated Boolean?
-  statusOfferLetterSigned  Boolean?
+  statusNonresponsive       Boolean?
+  statusOfferLetterCreated  Boolean?
+  statusOfferLetterSigned   Boolean?
+  statusOfferDecisionNeeded Boolean   @default(false)
+  /// Hiring manager would like an offer sent to this person
+  statusOfferApproved       Boolean?
+  /// Hiring manager does not think this is a suitable candidate
+  statusOfferWillNotBeMade  Boolean?
   /// Person notified us they are on leave
-  statusOnLeave            Boolean?
+  statusOnLeave             Boolean?
   /// Person notified us they have resigned
-  statusResigned           Boolean?
+  statusResigned            Boolean?
 
   QuestionAnswer QuestionAnswer[]
   TeamMember     TeamMember[]
