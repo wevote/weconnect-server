@@ -1,3 +1,4 @@
+const taskApiController = require('../controllers/taskApiController');
 const teamApiController = require('../controllers/teamApiController');
 const personApiController = require('../controllers/personApiController');
 const questionnaireApiController = require('../controllers/questionnaireApiController');
@@ -17,6 +18,10 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/questionnaire-save', questionnaireApiController.questionnaireSave);
   weconnectServer.get('/apis/v1/question-save', questionnaireApiController.questionSave);
   weconnectServer.get('/apis/v1/remove-person-from-team', teamApiController.removePersonFromTeam);
+  weconnectServer.get('/apis/v1/task-definition-list-retrieve', taskApiController.taskDefinitionListRetrieve);
+  weconnectServer.get('/apis/v1/task-definition-save', taskApiController.taskDefinitionSave);
+  weconnectServer.get('/apis/v1/task-group-list-retrieve', taskApiController.taskGroupListRetrieve);
+  weconnectServer.get('/apis/v1/task-group-save', taskApiController.taskGroupSave);
   weconnectServer.get('/apis/v1/team-list-retrieve', teamApiController.teamListRetrieve);
   weconnectServer.get('/apis/v1/team-save', teamApiController.teamSave);
   weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
