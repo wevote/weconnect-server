@@ -13,7 +13,7 @@ model TaskGroup {
 // TaskGroupLinkToTeam
 
 /// How is one TaskDefinition related to (or dependent on) prior TaskDefinitions?
-model TaskDependencies {
+model TaskDependency {
   id                       Int     @id @default(autoincrement())
   isBlockedBy              Boolean @default(false)
   dependencyName           String?
@@ -46,16 +46,17 @@ model Task {
   googleDriveSuccess    Boolean?
   /// Id of the person being taking through this TaskGroup
   personId              Int
-  /// Id of the TaskGroup this stask is a part of
-  taskGroupId           Int
   statusDone            Boolean  @default(false)
   statusError           Boolean?
   /// If there was an issue, it has been resolved
   statusErrorResolved   Boolean?
+  statusReadyToDo       Boolean  @default(false)
   statusResolvedComment String?
   statusToDoByHuman     Boolean?
   /// Id of the TaskDefinition
   taskDefinitionId      Int
+  /// Id of the TaskGroup this stask is a part of
+  taskGroupId           Int
 
   @@id(name: "taskDefinitionIdPersonId", [taskDefinitionId, personId])
 }

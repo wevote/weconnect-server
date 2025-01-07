@@ -1,5 +1,5 @@
 // weconnect-server/controllers/taskApiController.js
-// const { retrieveTaskGroupResponseListByPersonIdList, saveAnswerToMappedField } =  require('./taskController');
+const { retrieveTaskStatusListByPersonIdList } =  require('./taskController');
 const { createTaskDefinition, createTaskGroup,
   findTaskDefinitionListByParams, findTaskGroupById, findTaskGroupListByParams,
   TASK_DEFINITION_FIELDS_ACCEPTED, TASK_GROUP_FIELDS_ACCEPTED,
@@ -90,17 +90,16 @@ exports.taskGroupListRetrieve = async (request, response) => {
 };
 
 /**
- * GET /api/v1/task-list-retrieve
- * Retrieve a list of tasks.
+ * GET /api/v1/task-status-list-retrieve
+ * Retrieve a list of tasks and the supporting data.
  */
-exports.taskListRetrieve = async (request, response) => {
+exports.taskStatusListRetrieve = async (request, response) => {
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
   // console.log('queryParams:', queryParams);
   const personIdListIncoming = queryParams.getAll('personIdList[]');
   const personIdList = personIdListIncoming.map(convertToInteger);
-  console.log('taskListRetrieve personIdList:', personIdList);
-  // const personId = convertToInteger(queryParams.get('personId'));
+  console.log('taskStatusListRetrieve personIdList:', personIdList);
 
   const jsonData = {
     isSearching: false,
@@ -111,17 +110,17 @@ exports.taskListRetrieve = async (request, response) => {
     success: true,
   };
   try {
-    // console.log('taskListRetrieve personIdList:', personIdList);
-    // const results = await retrieveTaskResponseListByPersonIdList(personIdList);
-    const results = {};
-    // console.log('results:', results);
+    // console.log('taskStatusListRetrieve personIdList:', personIdList);
+    const results = await retrieveTaskStatusListByPersonIdList(personIdList);
+    // const results = {};
+    console.log('results:', results);
     jsonData.success = true;
     jsonData.taskList = results.taskList;
     jsonData.taskDefinitionList = results.taskDefinitionList;
     jsonData.taskGroupList = results.taskGroupList;
     jsonData.status += results.status;
   } catch (err) {
-    console.log('taskListRetrieve err:', err);
+    console.log('taskStatusListRetrieve err:', err);
     jsonData.status += err.message;
     jsonData.success = false;
   }

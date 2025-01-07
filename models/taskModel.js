@@ -31,6 +31,11 @@ function removeProtectedFieldsFromTaskDefinition (taskDefinition) {
   return modifiedTaskDefinition;
 }
 
+function removeProtectedFieldsFromTaskDependency (taskDependency) {
+  const modifiedTaskDependency = { ...taskDependency };
+  return modifiedTaskDependency;
+}
+
 function removeProtectedFieldsFromTaskGroup (taskGroup) {
   const modifiedTaskGroup = { ...taskGroup };
   return modifiedTaskGroup;
@@ -130,6 +135,20 @@ async function findTaskDefinitionListByParams (params = {}) {
   return modifiedTaskDefinitionList;
 }
 
+async function findTaskDependencyListByParams (params = {}) {
+  const taskDependencyList = await prisma.taskDependency.findMany({
+    where: params,
+  });
+  let modifiedTaskDependency = {};
+  const modifiedTaskDependencyList = [];
+  taskDependencyList.forEach((taskDependency) => {
+    modifiedTaskDependency = { ...taskDependency };
+    modifiedTaskDependency.taskDependencyId = taskDependency.id;
+    modifiedTaskDependencyList.push(modifiedTaskDependency);
+  });
+  return modifiedTaskDependencyList;
+}
+
 async function findTaskGroupListByIdList (idList, includeAllData = false) {
   const taskGroupList = await prisma.taskGroup.findMany({
     where: {
@@ -224,6 +243,18 @@ async function saveTaskDefinition (taskDefinition) {
   return updateTaskDefinition;
 }
 
+async function saveTaskDependency (taskDependency) {
+  // console.log('saveTaskDependency taskDependency:', taskDependency);
+  const updateTaskDependency = await prisma.taskDependency.update({
+    where: {
+      id: taskDependency.id,
+    },
+    data: taskDependency,
+  });
+  // console.log(updateTaskDependency);
+  return updateTaskDependency;
+}
+
 async function saveTaskGroup (taskGroup) {
   // console.log('saveTaskGroup taskGroup:', taskGroup);
   const updateTaskGroup = await prisma.taskGroup.update({
@@ -245,6 +276,12 @@ async function createTaskDefinition (updateDict) {
   // eslint-disable-next-line prefer-object-spread
   const taskDefinition = await prisma.taskDefinition.create({ data: updateDict });
   return taskDefinition;
+}
+
+async function createTaskDependency (updateDict) {
+  // eslint-disable-next-line prefer-object-spread
+  const taskDependency = await prisma.taskDependency.create({ data: updateDict });
+  return taskDependency;
 }
 
 async function createTaskGroup (updateDict) {
@@ -277,10 +314,12 @@ function updateOrCreateTask (personId, taskId, taskGroupId, updateDict) {
 module.exports = {
   createTask,
   createTaskDefinition,
+  createTaskDependency,
   createTaskGroup,
   deleteOneTaskGroup,
   extractTaskGroupVariablesToChange,
   findTaskDefinitionListByParams,
+  findTaskDependencyListByParams,
   findTaskListByIdList,
   findTaskListByParams,
   findTaskGroupById,
@@ -291,9 +330,11 @@ module.exports = {
   TASK_GROUP_FIELDS_ACCEPTED,
   removeProtectedFieldsFromTask,
   removeProtectedFieldsFromTaskDefinition,
+  removeProtectedFieldsFromTaskDependency,
   removeProtectedFieldsFromTaskGroup,
   saveTask,
   saveTaskDefinition,
+  saveTaskDependency,
   saveTaskGroup,
   updateOrCreateTask,
 }; // Export the functions
