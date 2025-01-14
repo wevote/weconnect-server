@@ -1,4 +1,5 @@
 // weconnect-server/controllers/dataTransformationUtils.js
+const { convertToInteger } = require('../utils/convertToInteger');
 
 function extractQuestionAnswersFromIncomingParams (queryParams) {
   const updateDict = {};
@@ -17,27 +18,81 @@ function extractQuestionAnswersFromIncomingParams (queryParams) {
 
 function extractVariablesToChangeFromIncomingParams (queryParams, fieldsAccepted = {}) {
   let keyWithoutToBeSaved = '';
+  let thisFieldAccepted = false;
   const updateDict = {};
   // console.log('==== extractVariablesToChangeFromIncomingParams queryParams:', queryParams);
   // eslint-disable-next-line no-restricted-syntax
   for (const [key, value] of queryParams) {
     // console.log('==== key:', key, ', value:', value);
     keyWithoutToBeSaved = key.replace('ToBeSaved', '');
-    if (fieldsAccepted.includes(keyWithoutToBeSaved)) {
-      if (queryParams && queryParams.get(`${keyWithoutToBeSaved}Changed`) === 'true') {
-        if (value === 'true') {
-          // console.log('==== *** boolean: ', true);
-          updateDict[keyWithoutToBeSaved] = true;
-        } else if (value === 'false') {
-          // console.log('==== *** boolean: ', false);
-          updateDict[keyWithoutToBeSaved] = false;
-        } else {
-          // console.log('==== *** string');
-          updateDict[keyWithoutToBeSaved] = value.trim();
-        }
+    thisFieldAccepted = false;
+    try {
+      if (fieldsAccepted && fieldsAccepted.includes(keyWithoutToBeSaved)) {
+        // OLD WAY
+        thisFieldAccepted = true;
+      }
+    } catch (error) {
+      // console.error('Error checking if field is accepted:', error);
+      if (fieldsAccepted && keyWithoutToBeSaved in fieldsAccepted) {
+        // NEW WAY
+        // console.log('==== *** NEW WAY worked: ', keyWithoutToBeSaved);
+        thisFieldAccepted = true;
+      } else {
+        // console.log('==== *** NEW WAY undefined: ', keyWithoutToBeSaved);
       }
     }
+    if (thisFieldAccepted) {
+      if (queryParams && queryParams.get(`${keyWithoutToBeSaved}Changed`) === 'true') {
+        // NEW WAY that uses dictionaries to map accepted fields to their expected types
+        if (keyWithoutToBeSaved && keyWithoutToBeSaved in fieldsAccepted) {
+          if (fieldsAccepted[keyWithoutToBeSaved] === 'BOOLEAN') {
+            // console.log('==== *** BOOLEAN: ', value);
+            if (value === 'true' || value === true) {
+              updateDict[keyWithoutToBeSaved] = true;
+            } else if (value === 'false' || value === false) {
+              // console.log('==== *** boolean: ', false);
+              updateDict[keyWithoutToBeSaved] = false;
+            } else {
+              console.log('==== *** expected boolean, but invalid value: ', value);
+            }
+          } else if (fieldsAccepted[keyWithoutToBeSaved] === 'INTEGER') {
+            // console.log('==== *** INTEGER: ', value);
+            updateDict[keyWithoutToBeSaved] = convertToInteger(value);
+          } else {
+            // console.log('==== *** undefined: ', value);
+            try {
+              updateDict[keyWithoutToBeSaved] = value.trim();
+              // console.log('value.trim() successful value:', value);
+            } catch (error) {
+              // console.error('Error parsing value:', value, 'Error:', error);
+              updateDict[keyWithoutToBeSaved] = value;
+            }
+          }
+        } else {
+          // OLD WAY that just lists the accepted fields in an array
+          // console.log('==== *** OLD WAY: ', keyWithoutToBeSaved);
+          if (value === 'true') {
+            updateDict[keyWithoutToBeSaved] = true;
+          } else if (value === 'false') {
+            // console.log('==== *** boolean: ', false);
+            updateDict[keyWithoutToBeSaved] = false;
+          }  else {
+            // console.log('==== *** string');
+            try {
+              updateDict[keyWithoutToBeSaved] = value.trim();
+              // console.log('value.trim() successful value:', value);
+            } catch (error) {
+              // console.error('Error parsing value:', value, 'Error:', error);
+              updateDict[keyWithoutToBeSaved] = value;
+            }
+          }
+        }
+      }
+    } else {
+      // console.log('==== *** field not accepted: ', keyWithoutToBeSaved);
+    }
   }
+  // console.log('==== extractVariablesToChangeFromIncomingParams updateDict:', updateDict);
   return updateDict;
 }
 

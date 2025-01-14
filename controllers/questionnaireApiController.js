@@ -220,7 +220,6 @@ exports.questionnaireResponsesListRetrieve = async (request, response) => {
   // console.log('queryParams:', queryParams);
   const personIdListIncoming = queryParams.getAll('personIdList[]');
   const personIdList = personIdListIncoming.map(convertToInteger);
-  // const personId = convertToInteger(queryParams.get('personId'));
 
   const jsonData = {
     isSearching: false,

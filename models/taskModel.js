@@ -4,12 +4,6 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-const TASK_GROUP_FIELDS_ACCEPTED = [
-  'taskGroupName',
-  'taskGroupDescription',
-  'taskGroupIsForTeam',
-];
-
 const TASK_DEFINITION_FIELDS_ACCEPTED = [
   'googleDriveFolderId',
   'isGoogleDrivePermissionStep',
@@ -21,6 +15,36 @@ const TASK_DEFINITION_FIELDS_ACCEPTED = [
   'taskInstructions',
 ];
 
+const TASK_FIELDS_ACCEPTED = [
+  'doneByPersonId',
+  'googleDriveSuccess',
+  'statusDone',
+  'statusError',
+  'statusErrorResolved',
+  'statusReadyToDo',
+  'statusResolvedComment',
+  'statusToDoByHuman',
+  'taskGroupId',
+];
+
+const TASK_FIELDS_ACCEPTED_DICT = {
+  doneByPersonId: 'INTEGER',
+  googleDriveSuccess: 'BOOLEAN',
+  statusDone: 'BOOLEAN',
+  statusError: 'BOOLEAN',
+  statusErrorResolved: 'BOOLEAN',
+  statusReadyToDo: 'BOOLEAN',
+  statusResolvedComment: 'BOOLEAN',
+  statusToDoByHuman: 'BOOLEAN',
+  taskGroupId: 'INTEGER',
+};
+
+const TASK_GROUP_FIELDS_ACCEPTED = [
+  'taskGroupName',
+  'taskGroupDescription',
+  'taskGroupIsForTeam',
+];
+
 function removeProtectedFieldsFromTask (task) {
   const modifiedTask = { ...task };
   return modifiedTask;
@@ -29,6 +53,11 @@ function removeProtectedFieldsFromTask (task) {
 function removeProtectedFieldsFromTaskDefinition (taskDefinition) {
   const modifiedTaskDefinition = { ...taskDefinition };
   return modifiedTaskDefinition;
+}
+
+function removeProtectedFieldsFromTaskDependency (taskDependency) {
+  const modifiedTaskDependency = { ...taskDependency };
+  return modifiedTaskDependency;
 }
 
 function removeProtectedFieldsFromTaskGroup (taskGroup) {
@@ -130,6 +159,20 @@ async function findTaskDefinitionListByParams (params = {}) {
   return modifiedTaskDefinitionList;
 }
 
+async function findTaskDependencyListByParams (params = {}) {
+  const taskDependencyList = await prisma.taskDependency.findMany({
+    where: params,
+  });
+  let modifiedTaskDependency = {};
+  const modifiedTaskDependencyList = [];
+  taskDependencyList.forEach((taskDependency) => {
+    modifiedTaskDependency = { ...taskDependency };
+    modifiedTaskDependency.taskDependencyId = taskDependency.id;
+    modifiedTaskDependencyList.push(modifiedTaskDependency);
+  });
+  return modifiedTaskDependencyList;
+}
+
 async function findTaskGroupListByIdList (idList, includeAllData = false) {
   const taskGroupList = await prisma.taskGroup.findMany({
     where: {
@@ -224,6 +267,18 @@ async function saveTaskDefinition (taskDefinition) {
   return updateTaskDefinition;
 }
 
+async function saveTaskDependency (taskDependency) {
+  // console.log('saveTaskDependency taskDependency:', taskDependency);
+  const updateTaskDependency = await prisma.taskDependency.update({
+    where: {
+      id: taskDependency.id,
+    },
+    data: taskDependency,
+  });
+  // console.log(updateTaskDependency);
+  return updateTaskDependency;
+}
+
 async function saveTaskGroup (taskGroup) {
   // console.log('saveTaskGroup taskGroup:', taskGroup);
   const updateTaskGroup = await prisma.taskGroup.update({
@@ -247,21 +302,27 @@ async function createTaskDefinition (updateDict) {
   return taskDefinition;
 }
 
+async function createTaskDependency (updateDict) {
+  // eslint-disable-next-line prefer-object-spread
+  const taskDependency = await prisma.taskDependency.create({ data: updateDict });
+  return taskDependency;
+}
+
 async function createTaskGroup (updateDict) {
   // eslint-disable-next-line prefer-object-spread
   const taskGroup = await prisma.taskGroup.create({ data: updateDict });
   return taskGroup;
 }
 
-function updateOrCreateTask (personId, taskId, taskGroupId, updateDict) {
+function updateOrCreateTask (personId, taskDefinitionId, taskGroupId, updateDict) {
   // eslint-disable-next-line prefer-object-spread
-  const createDict = Object.assign({}, { personId, taskId, taskGroupId }, updateDict);
+  const createDict = Object.assign({}, { personId, taskDefinitionId, taskGroupId }, updateDict);
   try {
     const upResult =  prisma.task.upsert({
       where: {
-        taskIdPersonId: {
-          taskId,
+        taskDefinitionIdPersonId: {
           personId,
+          taskDefinitionId,
         },
       },
       update: { ...updateDict },
@@ -269,7 +330,7 @@ function updateOrCreateTask (personId, taskId, taskGroupId, updateDict) {
     });
     return upResult;
   } catch (err) {
-    console.log('updateOrCreateTeamMember: ERROR ', err);
+    console.log('updateOrCreateTask: ERROR ', err);
     return null;
   }
 }
@@ -277,10 +338,12 @@ function updateOrCreateTask (personId, taskId, taskGroupId, updateDict) {
 module.exports = {
   createTask,
   createTaskDefinition,
+  createTaskDependency,
   createTaskGroup,
   deleteOneTaskGroup,
   extractTaskGroupVariablesToChange,
   findTaskDefinitionListByParams,
+  findTaskDependencyListByParams,
   findTaskListByIdList,
   findTaskListByParams,
   findTaskGroupById,
@@ -288,12 +351,16 @@ module.exports = {
   findTaskGroupListByParams,
   findOneTaskGroup,
   TASK_DEFINITION_FIELDS_ACCEPTED,
+  TASK_FIELDS_ACCEPTED,
+  TASK_FIELDS_ACCEPTED_DICT,
   TASK_GROUP_FIELDS_ACCEPTED,
   removeProtectedFieldsFromTask,
   removeProtectedFieldsFromTaskDefinition,
+  removeProtectedFieldsFromTaskDependency,
   removeProtectedFieldsFromTaskGroup,
   saveTask,
   saveTaskDefinition,
+  saveTaskDependency,
   saveTaskGroup,
   updateOrCreateTask,
 }; // Export the functions

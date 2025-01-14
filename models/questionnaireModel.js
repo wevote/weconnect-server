@@ -250,7 +250,7 @@ function updateOrCreateQuestionAnswer (personId, questionId, questionnaireId, up
     });
     return upResult;
   } catch (err) {
-    console.log('updateOrCreateTeamMember: ERROR ', err);
+    console.log('updateOrCreateQuestionAnswer: ERROR ', err);
     return null;
   }
 }

@@ -1,43 +1,3 @@
-/// An ordered series (sometimes) of tasks to accomplish an onboarding goal
-model TaskGroup {
-  id                   Int      @id @default(autoincrement())
-  taskGroupName        String
-  taskGroupDescription String?
-  /// To be completed based on team(s) the volunteer is in
-  taskGroupIsForTeam   Boolean?
-  /// This is a series that is in use
-  statusActive         Boolean  @default(true)
-}
-
-/// This team wants this TaskGroup completed for team members
-// TaskGroupLinkToTeam
-
-/// How is one TaskDefinition related to (or dependent on) prior TaskDefinitions?
-model TaskDependencies {
-  id                       Int     @id @default(autoincrement())
-  isBlockedBy              Boolean @default(false)
-  dependencyName           String?
-  previousTaskDefinitionId Int
-  taskDefinitionId         Int
-}
-
-/// The description of one task is a TaskDefinition. The status of one person for a particular TaskDefinition, is a Task.
-model TaskDefinition {
-  id                          Int      @id @default(autoincrement())
-  /// Needed for Google Drive API
-  googleDriveFolderId         String?
-  isGoogleDrivePermissionStep Boolean?
-  /// What step is this in the series
-  order                       Int      @default(0)
-  /// Id of the TaskGroup this task is a part of
-  taskGroupId                 Int
-  /// Where HR team goes to do this task. The link could be a Google drive folder.
-  taskActionUrl               String?
-  taskName                    String
-  taskDescription             String?
-  taskInstructions            String?
-}
-
 /// One task in an onboarding TaskGroup, for one person. Definition of each task in TaskDefinition.
 model Task {
   dateLastUpdated       DateTime @default(now()) @updatedAt
@@ -46,16 +6,17 @@ model Task {
   googleDriveSuccess    Boolean?
   /// Id of the person being taking through this TaskGroup
   personId              Int
-  /// Id of the TaskGroup this stask is a part of
-  taskGroupId           Int
   statusDone            Boolean  @default(false)
   statusError           Boolean?
   /// If there was an issue, it has been resolved
   statusErrorResolved   Boolean?
+  statusReadyToDo       Boolean  @default(false)
   statusResolvedComment String?
   statusToDoByHuman     Boolean?
   /// Id of the TaskDefinition
   taskDefinitionId      Int
+  /// Id of the TaskGroup this stask is a part of
+  taskGroupId           Int?
 
   @@id(name: "taskDefinitionIdPersonId", [taskDefinitionId, personId])
 }
@@ -79,3 +40,43 @@ model TaskChangeLog {
   statusDone               Boolean?
   statusToDo               Boolean?
 }
+
+/// The description of one task is a TaskDefinition. The status of one person for a particular TaskDefinition, is a Task.
+model TaskDefinition {
+  id                          Int      @id @default(autoincrement())
+  /// Needed for Google Drive API
+  googleDriveFolderId         String?
+  isGoogleDrivePermissionStep Boolean?
+  /// What step is this in the series
+  order                       Int      @default(0)
+  /// Id of the TaskGroup this task is a part of
+  taskGroupId                 Int
+  /// Where HR team goes to do this task. The link could be a Google drive folder.
+  taskActionUrl               String?
+  taskName                    String
+  taskDescription             String?
+  taskInstructions            String?
+}
+
+/// How is one TaskDefinition related to (or dependent on) prior TaskDefinitions?
+model TaskDependency {
+  id                       Int     @id @default(autoincrement())
+  isBlockedBy              Boolean @default(false)
+  dependencyName           String?
+  previousTaskDefinitionId Int
+  taskDefinitionId         Int
+}
+
+/// A series of tasks (sometimes ordered) to accomplish an onboarding goal
+model TaskGroup {
+  id                   Int      @id @default(autoincrement())
+  taskGroupName        String
+  taskGroupDescription String?
+  /// To be completed based on team(s) the volunteer is in
+  taskGroupIsForTeam   Boolean?
+  /// This is a series that is in use
+  statusActive         Boolean  @default(true)
+}
+
+/// This team wants this TaskGroup completed for team members
+// TaskGroupLinkToTeam

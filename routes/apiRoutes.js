@@ -22,6 +22,8 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/task-definition-save', taskApiController.taskDefinitionSave);
   weconnectServer.get('/apis/v1/task-group-list-retrieve', taskApiController.taskGroupListRetrieve);
   weconnectServer.get('/apis/v1/task-group-save', taskApiController.taskGroupSave);
+  weconnectServer.get('/apis/v1/task-save', taskApiController.taskSave);
+  weconnectServer.get('/apis/v1/task-status-list-retrieve', taskApiController.taskStatusListRetrieve);
   weconnectServer.get('/apis/v1/team-list-retrieve', teamApiController.teamListRetrieve);
   weconnectServer.get('/apis/v1/team-save', teamApiController.teamSave);
   weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);

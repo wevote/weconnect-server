@@ -1,10 +1,10 @@
 // weconnect-server/controllers/taskApiController.js
-// const { retrieveTaskGroupResponseListByPersonIdList, saveAnswerToMappedField } =  require('./taskController');
+const { retrieveTaskStatusListByPersonIdList } =  require('./taskController');
 const { createTaskDefinition, createTaskGroup,
   findTaskDefinitionListByParams, findTaskGroupById, findTaskGroupListByParams,
-  TASK_DEFINITION_FIELDS_ACCEPTED, TASK_GROUP_FIELDS_ACCEPTED,
-  removeProtectedFieldsFromTaskDefinition, removeProtectedFieldsFromTaskGroup,
-  saveTaskDefinition, saveTaskGroup } = require('../models/taskModel');
+  TASK_DEFINITION_FIELDS_ACCEPTED, TASK_FIELDS_ACCEPTED_DICT, TASK_GROUP_FIELDS_ACCEPTED,
+  removeProtectedFieldsFromTask, removeProtectedFieldsFromTaskDefinition, removeProtectedFieldsFromTaskGroup,
+  saveTaskDefinition, saveTaskGroup, updateOrCreateTask } = require('../models/taskModel');
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { convertToInteger } = require('../utils/convertToInteger');
 
@@ -90,17 +90,16 @@ exports.taskGroupListRetrieve = async (request, response) => {
 };
 
 /**
- * GET /api/v1/task-list-retrieve
- * Retrieve a list of tasks.
+ * GET /api/v1/task-status-list-retrieve
+ * Retrieve a list of tasks and the supporting data.
  */
-exports.taskListRetrieve = async (request, response) => {
+exports.taskStatusListRetrieve = async (request, response) => {
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
   // console.log('queryParams:', queryParams);
   const personIdListIncoming = queryParams.getAll('personIdList[]');
   const personIdList = personIdListIncoming.map(convertToInteger);
-  console.log('taskListRetrieve personIdList:', personIdList);
-  // const personId = convertToInteger(queryParams.get('personId'));
+  console.log('taskStatusListRetrieve personIdList:', personIdList);
 
   const jsonData = {
     isSearching: false,
@@ -111,9 +110,9 @@ exports.taskListRetrieve = async (request, response) => {
     success: true,
   };
   try {
-    // console.log('taskListRetrieve personIdList:', personIdList);
-    // const results = await retrieveTaskResponseListByPersonIdList(personIdList);
-    const results = {};
+    // console.log('taskStatusListRetrieve personIdList:', personIdList);
+    const results = await retrieveTaskStatusListByPersonIdList(personIdList);
+    // const results = {};
     // console.log('results:', results);
     jsonData.success = true;
     jsonData.taskList = results.taskList;
@@ -121,7 +120,7 @@ exports.taskListRetrieve = async (request, response) => {
     jsonData.taskGroupList = results.taskGroupList;
     jsonData.status += results.status;
   } catch (err) {
-    console.log('taskListRetrieve err:', err);
+    console.log('taskStatusListRetrieve err:', err);
     jsonData.status += err.message;
     jsonData.success = false;
   }
@@ -355,6 +354,83 @@ exports.taskDefinitionSave = async (request, response) => {
     }
   } catch (err) {
     console.error('Error while saving taskDefinition:', err);
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+
+  response.json(jsonData);
+};
+
+/**
+ * GET /api/v1/task-save
+ *
+ */
+exports.taskSave = async (request, response) => {
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const queryParams = new URLSearchParams(parsedUrl.search);
+  const personId = convertToInteger(queryParams.get('personId'));
+  const taskDefinitionId = convertToInteger(queryParams.get('taskDefinitionId'));
+  const taskGroupId = convertToInteger(queryParams.get('taskGroupId'));
+  const taskChangeDict = extractVariablesToChangeFromIncomingParams(queryParams, TASK_FIELDS_ACCEPTED_DICT);
+  console.log('== AFTER extractVariablesToChangeFromIncomingParams taskChangeDict:', taskChangeDict);
+  // Set up the default JSON response.
+  const jsonData = {
+    taskCreated: false,
+    personId: -1,
+    taskDefinitionId: -1,
+    taskGroupId: -1,
+    taskUpdated: false,
+    status: '',
+    success: true,
+    updateErrors: [],
+  };
+  try {
+    jsonData.personId = personId;
+    jsonData.taskDefinitionId = taskDefinitionId;
+    jsonData.taskGroupId = taskGroupId;
+    jsonData.success = true;
+    const keys = Object.keys(taskChangeDict);
+    const values = Object.values(taskChangeDict);
+    for (let i = 0; i < keys.length; i++) {
+      jsonData[keys[i]] = values[i];
+    }
+  } catch (err) {
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+
+  try {
+    let requiredFieldsExist = true;
+    if (personId < 0) {
+      jsonData.status += 'personId_MISSING ';
+      requiredFieldsExist = false;
+    }
+    if (taskDefinitionId < 0) {
+      jsonData.status += 'taskDefinitionId_MISSING ';
+      requiredFieldsExist = false;
+    }
+    if (taskGroupId < 0) {
+      jsonData.status += 'WARNING_taskGroupId_MISSING ';
+    }
+
+    if (requiredFieldsExist) {
+      const task = await updateOrCreateTask(personId, taskDefinitionId, taskGroupId, taskChangeDict);
+      // taskId = task.id;
+      // console.log('Created new task:', task);
+      jsonData.taskCreated = true;
+      jsonData.taskPersonId = task.personId;
+      jsonData.taskDefinitionId = task.taskDefinitionId;
+      jsonData.taskGroupId = task.taskGroupId;
+      jsonData.status += 'TASK_UPDATED_OR_CREATED ';
+      const modifiedTaskDict = removeProtectedFieldsFromTask(task);
+      const taskKeys = Object.keys(modifiedTaskDict);
+      const taskValues = Object.values(modifiedTaskDict);
+      for (let i = 0; i < taskKeys.length; i++) {
+        jsonData[taskKeys[i]] = taskValues[i];
+      }
+    }
+  } catch (err) {
+    console.error('Error while saving task:', err);
     jsonData.status += err.message;
     jsonData.success = false;
   }
