@@ -58,7 +58,7 @@ exports.generateTaskStatusListForAllPeople = async () => {
       taskDefinitionList,
       taskDependencyList,
     );
-    console.log('taskListUpdated:', taskListUpdated);
+    // console.log('taskListUpdated:', taskListUpdated);
   }
   return {
     status,
@@ -81,7 +81,7 @@ exports.generateTasksForPerson = async (
       taskDictByDefinitionId[taskListForPerson[i].taskDefinitionId] = taskListForPerson[i];
     }
   }
-  console.log('taskDictByDefinitionId:', taskDictByDefinitionId);
+  // console.log('taskDictByDefinitionId:', taskDictByDefinitionId);
   // Loop through all TaskDefinitions and if a task doesn't already exist, create it
   // Create an array of promises for new tasks
   const newTaskPromises = taskDefinitionList.map((taskDefinition) => {
@@ -109,11 +109,11 @@ exports.generateTasksForPerson = async (
     taskDictByDefinitionId[task.taskDefinitionId] = task;
   });
 
-  console.log('taskListForPerson:', taskListForPerson);
+  // console.log('generateTasksForPerson taskListForPerson:', taskListForPerson);
 
   // Check dependencies and update task status
 
-  console.log('person.firstName:', person.firstName);
+  // console.log('person.firstName:', person.firstName);
   return {
     status,
     success,
@@ -140,7 +140,7 @@ exports.retrieveTaskStatusListByPersonIdList = async (personIdList) => {
     success = false;
   }
   // Start with the task data received for personIds in personIdList
-  console.log('personIdList:', personIdList);
+  // console.log('personIdList:', personIdList);
   try {
     let params = {};
     if (personIdList && personIdList.length > 0) {
@@ -150,7 +150,7 @@ exports.retrieveTaskStatusListByPersonIdList = async (personIdList) => {
     }
     taskList = await findTaskListByParams(params);
     success = true;
-    console.log('== AFTER findTaskListByParams taskList:', taskList);
+    // console.log('== AFTER findTaskListByParams taskList:', taskList);
     if (taskList) {
       status += 'TASK_LIST_FOUND ';
     } else {
@@ -233,7 +233,7 @@ exports.updateTaskStatusesForPerson = async (
   taskDefinitionList,
   taskDependencyList,
 ) => {
-  console.log('updateTaskStatusesForPerson person.firstName:', person.firstName);
+  // console.log('updateTaskStatusesForPerson person.firstName:', person.firstName);
   // Organize tasks into a dict based on taskDefinitionId
   const taskDictByDefinitionId = {};
   for (let i = 0; i < taskListForPerson.length; i++) {
@@ -241,9 +241,9 @@ exports.updateTaskStatusesForPerson = async (
       taskDictByDefinitionId[taskListForPerson[i].taskDefinitionId] = taskListForPerson[i];
     }
   }
-  console.log('taskDictByDefinitionId:', taskDictByDefinitionId);
+  // console.log('taskDictByDefinitionId:', taskDictByDefinitionId);
 
-  console.log('taskListForPerson:', taskListForPerson);
+  // console.log('updateTaskStatusesForPerson taskListForPerson:', taskListForPerson);
 
   // Check dependencies and update task status
 

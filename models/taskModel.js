@@ -4,12 +4,6 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-const TASK_GROUP_FIELDS_ACCEPTED = [
-  'taskGroupName',
-  'taskGroupDescription',
-  'taskGroupIsForTeam',
-];
-
 const TASK_DEFINITION_FIELDS_ACCEPTED = [
   'googleDriveFolderId',
   'isGoogleDrivePermissionStep',
@@ -19,6 +13,36 @@ const TASK_DEFINITION_FIELDS_ACCEPTED = [
   'taskName',
   'taskDescription',
   'taskInstructions',
+];
+
+const TASK_FIELDS_ACCEPTED = [
+  'doneByPersonId',
+  'googleDriveSuccess',
+  'statusDone',
+  'statusError',
+  'statusErrorResolved',
+  'statusReadyToDo',
+  'statusResolvedComment',
+  'statusToDoByHuman',
+  'taskGroupId',
+];
+
+const TASK_FIELDS_ACCEPTED_DICT = {
+  doneByPersonId: 'INTEGER',
+  googleDriveSuccess: 'BOOLEAN',
+  statusDone: 'BOOLEAN',
+  statusError: 'BOOLEAN',
+  statusErrorResolved: 'BOOLEAN',
+  statusReadyToDo: 'BOOLEAN',
+  statusResolvedComment: 'BOOLEAN',
+  statusToDoByHuman: 'BOOLEAN',
+  taskGroupId: 'INTEGER',
+};
+
+const TASK_GROUP_FIELDS_ACCEPTED = [
+  'taskGroupName',
+  'taskGroupDescription',
+  'taskGroupIsForTeam',
 ];
 
 function removeProtectedFieldsFromTask (task) {
@@ -290,15 +314,15 @@ async function createTaskGroup (updateDict) {
   return taskGroup;
 }
 
-function updateOrCreateTask (personId, taskId, taskGroupId, updateDict) {
+function updateOrCreateTask (personId, taskDefinitionId, taskGroupId, updateDict) {
   // eslint-disable-next-line prefer-object-spread
-  const createDict = Object.assign({}, { personId, taskId, taskGroupId }, updateDict);
+  const createDict = Object.assign({}, { personId, taskDefinitionId, taskGroupId }, updateDict);
   try {
     const upResult =  prisma.task.upsert({
       where: {
-        taskIdPersonId: {
-          taskId,
+        taskDefinitionIdPersonId: {
           personId,
+          taskDefinitionId,
         },
       },
       update: { ...updateDict },
@@ -306,7 +330,7 @@ function updateOrCreateTask (personId, taskId, taskGroupId, updateDict) {
     });
     return upResult;
   } catch (err) {
-    console.log('updateOrCreateTeamMember: ERROR ', err);
+    console.log('updateOrCreateTask: ERROR ', err);
     return null;
   }
 }
@@ -327,6 +351,8 @@ module.exports = {
   findTaskGroupListByParams,
   findOneTaskGroup,
   TASK_DEFINITION_FIELDS_ACCEPTED,
+  TASK_FIELDS_ACCEPTED,
+  TASK_FIELDS_ACCEPTED_DICT,
   TASK_GROUP_FIELDS_ACCEPTED,
   removeProtectedFieldsFromTask,
   removeProtectedFieldsFromTaskDefinition,
