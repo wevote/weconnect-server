@@ -309,8 +309,7 @@ exports.teamSave = async (request, response) => {
 };
 
 /**
- * GET /api/v1/team-save
- *
+ * GET /api/v1/team-delete
  */
 exports.teamDelete = async (request, response) => {
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
