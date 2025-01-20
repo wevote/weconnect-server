@@ -99,6 +99,14 @@ async function createTeam (updateDict) {
   return prisma.team.create({ data: mergedTeam });
 }
 
+async function deleteTeam (teamId) {
+  return prisma.team.delete({
+    where: {
+      id: teamId,
+    },
+  });
+}
+
 async function createTeamMember (updateDict) {
   // eslint-disable-next-line prefer-object-spread
   const mergedTeam = Object.assign({}, teamObjTemplate, updateDict);
@@ -131,6 +139,7 @@ module.exports = {
   createTeamMember,
   deleteOne,
   deleteOneTeamMember,
+  deleteTeam,
   findOneTeam,
   findTeamById,
   findTeamListByParams,

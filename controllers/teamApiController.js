@@ -1,8 +1,9 @@
 // weconnect-server/controllers/teamApiController.js
 const { retrieveTeamMemberList } = require('./teamController');
 const {
-  createTeam, deleteOneTeamMember, findTeamById, findTeamListByParams,
+  saveTeam, createTeam, deleteOneTeamMember, findOneTeam, findTeamById, findTeamListByParams,
   removeProtectedFieldsFromTeam, TEAM_FIELDS_ACCEPTED, updateOrCreateTeamMember,
+  deleteTeam,
 } = require('../models/teamModel');
 const { convertToInteger } = require('../utils/convertToInteger');
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
@@ -276,10 +277,10 @@ exports.teamSave = async (request, response) => {
     }
 
     if (shouldCreateTeam) {
-      //
       const team = await createTeam(changeDict);
       console.log('Created new team:', team);
       jsonData.teamCreated = true;
+      jsonData.teamUpdated = false;
       jsonData.teamId = team.id;
       jsonData.status += 'TEAM_CREATED ';
       const modifiedTeamDict = removeProtectedFieldsFromTeam(team);
@@ -288,12 +289,58 @@ exports.teamSave = async (request, response) => {
       for (let i = 0; i < teamKeys.length; i++) {
         jsonData[teamKeys[i]] = teamValues[i];
       }
+    } else {
+      const team = await findOneTeam({ id: teamId });
+      const updatedTeam = { ...team, ...changeDict };
+      await saveTeam(updatedTeam);
+      jsonData.teamCreated = false;
+      jsonData.teamUpdated = true;
+      jsonData.teamId = team.id;
+      jsonData.status += 'TEAM_NAME_UPDATED ';
     }
   } catch (err) {
     console.error('Error while saving team:', err);
     jsonData.status += err.message;
     jsonData.success = false;
     jsonData.updateErrors.push('Missing required field: teamName');
+  }
+
+  response.json(jsonData);
+};
+
+/**
+ * GET /api/v1/team-save
+ *
+ */
+exports.teamDelete = async (request, response) => {
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const queryParams = new URLSearchParams(parsedUrl.search);
+  const teamId = convertToInteger(queryParams.get('teamId'));
+
+  // TODO, this should also clean up dependent data like TeamMembers that reference this team
+
+  // Set up the default JSON response.
+  const jsonData = {
+    teamDeleted: false,
+    teamId,
+    status: '',
+    success: true,
+    updateErrors: [],
+  };
+
+  try {
+    if (parseInt(teamId) >= 0) {
+      jsonData.status += 'TEAM_TO_BE_DELETED ';
+      const team = await deleteTeam(teamId);
+      console.log('Deleted team:', teamId);
+      jsonData.teamDeleted = true;
+      jsonData.teamId = team.id;
+      jsonData.status += 'TEAM_DELETED ';
+    }
+  } catch (err) {
+    console.error('Error while deleting team:', err);
+    jsonData.status += err.message;
+    jsonData.success = false;
   }
 
   response.json(jsonData);

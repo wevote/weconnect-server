@@ -16,6 +16,14 @@ function extractQuestionAnswersFromIncomingParams (queryParams) {
   return updateDict;
 }
 
+/* this could just be ...
+  const queryParams = {};
+  const searchParams = new URLSearchParams(new URL(url).search);
+  for (const [key, value] of searchParams.entries()) {
+    queryParams[key] = value;
+  }
+ */
+
 function extractVariablesToChangeFromIncomingParams (queryParams, fieldsAccepted = {}) {
   let keyWithoutToBeSaved = '';
   let thisFieldAccepted = false;
@@ -71,6 +79,7 @@ function extractVariablesToChangeFromIncomingParams (queryParams, fieldsAccepted
         } else {
           // OLD WAY that just lists the accepted fields in an array
           // console.log('==== *** OLD WAY: ', keyWithoutToBeSaved);
+          // eslint-disable-next-line no-lonely-if
           if (value === 'true') {
             updateDict[keyWithoutToBeSaved] = true;
           } else if (value === 'false') {
