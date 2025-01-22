@@ -26,6 +26,7 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/task-status-list-retrieve', taskApiController.taskStatusListRetrieve);
   weconnectServer.get('/apis/v1/team-list-retrieve', teamApiController.teamListRetrieve);
   weconnectServer.get('/apis/v1/team-save', teamApiController.teamSave);
+  weconnectServer.get('/apis/v1/team-delete', teamApiController.teamDelete);
   weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
   // weconnectServer.get('/apis/v1/secret-retrieve', prismaUserController.getSignup);
   weconnectServer.get('/apis/v1/auth', personApiController.getAuth);
