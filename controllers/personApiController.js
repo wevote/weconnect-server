@@ -8,6 +8,7 @@ const { createPerson, findPersonListByParams, PERSON_FIELDS_ACCEPTED, removeProt
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { updateOrCreateTeamMember } = require('../models/teamModel');
 const { convertToInteger } = require('../utils/convertToInteger');
+const { sendEmailValidationCode } = require('./sendEmailController');
 
 
 /**
@@ -59,26 +60,34 @@ exports.personRetrieve = async (request, response) => {
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
   const personId = convertToInteger(queryParams.get('personId'));
-  const searchText = queryParams.get('searchText');
+  // const searchText = queryParams.get('searchText');
 
   const jsonData = {
     status: '',
     success: true,
+    personFound: false,
   };
   try {
-    const params = {};
-    if (searchText) {
-      jsonData.isSearching = true;
-      params.OR = [
-        { firstName: { contains: searchText, mode: 'insensitive' } },
-        { firstNamePreferred: { contains: searchText, mode: 'insensitive' } },
-        { lastName: { contains: searchText, mode: 'insensitive' } },
-        { emailPersonal: { contains: searchText, mode: 'insensitive' } },
-      ];
+    const params = Object.fromEntries(queryParams.entries());
+    let person;
+    if (Object.keys(params).length) {
+      if (params.searchText) {
+        delete params.searchText;
+      }
+      // jsonData.isSearching = true;
+      // params.OR = [
+      //   { firstName: { contains: searchText, mode: 'insensitive' } },
+      //   { firstNamePreferred: { contains: searchText, mode: 'insensitive' } },
+      //   { lastName: { contains: searchText, mode: 'insensitive' } },
+      //   { emailPersonal: { contains: searchText, mode: 'insensitive' } },
+      // ];
+      person = await findOnePerson(params);
+    } else {
+      person = await findPersonById(personId);
     }
-    const person = await findPersonById(personId);
     jsonData.success = true;
-    if (person) {
+    if (person && Object.keys(person).length) {
+      jsonData.personFound = true;
       jsonData.personId = person.id;
       const keys = Object.keys(person);
       const values = Object.values(person);
@@ -283,6 +292,70 @@ exports.postLogin = (req, res, next) => {
 
   req.body.email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
   req.body.personalEmail = req.body.email;
+  // eslint-disable-next-line consistent-return
+  passport.authenticate('local', (err, user, info) => {
+    if (err) { return next(err); }
+    if (!user) {
+      // Converting from a pug redirect to an API response ... req.flash('errors', info);
+      // Converting from a pug redirect to an API response ... return res.redirect('/login');
+      return res.json({
+        signedIn: false,
+        errors: info,
+        userId: -1,
+        name: '',
+      });
+    }
+    req.logIn(user, (err2) => {
+      if (err2) {
+        res.json({
+          signedIn: false,
+          errors: info + err2,
+          userId: -1,
+          name: '',
+        });
+      }
+
+      res.json({
+        signedIn: true,
+        userId: user.id,
+        name: user.name,
+      });
+      console.log('test at bottom in postLogin isAuthenticated: ', req.isAuthenticated());
+    });
+  })(req, res, next);
+};
+
+/**
+ * POST /apis/v1/send-email-code
+ * Send a verification code to the 'person's email
+ */
+exports.sendEmailCode = async (req, res, next) => {
+  const personId = req.body.personId;
+  let email = req.body.email || '';
+  // const emailType = req.body.email-type || 'emailPersonal';  // {emailOfficial, emailOfficialAlternate, emailPersonal, emailPersonalAlternate, emailPreferred }
+
+  // TODO Finish, but need to get a response to figure out
+
+  const results = {
+    emailSent: false,
+    errors: '',
+    userId: -1,
+    name: '',
+  };
+
+  // email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
+
+  const person = await findPersonById(personId);
+  // For now, just use person.emailPersonal
+
+  const ret = sendEmailValidationCode(person);
+  results.errors += ` ${ret.error}`;
+  results.emailSent = ret.success;
+
+  return results;
+
+
+
   // eslint-disable-next-line consistent-return
   passport.authenticate('local', (err, user, info) => {
     if (err) { return next(err); }

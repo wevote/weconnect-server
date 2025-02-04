@@ -1,6 +1,6 @@
 // weconnect-server/controllers/personController.js
 
-function displayFullNamePreferred (person) {
+const displayFullNamePreferred = (person) => {
   let fullName = '';
   if (person.firstNamePreferred) {
     fullName += person.firstNamePreferred;
@@ -14,4 +14,6 @@ function displayFullNamePreferred (person) {
     fullName += person.lastName;
   }
   return fullName;
-}
+};
+
+module.exports = { displayFullNamePreferred };
