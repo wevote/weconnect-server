@@ -4,6 +4,8 @@
 const cors = require('cors');
 const path = require('path');
 const express = require('express');
+const https = require('https');
+const fs = require('fs');
 const compression = require('compression');
 const session = require('express-session');
 const connectPgSimple = require('connect-pg-simple');
@@ -99,8 +101,6 @@ weconnectServer.use(lusca({
   allowlist: ['/login', '/signup'],
 }));
 
-
-
 weconnectServer.use((req, res, next) => {
   if (req.path === '/api/upload') {
     // Multer multipart/form-data handling needs to occur before the Lusca CSRF check.
@@ -184,11 +184,33 @@ if (process.env.NODE_ENV === 'development') {
     res.status(500).send('Server Error');
   });
 }
+let privateKey;
+let certificate;
+let serverHttpOrHttps;
+
+if (process.env.PROTOCOL.includes('https')) {
+  // SSL/TLS Setup
+  try {
+    privateKey =  fs.readFileSync('./cert/wevotedeveloper.com_key.txt', 'utf8');
+    certificate = fs.readFileSync('./cert/wevotedeveloper.com.crt', 'utf8');
+  } catch (err) {
+    console.error('Error reading certificate:', err);
+  }
+
+  const credentials = {
+    key: privateKey,
+    cert: certificate,
+  };
+
+  serverHttpOrHttps = https.createServer(credentials, weconnectServer);
+} else {
+  serverHttpOrHttps = weconnectServer;
+}
 
 /**
  * Start Express server.
  */
-weconnectServer.listen(weconnectServer.get('port'), () => {
+serverHttpOrHttps.listen(weconnectServer.get('port'), () => {
   const { BASE_URL } = process.env;
   const colonIndex = BASE_URL.lastIndexOf(':');
   const port = parseInt(BASE_URL.slice(colonIndex + 1), 10);
@@ -199,7 +221,7 @@ weconnectServer.listen(weconnectServer.get('port'), () => {
     console.warn(`WARNING: The BASE_URL environment variable and the App have a port mismatch. If you plan to view the app in your browser using the localhost address, you may need to adjust one of the ports to make them match. BASE_URL: ${BASE_URL}\n`);
   }
 
-  console.log(`App is running on http://localhost:${weconnectServer.get('port')} in ${weconnectServer.get('env')} mode.`);
+  console.log(`App is running on  ${process.env.BASE_URL}  in  ${weconnectServer.get('env')} mode.`);
   console.log('Press CTRL-C to stop.');
 });
 

@@ -100,6 +100,14 @@ async function createTeam (updateDict) {
 }
 
 async function deleteTeam (teamId) {
+  const teamMembers = await findTeamMemberListByParams({ teamId });
+  console.log(`removing ${teamMembers.length} from team ${teamId})`);
+  teamMembers.forEach((member) => {
+    console.log(`-- removing ${member.lastName} from team ${teamId})`);
+    deleteOneTeamMember(member.personId, teamId);
+  });
+  console.log(`removing ${teamMembers.length} from team ${teamId})`);
+
   return prisma.team.delete({
     where: {
       id: teamId,

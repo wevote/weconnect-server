@@ -16,14 +16,6 @@ function extractQuestionAnswersFromIncomingParams (queryParams) {
   return updateDict;
 }
 
-/* this could just be ...
-  const queryParams = {};
-  const searchParams = new URLSearchParams(new URL(url).search);
-  for (const [key, value] of searchParams.entries()) {
-    queryParams[key] = value;
-  }
- */
-
 function extractVariablesToChangeFromIncomingParams (queryParams, fieldsAccepted = {}) {
   let keyWithoutToBeSaved = '';
   let thisFieldAccepted = false;
