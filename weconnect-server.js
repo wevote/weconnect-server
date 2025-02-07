@@ -32,9 +32,9 @@ const secureTransfer = (process.env.BASE_URL.startsWith('https'));
 // Consider adding a proxy such as cloudflare for production.
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  max: 10000,               // Limit each IP to 10000 requests per `window` (here, per 15 minutes)
+  standardHeaders: true,    // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false,     // Disable the `X-RateLimit-*` headers
 });
 
 // This logic for numberOfProxies works for local testing, ngrok use, single host deployments

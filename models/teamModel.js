@@ -59,13 +59,13 @@ async function findOneTeam (params) {   // Find one with array
   return team;
 }
 
-async function deleteOne (id) {
-  await prisma.team.delete({
-    where: {
-      id,
-    },
-  });
-}
+// async function deleteOne (id) {
+//   await prisma.team.delete({
+//     where: {
+//       id,
+//     },
+//   });
+// }
 
 async function deleteOneTeamMember (personId, teamId) {
   await prisma.teamMember.delete({
@@ -145,7 +145,6 @@ function updateOrCreateTeamMember (personId, teamId, updateDict) {
 module.exports = {
   createTeam,
   createTeamMember,
-  deleteOne,
   deleteOneTeamMember,
   deleteTeam,
   findOneTeam,
