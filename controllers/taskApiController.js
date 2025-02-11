@@ -25,9 +25,10 @@ exports.taskDefinitionListRetrieve = async (request, response) => {
     success: true,
   };
   try {
-    const params = {
-      taskGroupId,
-    };
+    let params = {};
+    if (taskGroupId && taskGroupId >= 0) {
+      params = { taskGroupId };
+    }
     if (searchText) {
       jsonData.isSearching = true;
       params.OR = [
