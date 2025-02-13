@@ -15,6 +15,7 @@ const QUESTION_FIELDS_ACCEPTED = [
   'fieldMappingRule',
   'questionInstructions',
   'questionOrder',
+  'questionPlaceholder',
   'questionText',
   'requireAnswer',
   'statusActive',
