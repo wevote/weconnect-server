@@ -18,9 +18,7 @@ exports.answerListSave = async (request, response) => {
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
   const personId = convertToInteger(queryParams.get('personId'));
-  // const questionId = convertToInteger(queryParams.get('questionId'));
   const questionnaireId = convertToInteger(queryParams.get('questionnaireId'));
-  // console.log('queryParams:', queryParams);
 
   let answerListSaved = false;
   const answersSavedList = [];
@@ -213,11 +211,12 @@ exports.questionnaireListRetrieve = async (request, response) => {
 /**
  * GET /api/v1/questionnaire-responses-list-retrieve
  * Retrieve a list of responses to questionnaire questions.
+ * TODO: I am considering refactoring this to be answer-list-retrieve and not return questionList or questionnaireList.
  */
 exports.questionnaireResponsesListRetrieve = async (request, response) => {
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
-  // console.log('queryParams:', queryParams);
+  // console.log('questionnaireResponsesListRetrieve queryParams:', queryParams);
   const personIdListIncoming = queryParams.getAll('personIdList[]');
   const personIdList = personIdListIncoming.map(convertToInteger);
 
@@ -386,6 +385,7 @@ exports.questionSave = async (request, response) => {
 
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
+  // console.log('questionSave queryParams:', queryParams);
   const questionId = convertToInteger(queryParams.get('questionId'));
   const questionnaireId = convertToInteger(queryParams.get('questionnaireId'));
   // console.log('queryParams:', queryParams);
@@ -393,7 +393,7 @@ exports.questionSave = async (request, response) => {
   if (questionChangeDict.answerType && questionChangeDict.answerType.includes()) {
     // Consider adding a filter to ensure the answerType is one of the accepted types.
   }
-  // console.log('questionChangeDict:', questionChangeDict);
+  // console.log('questionSave questionChangeDict:', questionChangeDict);
   // Set up the default JSON response.
   const jsonData = {
     questionCreated: false,
