@@ -32,7 +32,13 @@ async function findPersonById (id, includeAllData = false) {
       id,
     },
   });
-  let modifiedPerson = {};
+  if (!person) {    // If the person has not been stored yet, during person creation
+    return {
+      id: 0,
+      personId: 0,
+    };
+  }
+  let modifiedPerson;
   if (includeAllData) {
     modifiedPerson = person;
   } else {
@@ -101,7 +107,7 @@ async function findOnePerson (params, includeAllData = false) {   // Find one wi
   const person = await prisma.person.findUnique({
     where: params,
   });
-  let modifiedPerson = {};
+  let modifiedPerson;
   if (includeAllData) {
     modifiedPerson = person;
   } else {
@@ -133,11 +139,22 @@ async function savePerson (person) {
   return updatePerson;
 }
 
-function isoFutureDate () {
+async function updatePersonByPersonId (personId, person) {
+  const updatePerson = await prisma.person.update({
+    where: {
+      personId,
+    },
+    data: person,
+  });
+  // console.log(updatePerson);
+  return updatePerson;
+}
+
+function isoFutureDateDays (days) {
   const today = new Date();
-  const oneYearFromNow = new Date(today);
-  oneYearFromNow.setFullYear(today.getFullYear() + 1);
-  return oneYearFromNow;
+  const futureDate = new Date(today);
+  futureDate.setDate(today.getDate() + days);
+  return futureDate;
 }
 
 // For required fields that we want to include, even if not passed from the interface.
@@ -165,7 +182,7 @@ const personObjTemplate = {
 
   password: '',
   passwordResetToken: '',
-  passwordResetExpires: isoFutureDate(),
+  passwordResetExpires: isoFutureDateDays(365),
   emailVerificationToken: '',
   emailVerified: false,
 
@@ -199,15 +216,17 @@ async function comparePassword (person, candidatePassword, cb) {
 }
 
 module.exports = {
+  PERSON_FIELDS_ACCEPTED,
   comparePassword,
   createPerson,
   deleteOne,
   extractPersonVariablesToChange,
+  findOnePerson,
   findPersonById,
   findPersonListByIdList,
   findPersonListByParams,
-  findOnePerson,
-  PERSON_FIELDS_ACCEPTED,
+  isoFutureDateDays,
   removeProtectedFieldsFromPerson,
   savePerson,
+  updatePersonByPersonId,
 }; // Export the functions

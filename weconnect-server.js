@@ -14,9 +14,10 @@ const logger = require('morgan');
 const errorHandler = require('errorhandler');
 const lusca = require('lusca');
 const dotenv = require('dotenv');
-const flash = require('express-flash');
 const passport = require('passport');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
+const useragent = require('express-useragent');
 
 
 /**
@@ -66,6 +67,9 @@ weconnectServer.use(logger('dev'));
 weconnectServer.use(bodyParser.json());
 weconnectServer.use(bodyParser.urlencoded({ extended: true }));
 weconnectServer.use(limiter);
+weconnectServer.use(cookieParser());
+weconnectServer.use(useragent.express());
+
 
 /**
  * Signin, Authorization,
@@ -79,7 +83,8 @@ weconnectServer.use(session({
   name: 'WeConnectSession',
   cookie: {
     maxAge: 1209600000, // Two weeks in milliseconds
-    secure: secureTransfer,
+    secure: true, // secureTransfer,
+    sameSite: 'none',
     allowlist: [
       { path: '/apis/v1', type: 'startWith' },
       { path: '/localhost', type: 'exact' },
@@ -94,7 +99,6 @@ weconnectServer.use(session({
 
 weconnectServer.use(passport.initialize());   // init passport on every route call.
 weconnectServer.use(passport.session());      // allow passport to use "express-session".
-weconnectServer.use(flash());   // TODO: probably not needed or wanted
 dotenv.config({ path: '.env' });              // reads text in '.env' file into process.env global variables
 // TODO: This allowlist is a hack around a csrf.js issue, where login was blocked by a csrf mismatch.  I suspect that we have an unresolved Lusca setup issue.
 weconnectServer.use(lusca({
@@ -117,6 +121,14 @@ weconnectServer.use((req, res, next) => {
   res.locals.user = req.user;
   next();
 });
+
+// Add isSignedIn to response if true
+weconnectServer.use((req, res, next) => {
+  res.locals.isSignedIn = true; // TODO hack
+  next();
+});
+
+
 
 // After successful login, redirect back to the intended page
 weconnectServer.use((req, res, next) => {
@@ -167,7 +179,7 @@ require('./routes/futureApiAndPugRoutes')(weconnectServer);
 
 
 /**
- * Error Handler.
+ * Error Handler Middleware.
  */
 weconnectServer.use((req, res) => {
   const err = new Error('Not Found');

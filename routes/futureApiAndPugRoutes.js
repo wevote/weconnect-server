@@ -19,14 +19,14 @@ const upload = multer({ dest: path.join(__dirname, 'uploads') });
 module.exports = function (weconnectServer) {
   weconnectServer.get('/', homeController.index);
   // weconnectServer.get('/login', prismaUserController.getLogin);
-  // weconnectServer.post('/login', prismaUserController.postLogin);
+  // weconnectServer.post('/login', prismaUserController.login);
   weconnectServer.get('/logout', prismaUserController.logout);
   weconnectServer.get('/forgot', prismaUserController.getForgot);
   weconnectServer.post('/forgot', prismaUserController.postForgot);
   weconnectServer.get('/reset/:token', prismaUserController.getReset);
   weconnectServer.post('/reset/:token', prismaUserController.postReset);
   // weconnectServer.get('/signup', prismaUserController.getSignup);
-  // weconnectServer.post('/signup', prismaUserController.postSignup);
+  // weconnectServer.post('/signup', prismaUserController.signup);
   weconnectServer.get('/contact', contactController.getContact);
   weconnectServer.post('/contact', contactController.postContact);
   weconnectServer.get('/account/verify', passportConfig.isAuthenticated, prismaUserController.getVerifyEmail);
