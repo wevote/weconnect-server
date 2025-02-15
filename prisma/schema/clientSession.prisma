@@ -1,0 +1,10 @@
+// One browser session, based on the WeConnectSession cookie that is automatically setup by passport.js, but we act on
+// and persist passport.js's sessionID.  This is associated with a person, who has achieved authentication.
+model ClientSession {
+  id                    Int      @id @default(autoincrement())
+  personId              Int
+  sessionID             String   @unique
+  dateCreated           DateTime @default(now()) @updatedAt
+  dateExpires           DateTime
+  userAgent             String
+}

@@ -28,11 +28,11 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/team-save', teamApiController.teamSave);
   weconnectServer.get('/apis/v1/team-delete', teamApiController.teamDelete);
   weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
-  // weconnectServer.get('/apis/v1/secret-retrieve', prismaUserController.getSignup);
 
   weconnectServer.post('/apis/v1/get-auth', personApiController.getAuth);
-  weconnectServer.post('/apis/v1/login', personApiController.postLogin);
+  weconnectServer.post('/apis/v1/login', personApiController.login);
   weconnectServer.post('/apis/v1/logout', personApiController.logout);
-  weconnectServer.post('/apis/v1/signup', personApiController.postSignup);
+  weconnectServer.post('/apis/v1/signup', personApiController.signup);
   weconnectServer.post('/apis/v1/send-email-code', personApiController.sendEmailCode);
+  weconnectServer.post('/apis/v1/verify-email-code', personApiController.verifyEmailCode);
 };
