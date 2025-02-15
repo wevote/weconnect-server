@@ -1,5 +1,5 @@
-// One session, stored on the browser as the WeConnectSession cookie, associated with a person, who will need to
-// be authenticated to have any rights (except maybe newbies filling out a questionnaire)
+// One browser session, based on the WeConnectSession cookie that is automatically setup by passport.js, but we act on
+// and persist passport.js's sessionID.  This is associated with a person, who has achieved authentication.
 model ClientSession {
   id                    Int      @id @default(autoincrement())
   personId              Int
