@@ -152,9 +152,10 @@ exports.teamListRetrieve = async (request, response) => {
     success: true,
     teamList: [],
   };
-  // let results;
-  // const teamListModified = [];
-  // let teamModified = {};
+  // const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  // const queryParams = new URLSearchParams(parsedUrl.search);
+  // const searchText = queryParams.get('searchText');
+  // console.log('searchText:', searchText);
   try {
     const teamList = await findTeamListByParams({}, false);
     jsonData.success = true;
