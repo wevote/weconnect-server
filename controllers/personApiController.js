@@ -3,6 +3,7 @@ const bcrypt = require('@node-rs/bcrypt');
 const validator = require('validator');
 const passport = require('passport');
 const { createPerson, findPersonListByParams, PERSON_FIELDS_ACCEPTED, removeProtectedFieldsFromPerson, findOnePerson, findPersonById, savePerson,
+  PERSON_FIELDS_ACCEPTED_ADMIN,
 } = require('../models/personModel');
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { updateOrCreateTeamMember } = require('../models/teamModel');
@@ -107,12 +108,25 @@ exports.personRetrieve = async (request, response) => {
   response.json(jsonData);
 };
 
+async function checkIsAdmin (req) {
+  const isAuthenticated = req.isAuthenticated();
+  const personId = await getPersonIdBySessionId(req.sessionID || 0);
+  const person = personId ? await findPersonById(personId || 0) : undefined;
+  if (!person) {
+    console.error('Undefined person in checkIsAdmin isAuthenticated: ', isAuthenticated, ', req: ', req);
+  }
+  // superusers allow access to grant admin rights, in a blank DB, or after a misconfiguration.
+  const superUsers = ['dale.mcgrew@wevote.us', 'steve.podell@wevote.us']; // Feel free to revise
+  return person.isAdmin || superUsers.includes(person.emailPersonal.trim());
+}
+
 /**
  * GET /api/v1/person-save
  */
 exports.personSave = async (request, response) => {
   let shouldCreatePerson = false;
   let shouldUpdatePerson = false;
+  const userIsAdmin = await checkIsAdmin(request);
 
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
@@ -121,13 +135,17 @@ exports.personSave = async (request, response) => {
   const teamName = queryParams.get('teamName');
   const teamMemberFirstName = queryParams.get('firstNameToBeSaved');
   const teamMemberLastName = queryParams.get('lastNameToBeSaved');
-  const personChangeDict = extractVariablesToChangeFromIncomingParams(queryParams, PERSON_FIELDS_ACCEPTED);
+  const personChangeDict = extractVariablesToChangeFromIncomingParams(
+    queryParams,
+    userIsAdmin ? PERSON_FIELDS_ACCEPTED_ADMIN : PERSON_FIELDS_ACCEPTED,
+  );
   // Set up the default JSON response.
   const jsonData = {
     addPersonToTeamSuccessful: false,
     personCreated: false,
     personId: -1,
     personUpdated: false,
+    userIsAdmin,
     status: '',
     success: true,
     updateErrors: [],
@@ -389,11 +407,13 @@ exports.getAuth = async (req, res) => {
   const isAuthenticated = req.isAuthenticated();
   const personId = await getPersonIdBySessionId(req.sessionID || 0);
   const person = personId ? await findPersonById(personId || 0) : undefined;
+  const loggedInPersonIsAdmin = await checkIsAdmin(req);
   console.log('test top in getAuth isAuthenticated: ', isAuthenticated, personId);
 
   return res.json({
     isAuthenticated,
-    personId,
+    loggedInPersonIsAdmin,
     person,
+    personId,
   });
 };

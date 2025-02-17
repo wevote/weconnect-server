@@ -16,6 +16,15 @@ const PERSON_FIELDS_ACCEPTED = [
   'stateCode',
   'zipCode',
 ];
+const PERSON_FIELDS_ACCEPTED_ADMIN = PERSON_FIELDS_ACCEPTED.concat([
+  'isAdmin',
+  'isHiringManager',
+  'isIntern',
+  'isTeamLead',
+  'statusActive',
+  'statusOnLeave',
+  'statusResigned',
+]);
 
 function removeProtectedFieldsFromPerson (person) {
   const modifiedPerson = { ...person };
@@ -217,6 +226,7 @@ async function comparePassword (person, candidatePassword, cb) {
 
 module.exports = {
   PERSON_FIELDS_ACCEPTED,
+  PERSON_FIELDS_ACCEPTED_ADMIN,
   comparePassword,
   createPerson,
   deleteOne,
