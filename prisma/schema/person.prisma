@@ -32,15 +32,15 @@ model Person {
   emailVerificationToken String?
   emailVerified          Boolean?
 
-  bluesky       String?
-  facebookUrl   String?
-  githubUrl     String?
-  jazzHrUrl     String?
-  linkedInUrl   String?
-  portfolioUrl  String?
-  snapchat      String?
-  tokens        Json?
-  twitch        String?
+  // bluesky       String?
+  // facebookUrl   String?
+  // githubUrl     String?
+  // jazzHrUrl     String?
+  // linkedInUrl   String?
+  // portfolioUrl  String?
+  // snapchat      String?
+  // tokens        Json?
+  // twitch        String?
   twitterHandle String?
   websiteUrl    String?
 
