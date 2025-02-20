@@ -26,6 +26,98 @@ const PERSON_FIELDS_ACCEPTED_ADMIN = PERSON_FIELDS_ACCEPTED.concat([
   'statusResigned',
 ]);
 
+const ACCESS_RIGHTS_OPTIONS = [
+  'canAddPerson', 'canAddPersonDataAnyone', 'canAddTeam',
+  'canAddTeamMemberAnyTeam', 'canCreateOrgEmailAccount',
+  'canEditPermissionsAnyone', 'canEditPersonAnyone',
+  'canEditTeamAnyTeam',
+  'canRemoveTeam', 'canRemoveTeamMemberAnyTeam',
+  'canSendOfferLetter', 'canSendOfferQuestionnaire',
+  'canViewSystemSettings', 'canViewTeamMembersAnyTeam',
+];
+
+// const TEAM_ACCESS_RIGHTS_OPTIONS = [
+//   'canAddTeamMemberThisTeam',
+//   'canEditPersonThisTeam', 'canEditTeamThisTeam',
+//   'canRemoveTeamMemberThisTeam',
+// ];
+
+const getAccessRightsForPerson = (person) => {
+  if (!person) {
+    console.error('Undefined person in getAccessRightsForPerson');
+    return {};
+  }
+  const accessRightsDict = {};
+  // Add all ACCESS_RIGHTS_OPTIONS to the accessRightsDict with false values
+  for (let i = 0; i < ACCESS_RIGHTS_OPTIONS.length; i++) {
+    accessRightsDict[ACCESS_RIGHTS_OPTIONS[i]] = false;
+  }
+  // If person is an admin, set all access rights to true
+  if (person.isAdmin) {
+    for (let i = 0; i < ACCESS_RIGHTS_OPTIONS.length; i++) {
+      accessRightsDict[ACCESS_RIGHTS_OPTIONS[i]] = true;
+    }
+  } else {
+    if (person.isHRAdmin) {
+      accessRightsDict.canAddPerson = true;
+      accessRightsDict.canAddPersonDataAnyone = true;
+      accessRightsDict.canAddTeamMemberAnyTeam = true;
+      accessRightsDict.canEditPersonAnyone = true;
+      accessRightsDict.canRemoveTeamMemberAnyTeam = true;
+      accessRightsDict.canSendOfferLetter = true;
+      accessRightsDict.canViewSystemSettings = true;
+      accessRightsDict.canViewTeamMembersAnyTeam = true;
+    } else if (person.isHRGeneralist2) {
+      accessRightsDict.canAddPerson = true;
+      accessRightsDict.canAddPersonDataAnyone = true;
+      accessRightsDict.canAddTeamMemberAnyTeam = true;
+      accessRightsDict.canEditPersonAnyone = true;
+      accessRightsDict.canEditTeamAnyTeam = true;
+      // accessRightsDict.canRemoveTeamMemberAnyTeam = true;
+      accessRightsDict.canViewSystemSettings = true;
+      accessRightsDict.canViewTeamMembersAnyTeam = true;
+    } else if (person.isHRGeneralist1) {
+      accessRightsDict.canAddPerson = true;
+      accessRightsDict.canAddPersonDataAnyone = true;
+      accessRightsDict.canAddTeamMemberAnyTeam = true;
+      accessRightsDict.canViewSystemSettings = true;
+    }
+    if (person.isHROfferAdmin) {
+      accessRightsDict.canSendOfferLetter = true;
+    }
+    if (person.isHiringManager) {
+      accessRightsDict.canAddPerson = true;
+      accessRightsDict.canAddPersonDataAnyone = true;
+    }
+  }
+  return accessRightsDict;
+};
+
+// const getTeamAccessRights = (person) => {
+//   const accessRightsDict = {
+//     canAddPersonThisTeam: false,
+//     canEditPersonThisTeam: false, // edit
+//     canAddTeamMemberThisTeam: false,
+//     canRemoveTeamMemberThisTeam: false,
+//   };
+//   return accessRightsDict;
+// };
+
+const getTeamsAccessRightsForPerson = (person) => {
+  const accessRightsDict = {};
+  // Add all ACCESS_RIGHTS_OPTIONS to the accessRightsDict with false values
+  for (let i = 0; i < ACCESS_RIGHTS_OPTIONS.length; i++) {
+    accessRightsDict[ACCESS_RIGHTS_OPTIONS[i]] = false;
+  }
+  // If person is an admin, set all access rights to true
+  if (person.isAdmin) {
+    for (let i = 0; i < ACCESS_RIGHTS_OPTIONS.length; i++) {
+      accessRightsDict[ACCESS_RIGHTS_OPTIONS[i]] = true;
+    }
+  }
+  return accessRightsDict;
+};
+
 function removeProtectedFieldsFromPerson (person) {
   const modifiedPerson = { ...person };
   delete modifiedPerson.emailVerificationToken;
@@ -235,6 +327,8 @@ module.exports = {
   findPersonById,
   findPersonListByIdList,
   findPersonListByParams,
+  getAccessRightsForPerson,
+  getTeamsAccessRightsForPerson,
   isoFutureDateDays,
   removeProtectedFieldsFromPerson,
   savePerson,

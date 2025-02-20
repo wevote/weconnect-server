@@ -2,10 +2,13 @@
 const bcrypt = require('@node-rs/bcrypt');
 const validator = require('validator');
 const passport = require('passport');
-const { createPerson, findPersonListByParams, PERSON_FIELDS_ACCEPTED, removeProtectedFieldsFromPerson, findOnePerson, findPersonById, savePerson,
-  PERSON_FIELDS_ACCEPTED_ADMIN,
-} = require('../models/personModel');
-const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
+const { getViewerAccessRights, personCanSeeOrDo } = require('./personController');
+const {
+  createPerson, findPersonListByParams, getAccessRightsForPerson,
+  PERSON_FIELDS_ACCEPTED, PERSON_FIELDS_ACCEPTED_ADMIN,
+  removeProtectedFieldsFromPerson, findOnePerson, findPersonById, savePerson,
+} = require('../models/personModel'); // getTeamsAccessRightsForPerson
+const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils'); // extractSearchParamsFromIncomingParams
 const { updateOrCreateTeamMember } = require('../models/teamModel');
 const { convertToInteger } = require('../utils/convertToInteger');
 const { sendEmailValidationCode } = require('./sendEmailController');
@@ -62,7 +65,15 @@ exports.personListRetrieve = async (request, response) => {
 exports.personRetrieve = async (request, response) => {
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
-  const personId = convertToInteger(queryParams.get('personId'));
+  const personIdRaw = queryParams.get('personId');
+  const personIdInteger = convertToInteger(queryParams.get('personId'));
+
+  // Compare personIdRaw and personIdInteger as strings
+  const personIdRawString = String(personIdRaw);
+  const personIdIntegerString = String(personIdInteger);
+  const idsMatch = personIdRawString === personIdIntegerString;
+  const personId = idsMatch ? personIdInteger : -1;
+
   // const searchText = queryParams.get('searchText');
 
   const jsonData = {
@@ -73,7 +84,11 @@ exports.personRetrieve = async (request, response) => {
   try {
     const params = Object.fromEntries(queryParams.entries());
     let person;
-    if (Object.keys(params).length) {
+    // console.log('personRetrieve personId: ', personId);
+    if (personId >= 0) {
+      // console.log('personRetrieve findPersonById personId raw: ', personId);
+      person = await findPersonById(personId);
+    } else if (Object.keys(params).length) {
       if (params.searchText) {
         delete params.searchText;
       }
@@ -84,9 +99,12 @@ exports.personRetrieve = async (request, response) => {
       //   { lastName: { contains: searchText, mode: 'insensitive' } },
       //   { emailPersonal: { contains: searchText, mode: 'insensitive' } },
       // ];
-      person = await findOnePerson(params);
-    } else {
-      person = await findPersonById(personId);
+      // TODO filter out params that are not in PERSON_FIELDS_ACCEPTED - not currently working
+      // Please leave for Dale to debug
+      // console.log('personRetrieve params BEFORE: ', params);
+      // const filteredParams = extractSearchParamsFromIncomingParams(params, PERSON_FIELDS_ACCEPTED);
+      // console.log('personRetrieve filteredParams AFTER: ', filteredParams);
+      // person = await findOnePerson(filteredParams);
     }
     jsonData.success = true;
     if (person && Object.keys(person).length) {
@@ -108,6 +126,7 @@ exports.personRetrieve = async (request, response) => {
   response.json(jsonData);
 };
 
+// Replacing checkIsAdmin with /controllers/personController.js getViewerAccessRights and personCanSeeOrDo
 async function checkIsAdmin (req) {
   const isAuthenticated = req.isAuthenticated();
   const personId = await getPersonIdBySessionId(req.sessionID || 0);
@@ -126,8 +145,13 @@ async function checkIsAdmin (req) {
 exports.personSave = async (request, response) => {
   let shouldCreatePerson = false;
   let shouldUpdatePerson = false;
-  const userIsAdmin = await checkIsAdmin(request);
-
+  // const userIsAdmin = await checkIsAdmin(request);
+  const viewerAccessRights = await getViewerAccessRights(request);
+  // console.log('personSave viewerAccessRights: ', viewerAccessRights);
+  const canAddPerson = await personCanSeeOrDo('canAddPerson', viewerAccessRights);
+  const canAddTeamMemberAnyTeam = await personCanSeeOrDo('canAddTeamMemberAnyTeam', viewerAccessRights);
+  const canEditPermissionsAnyone = await personCanSeeOrDo('canEditPermissionsAnyone', viewerAccessRights);
+  const canEditPersonAnyone = await personCanSeeOrDo('canEditPersonAnyone', viewerAccessRights);
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
   let personId = convertToInteger(queryParams.get('personId'));
@@ -137,7 +161,7 @@ exports.personSave = async (request, response) => {
   const teamMemberLastName = queryParams.get('lastNameToBeSaved');
   const personChangeDict = extractVariablesToChangeFromIncomingParams(
     queryParams,
-    userIsAdmin ? PERSON_FIELDS_ACCEPTED_ADMIN : PERSON_FIELDS_ACCEPTED,
+    canEditPermissionsAnyone ? PERSON_FIELDS_ACCEPTED_ADMIN : PERSON_FIELDS_ACCEPTED,
   );
   // Set up the default JSON response.
   const jsonData = {
@@ -145,7 +169,7 @@ exports.personSave = async (request, response) => {
     personCreated: false,
     personId: -1,
     personUpdated: false,
-    userIsAdmin,
+    // userIsAdmin,
     status: '',
     success: true,
     updateErrors: [],
@@ -174,37 +198,51 @@ exports.personSave = async (request, response) => {
     }
 
     if (shouldCreatePerson) {
-      //
-      const tempPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      personChangeDict.password = await bcrypt.hash(tempPassword, 10);
-      const person = await createPerson(personChangeDict);
-      personId = person.id;
-      // console.log('Created new person:', person);
-      jsonData.personCreated = true;
-      jsonData.personId = person.id;
-      jsonData.status += 'PERSON_CREATED ';
-      const modifiedPersonDict = removeProtectedFieldsFromPerson(person);
-      const personKeys = Object.keys(modifiedPersonDict);
-      const personValues = Object.values(modifiedPersonDict);
-      for (let i = 0; i < personKeys.length; i++) {
-        jsonData[personKeys[i]] = personValues[i];
+      if (canAddPerson) {
+        const tempPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        personChangeDict.password = await bcrypt.hash(tempPassword, 10);
+        const person = await createPerson(personChangeDict);
+        personId = person.id;
+        // console.log('Created new person:', person);
+        jsonData.personCreated = true;
+        jsonData.personId = person.id;
+        jsonData.status += 'PERSON_CREATED ';
+        const modifiedPersonDict = removeProtectedFieldsFromPerson(person);
+        const personKeys = Object.keys(modifiedPersonDict);
+        const personValues = Object.values(modifiedPersonDict);
+        for (let i = 0; i < personKeys.length; i++) {
+          jsonData[personKeys[i]] = personValues[i];
+        }
+      } else {
+        jsonData.displayErrorMessage = true;
+        jsonData.personCreated = false;
+        jsonData.status += 'canAddPerson-PERMISSION_DENIED ';
+        jsonData.success = false;
       }
     } else if (shouldUpdatePerson) {
-      personChangeDict.id = personId;
-      // console.log('Updating person:', personChangeDict);
-      const person = await savePerson(personChangeDict);
-      jsonData.personUpdated = true;
-      jsonData.personId = person.id;
-      jsonData.status += 'PERSON_UPDATED ';
-      const modifiedPersonDict = removeProtectedFieldsFromPerson(person);
-      const personKeys = Object.keys(modifiedPersonDict);
-      const personValues = Object.values(modifiedPersonDict);
-      for (let i = 0; i < personKeys.length; i++) {
-        jsonData[personKeys[i]] = personValues[i];
+      if (canEditPersonAnyone) {
+        personChangeDict.id = personId;
+        // console.log('Updating person:', personChangeDict);
+        const person = await savePerson(personChangeDict);
+        jsonData.personUpdated = true;
+        jsonData.personId = person.id;
+        jsonData.status += 'PERSON_UPDATED ';
+        const modifiedPersonDict = removeProtectedFieldsFromPerson(person);
+        const personKeys = Object.keys(modifiedPersonDict);
+        const personValues = Object.values(modifiedPersonDict);
+        for (let i = 0; i < personKeys.length; i++) {
+          jsonData[personKeys[i]] = personValues[i];
+        }
+      } else {
+        jsonData.displayErrorMessage = true;
+        jsonData.personUpdated = false;
+        jsonData.status += 'canEditPersonAnyone-PERMISSION_DENIED ';
+        jsonData.success = false;
       }
     }
   } catch (err) {
     console.error('Error while saving person:', err);
+    jsonData.displayErrorMessage = true;
     jsonData.status += err.message;
     jsonData.success = false;
     jsonData.updateErrors.push('Missing required field: emailPersonal');
@@ -212,13 +250,20 @@ exports.personSave = async (request, response) => {
   try {
     if (personId >= 0 && teamId >= 0 && jsonData.personCreated) {
       // Add the person to the team
-      const teamMemberChangeDict = {
-        teamMemberFirstName,
-        teamMemberLastName,
-        teamName,
-      };
-      await updateOrCreateTeamMember(personId, teamId, teamMemberChangeDict);
-      jsonData.addPersonToTeamSuccessful = true;
+      if (canAddTeamMemberAnyTeam) {
+        const teamMemberChangeDict = {
+          teamMemberFirstName,
+          teamMemberLastName,
+          teamName,
+        };
+        await updateOrCreateTeamMember(personId, teamId, teamMemberChangeDict);
+        jsonData.addPersonToTeamSuccessful = true;
+      } else {
+        jsonData.displayErrorMessage = true;
+        jsonData.addPersonToTeamSuccessful = false;
+        jsonData.status += 'canAddTeamMemberAnyTeam-PERMISSION_DENIED ';
+        jsonData.success = false;
+      }
     }
   } catch (err) {
     console.error('Error while adding person to team:', err);
@@ -407,12 +452,16 @@ exports.getAuth = async (req, res) => {
   const isAuthenticated = req.isAuthenticated();
   const personId = await getPersonIdBySessionId(req.sessionID || 0);
   const person = personId ? await findPersonById(personId || 0) : undefined;
-  const loggedInPersonIsAdmin = await checkIsAdmin(req);
+  const accessRights = getAccessRightsForPerson(person);
+  // Feb 2025 See the evolving permissions plan: https://docs.google.com/spreadsheets/d/1xKRFzOb7MV8aM-O4s1_IBtu2NYgTM67vEPhoKxupkCc/edit?gid=257349954#gid=257349954
+  // Replacing checkIsAdmin with /controllers/personController.js getViewerAccessRights and personCanSeeOrDo
+  // const loggedInPersonIsAdmin = await checkIsAdmin(req);
   console.log('test top in getAuth isAuthenticated: ', isAuthenticated, personId);
 
   return res.json({
+    accessRights,
     isAuthenticated,
-    loggedInPersonIsAdmin,
+    // loggedInPersonIsAdmin,
     person,
     personId,
   });
