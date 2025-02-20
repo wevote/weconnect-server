@@ -1,6 +1,39 @@
 // weconnect-server/controllers/dataTransformationUtils.js
 const { convertToInteger } = require('../utils/convertToInteger');
 
+function extractSearchParamsFromIncomingParams (queryParams, fieldsAccepted = {}) {
+  const updateDict = {};
+  console.log('==== extractSearchParamsFromIncomingParams queryParams:', queryParams, ', fieldsAccepted:', fieldsAccepted);
+  Array.from(queryParams.entries()).forEach(([key, value]) => {
+    console.log('==== key:', key, ', value:', value);
+    let thisFieldAccepted = false;
+    try {
+      if (fieldsAccepted && fieldsAccepted.includes(key)) {
+        thisFieldAccepted = true;
+      } else {
+        console.log('==== fieldsAccepted.includes did not find key: ', key);
+      }
+    } catch (error) {
+      // console.error('Error checking if field is accepted:', error);
+      if (fieldsAccepted && key in fieldsAccepted) {
+        // NEW WAY
+        console.log('==== *** NEW WAY worked: ', key);
+        thisFieldAccepted = true;
+      } else {
+        console.log('==== *** NEW WAY undefined: ', key);
+      }
+    }
+    if (thisFieldAccepted) {
+      updateDict[key] = value;
+      console.log('==== *** field accepted: ', key);
+    } else {
+      console.log('==== *** field not accepted: ', key);
+    }
+  });
+  console.log('==== extractSearchParamsFromIncomingParams updateDict:', updateDict);
+  return updateDict;
+}
+
 function extractQuestionAnswersFromIncomingParams (queryParams) {
   const updateDict = {};
   let questionId = -1;
@@ -98,6 +131,7 @@ function extractVariablesToChangeFromIncomingParams (queryParams, fieldsAccepted
 }
 
 module.exports = {
+  extractSearchParamsFromIncomingParams,
   extractQuestionAnswersFromIncomingParams,
   extractVariablesToChangeFromIncomingParams,
 }; // Export the functions

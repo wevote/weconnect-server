@@ -32,15 +32,15 @@ model Person {
   emailVerificationToken String?
   emailVerified          Boolean?
 
-  // bluesky       String?
-  // facebookUrl   String?
-  // githubUrl     String?
-  // jazzHrUrl     String?
-  // linkedInUrl   String?
-  // portfolioUrl  String?
-  // snapchat      String?
+  bluesky       String?
+  facebookUrl   String?
+  githubUrl     String?
+  jazzHrUrl     String?
+  linkedInUrl   String?
+  portfolioUrl  String?
+  snapchat      String?
   // tokens        Json?
-  // twitch        String?
+  twitch        String?
   twitterHandle String?
   websiteUrl    String?
 
@@ -57,6 +57,11 @@ model Person {
   dateStarted               DateTime?
   /// This person has admin rights
   isAdmin                   Boolean?
+  isHRAdmin                 Boolean?
+  isHROfferAdmin            Boolean?
+  /// Has HR Generalist rights
+  isHRGeneralist1           Boolean?
+  isHRGeneralist2           Boolean?
   /// Has hiring manager rights
   isHiringManager           Boolean?
   isIntern                  Boolean?
