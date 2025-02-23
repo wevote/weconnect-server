@@ -4,6 +4,12 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
+const TEAM_ACCESS_RIGHTS_OPTIONS = [
+  'canAddTeamMemberThisTeam',
+  'canEditPersonThisTeam', 'canEditTeamThisTeam',
+  'canRemoveTeamMemberThisTeam',
+];
+
 const TEAM_FIELDS_ACCEPTED = [
   'description',
   'meetingDay',
@@ -142,6 +148,66 @@ function updateOrCreateTeamMember (personId, teamId, updateDict) {
   }
 }
 
+// These are the permissions this signed in person can perform on data like: people or team records
+const getTeamAccessRightsForPerson = async (person) => {
+  const teamsAccessRightsDict = {}; // key: teamId, value: accessRightsDict
+  if (!person || !person.id) {
+    console.error('Undefined person in getTeamAccessRightsForPerson');
+    return teamsAccessRightsDict;
+  }
+  // Retrieve all teams where this person has TeamMember.isTeamAdmin and TeamMember.statusIsActiveInTeam
+  const teamMemberList = await prisma.teamMember.findMany({
+    where: {
+      isTeamAdmin: true,
+      personId: person.id,
+      statusIsActiveInTeam: true,
+    },
+  });
+  // console.log('getTeamAccessRightsForPerson teamMemberList:', teamMemberList);
+  for (let teamIndex = 0; teamIndex < teamMemberList.length; teamIndex++) {
+    const accessRightsDict = {};
+    const teamMember = teamMemberList[teamIndex];
+    // console.log('getTeamAccessRightsForPerson teamMember:', teamMember);
+    // Add all ACCESS_RIGHTS_OPTIONS to the accessRightsDict with false values
+    for (let i = 0; i < TEAM_ACCESS_RIGHTS_OPTIONS.length; i++) {
+      accessRightsDict[TEAM_ACCESS_RIGHTS_OPTIONS[i]] = false;
+    }
+    // If teamMember is a team admin, set all access rights to true
+    if (teamMember.isTeamAdmin && teamMember.statusIsActiveInTeam) {
+      for (let i = 0; i < TEAM_ACCESS_RIGHTS_OPTIONS.length; i++) {
+        accessRightsDict[TEAM_ACCESS_RIGHTS_OPTIONS[i]] = true;
+      }
+    }
+    // console.log('getTeamAccessRightsForPerson accessRightsDict:', accessRightsDict);
+    teamsAccessRightsDict[teamMember.teamId] = accessRightsDict;
+  }
+  // console.log('getTeamAccessRightsForPerson teamsAccessRightsDict:', teamsAccessRightsDict);
+  return teamsAccessRightsDict;
+};
+
+// We assemble a dictionary so we can see who is active in each team
+const getPersonIdsByTeamDict = async () => {
+  const personIdsByTeamId = {}; // key: teamId, value: list of personIds active in that team
+  // Retrieve all teams where this person has TeamMember.isTeamAdmin and TeamMember.statusIsActiveInTeam
+  const teamMemberList = await prisma.teamMember.findMany({
+    where: {
+      statusIsActiveInTeam: true,
+    },
+  });
+  // console.log('getTeamAccessRightsForPerson teamMemberList:', teamMemberList);
+  for (let teamIndex = 0; teamIndex < teamMemberList.length; teamIndex++) {
+    const teamMember = teamMemberList[teamIndex];
+    if (!(teamMember.teamId in personIdsByTeamId)) {
+      personIdsByTeamId[teamMember.teamId] = [];
+    }
+    if (!(teamMember.personId in personIdsByTeamId[teamMember.teamId])) {
+      personIdsByTeamId[teamMember.teamId].push(teamMember.personId);
+    }
+  }
+  // console.log('getPersonIdsByTeamDict personIdsByTeamId:', personIdsByTeamId);
+  return personIdsByTeamId;
+};
+
 module.exports = {
   createTeam,
   createTeamMember,
@@ -151,6 +217,8 @@ module.exports = {
   findTeamById,
   findTeamListByParams,
   findTeamMemberListByParams,
+  getPersonIdsByTeamDict,
+  getTeamAccessRightsForPerson,
   removeProtectedFieldsFromTeam,
   saveTeam,
   TEAM_FIELDS_ACCEPTED,
