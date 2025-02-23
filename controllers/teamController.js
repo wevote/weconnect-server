@@ -2,7 +2,7 @@
 const { findPersonListByIdList } = require('../models/personModel');
 const { findTeamMemberListByParams } = require('../models/teamModel');
 
-// Parallel to weconnect-client viewerCanSeeOrDo
+// Parallel to weconnect-client viewerCanSeeOrDoForThisTeam
 async function viewerCanSeeOrDoForThisTeam (accessRightName, teamId, teamAccessRights) {
   // console.log('viewerCanSeeOrDoForThisTeam Checking access right for teamId:', teamId, ', accessRightName:', accessRightName, ', teamAccessRights: ', teamAccessRights);
   if (teamAccessRights && (teamId in teamAccessRights) && teamAccessRights[teamId] && teamAccessRights[teamId][accessRightName]) {
@@ -13,6 +13,7 @@ async function viewerCanSeeOrDoForThisTeam (accessRightName, teamId, teamAccessR
   }
 }
 
+// Parallel to weconnect-client viewerCanSeeOrDoForThisTeamMember
 async function viewerCanSeeOrDoForThisTeamMember (accessRightName, personId, teamAccessRights, personIdsByTeam) {
   // console.log('viewerCanSeeOrDoForThisTeamMember Checking access right for personId:', personId, ', accessRightName:', accessRightName, ', personIdsByTeam: ', personIdsByTeam);
   for (let i = 0; i < Object.entries(personIdsByTeam).length; i++) {
