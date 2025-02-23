@@ -1,9 +1,13 @@
 // weconnect-server/controllers/personController.js
 
 const { findPersonById, getAccessRightsForPerson } = require('../models/personModel');
+const { getPersonIdsByTeamDict, getTeamAccessRightsForPerson } = require('../models/teamModel');
 const { getPersonIdBySessionId } = require('../models/clientSessionModel');
 
-async function getViewerAccessRights (request) {
+async function getAllAccessRightsForPerson (request) {
+  let accessRights = {};
+  let personIdsByTeam = {}; // key: teamId, value: list of personIds active in the team
+  let teamAccessRights = {};
   let isAuthenticated = false;
   try {
     isAuthenticated = request.isAuthenticated();
@@ -11,20 +15,22 @@ async function getViewerAccessRights (request) {
     console.error('Error in personCanSeeOrDo isAuthenticated: ', error);
     return false;
   }
-  const personId = await getPersonIdBySessionId(request.sessionID || 0);
-  const person = personId ? await findPersonById(personId || 0) : undefined;
-  if (!person) {
-    console.error('Undefined person in getViewerAccessRights isAuthenticated: ', isAuthenticated, ', request: ', request);
+  const viewerPersonId = await getPersonIdBySessionId(request.sessionID || 0);
+  const viewerPerson = viewerPersonId ? await findPersonById(viewerPersonId || 0) : undefined;
+  if (!viewerPerson) {
+    console.error('Undefined viewerPerson in getAllAccessRightsForPerson isAuthenticated: ', isAuthenticated, ', request: ', request);
     return {};
   } else {
-    const accessRights = getAccessRightsForPerson(person);
-    if (accessRights) {
-      return accessRights;
-    } else {
-      console.error('Undefined accessRights for person: ', person);
-      return {};
-    }
+    accessRights = getAccessRightsForPerson(viewerPerson);
+    teamAccessRights = await getTeamAccessRightsForPerson(viewerPerson);
+    personIdsByTeam = await getPersonIdsByTeamDict();
   }
+  return {
+    accessRights,
+    personIdsByTeam,
+    teamAccessRights,
+    isAuthenticated,
+  };
 }
 
 // Parallel to weconnect-client viewerCanSeeOrDo
@@ -55,6 +61,6 @@ const displayFullNamePreferred = (person) => {
 
 module.exports = {
   displayFullNamePreferred,
-  getViewerAccessRights,
+  getAllAccessRightsForPerson,
   personCanSeeOrDo,
 };

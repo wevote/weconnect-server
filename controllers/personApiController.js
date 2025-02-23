@@ -2,14 +2,15 @@
 const bcrypt = require('@node-rs/bcrypt');
 const validator = require('validator');
 const passport = require('passport');
-const { getViewerAccessRights, personCanSeeOrDo } = require('./personController');
+const { getAllAccessRightsForPerson, personCanSeeOrDo } = require('./personController');
 const {
   createPerson, findPersonListByParams, getAccessRightsForPerson,
   PERSON_FIELDS_ACCEPTED, PERSON_FIELDS_ACCEPTED_ADMIN,
   removeProtectedFieldsFromPerson, findOnePerson, findPersonById, savePerson,
-} = require('../models/personModel'); // getTeamsAccessRightsForPerson
+} = require('../models/personModel');
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils'); // extractSearchParamsFromIncomingParams
-const { updateOrCreateTeamMember } = require('../models/teamModel');
+const { viewerCanSeeOrDoForThisTeam, viewerCanSeeOrDoForThisTeamMember } = require('./teamController');
+const { getTeamAccessRightsForPerson, updateOrCreateTeamMember } = require('../models/teamModel');
 const { convertToInteger } = require('../utils/convertToInteger');
 const { sendEmailValidationCode } = require('./sendEmailController');
 const { createSessionRecord, getPersonIdBySessionId, deleteOneSessionRecord } = require('../models/clientSessionModel');
@@ -126,7 +127,7 @@ exports.personRetrieve = async (request, response) => {
   response.json(jsonData);
 };
 
-// Replacing checkIsAdmin with /controllers/personController.js getViewerAccessRights and personCanSeeOrDo
+// Replacing checkIsAdmin with /controllers/personController.js getAllAccessRightsForPerson and personCanSeeOrDo
 async function checkIsAdmin (req) {
   const isAuthenticated = req.isAuthenticated();
   const personId = await getPersonIdBySessionId(req.sessionID || 0);
@@ -146,12 +147,9 @@ exports.personSave = async (request, response) => {
   let shouldCreatePerson = false;
   let shouldUpdatePerson = false;
   // const userIsAdmin = await checkIsAdmin(request);
-  const viewerAccessRights = await getViewerAccessRights(request);
-  // console.log('personSave viewerAccessRights: ', viewerAccessRights);
-  const canAddPerson = await personCanSeeOrDo('canAddPerson', viewerAccessRights);
-  const canAddTeamMemberAnyTeam = await personCanSeeOrDo('canAddTeamMemberAnyTeam', viewerAccessRights);
-  const canEditPermissionsAnyone = await personCanSeeOrDo('canEditPermissionsAnyone', viewerAccessRights);
-  const canEditPersonAnyone = await personCanSeeOrDo('canEditPersonAnyone', viewerAccessRights);
+  const results = await getAllAccessRightsForPerson(request);
+  const { accessRights, personIdsByTeam, teamAccessRights } = results;
+  // console.log('personSave accessRights: ', accessRights);
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
   let personId = convertToInteger(queryParams.get('personId'));
@@ -159,10 +157,20 @@ exports.personSave = async (request, response) => {
   const teamName = queryParams.get('teamName');
   const teamMemberFirstName = queryParams.get('firstNameToBeSaved');
   const teamMemberLastName = queryParams.get('lastNameToBeSaved');
+
+  // See if this viewer has accessRights
+  const canAddPerson = await personCanSeeOrDo('canAddPerson', accessRights);
+  const canAddTeamMemberAnyTeam = await personCanSeeOrDo('canAddTeamMemberAnyTeam', accessRights);
+  const canEditPermissionsAnyone = await personCanSeeOrDo('canEditPermissionsAnyone', accessRights);
+  const canEditPersonAnyone = await personCanSeeOrDo('canEditPersonAnyone', accessRights);
+  // See if this person is in a team this viewer has teamAccessRights for.
+  const canEditPersonThisTeam = await viewerCanSeeOrDoForThisTeamMember('canEditPersonThisTeam', personId, teamAccessRights, personIdsByTeam);
+  const canEditPerson = canEditPersonAnyone || canEditPersonThisTeam;
   const personChangeDict = extractVariablesToChangeFromIncomingParams(
     queryParams,
-    canEditPermissionsAnyone ? PERSON_FIELDS_ACCEPTED_ADMIN : PERSON_FIELDS_ACCEPTED,
+    canEditPerson ? PERSON_FIELDS_ACCEPTED_ADMIN : PERSON_FIELDS_ACCEPTED,
   );
+
   // Set up the default JSON response.
   const jsonData = {
     addPersonToTeamSuccessful: false,
@@ -220,7 +228,7 @@ exports.personSave = async (request, response) => {
         jsonData.success = false;
       }
     } else if (shouldUpdatePerson) {
-      if (canEditPersonAnyone) {
+      if (canEditPerson) {
         personChangeDict.id = personId;
         // console.log('Updating person:', personChangeDict);
         const person = await savePerson(personChangeDict);
@@ -236,7 +244,7 @@ exports.personSave = async (request, response) => {
       } else {
         jsonData.displayErrorMessage = true;
         jsonData.personUpdated = false;
-        jsonData.status += 'canEditPersonAnyone-PERMISSION_DENIED ';
+        jsonData.status += 'canEditPersonAnyone-OR-canEditPersonThisTeam-PERMISSION_DENIED ';
         jsonData.success = false;
       }
     }
@@ -453,10 +461,11 @@ exports.getAuth = async (req, res) => {
   const personId = await getPersonIdBySessionId(req.sessionID || 0);
   const person = personId ? await findPersonById(personId || 0) : undefined;
   const accessRights = getAccessRightsForPerson(person);
+  const teamAccessRights = await getTeamAccessRightsForPerson(person);
   // Feb 2025 See the evolving permissions plan: https://docs.google.com/spreadsheets/d/1xKRFzOb7MV8aM-O4s1_IBtu2NYgTM67vEPhoKxupkCc/edit?gid=257349954#gid=257349954
-  // Replacing checkIsAdmin with /controllers/personController.js getViewerAccessRights and personCanSeeOrDo
+  // Replacing checkIsAdmin with /controllers/personController.js getAllAccessRightsForPerson and personCanSeeOrDo
   // const loggedInPersonIsAdmin = await checkIsAdmin(req);
-  console.log('test top in getAuth isAuthenticated: ', isAuthenticated, personId);
+  // console.log('test top in getAuth isAuthenticated: ', isAuthenticated, personId);
 
   return res.json({
     accessRights,
@@ -464,5 +473,6 @@ exports.getAuth = async (req, res) => {
     // loggedInPersonIsAdmin,
     person,
     personId,
+    teamAccessRights,
   });
 };

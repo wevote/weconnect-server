@@ -36,18 +36,12 @@ const ACCESS_RIGHTS_OPTIONS = [
   'canViewSystemSettings', 'canViewTeamMembersAnyTeam',
 ];
 
-// const TEAM_ACCESS_RIGHTS_OPTIONS = [
-//   'canAddTeamMemberThisTeam',
-//   'canEditPersonThisTeam', 'canEditTeamThisTeam',
-//   'canRemoveTeamMemberThisTeam',
-// ];
-
 const getAccessRightsForPerson = (person) => {
-  if (!person) {
-    console.error('Undefined person in getAccessRightsForPerson');
-    return {};
-  }
   const accessRightsDict = {};
+  if (!person || !person.id) {
+    console.error('Undefined person in getAccessRightsForPerson');
+    return accessRightsDict;
+  }
   // Add all ACCESS_RIGHTS_OPTIONS to the accessRightsDict with false values
   for (let i = 0; i < ACCESS_RIGHTS_OPTIONS.length; i++) {
     accessRightsDict[ACCESS_RIGHTS_OPTIONS[i]] = false;
@@ -88,31 +82,6 @@ const getAccessRightsForPerson = (person) => {
     if (person.isHiringManager) {
       accessRightsDict.canAddPerson = true;
       accessRightsDict.canAddPersonDataAnyone = true;
-    }
-  }
-  return accessRightsDict;
-};
-
-// const getTeamAccessRights = (person) => {
-//   const accessRightsDict = {
-//     canAddPersonThisTeam: false,
-//     canEditPersonThisTeam: false, // edit
-//     canAddTeamMemberThisTeam: false,
-//     canRemoveTeamMemberThisTeam: false,
-//   };
-//   return accessRightsDict;
-// };
-
-const getTeamsAccessRightsForPerson = (person) => {
-  const accessRightsDict = {};
-  // Add all ACCESS_RIGHTS_OPTIONS to the accessRightsDict with false values
-  for (let i = 0; i < ACCESS_RIGHTS_OPTIONS.length; i++) {
-    accessRightsDict[ACCESS_RIGHTS_OPTIONS[i]] = false;
-  }
-  // If person is an admin, set all access rights to true
-  if (person.isAdmin) {
-    for (let i = 0; i < ACCESS_RIGHTS_OPTIONS.length; i++) {
-      accessRightsDict[ACCESS_RIGHTS_OPTIONS[i]] = true;
     }
   }
   return accessRightsDict;
@@ -328,7 +297,6 @@ module.exports = {
   findPersonListByIdList,
   findPersonListByParams,
   getAccessRightsForPerson,
-  getTeamsAccessRightsForPerson,
   isoFutureDateDays,
   removeProtectedFieldsFromPerson,
   savePerson,

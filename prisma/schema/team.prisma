@@ -42,10 +42,12 @@ model TeamMember {
   /// Id of the person on the team
   personId                   Int
   teamName                   String?
+  /// Has admin rights for this team, and can edit team members
+  isTeamAdmin                Boolean?
   /// Can run the team meetings on their own
   isTeamLead                 Boolean?
   /// True if participating with this team
-  statusIsActive             Boolean   @default(true)
+  statusIsActiveInTeam       Boolean   @default(true)
   /// New to the team and going through onboarding process
   statusIsOnboardingBasic    Boolean?
   /// Has some advanced onboarding to review
@@ -55,8 +57,10 @@ model TeamMember {
   statusOfferLetterSigned    Boolean?
   /// Date they joined this team
   dateStartDate              DateTime?
-  /// Date they ended service, or for interns, the planned end date
+  /// Date they ended service
   dateEndDate                DateTime?
+  /// For interns, the planned end date
+  dateEndDatePlanned         DateTime?
   /// Id of the team
   teamId                     Int
   teamMemberFirstName        String?
@@ -90,25 +94,25 @@ model TeamRole {
 }
 
 model TeamRoleToPersonLink {
-  id             Int       @id @default(autoincrement())
+  id                   Int       @id @default(autoincrement())
   /// Id of the person who was on the team
-  personId       Int
-  teamId         Int
-  teamRoleId     Int
-  teamRoleName   String?
+  personId             Int
+  teamId               Int
+  teamRoleId           Int
+  teamRoleName         String?
   /// True if the person is currently in this team role
-  statusIsActive Boolean   @default(true)
+  statusIsActiveInTeam Boolean   @default(true)
   /// Date they started service
-  dateStartDate  DateTime?
+  dateStartDate        DateTime?
   /// Date they ended service
-  dateEndDate    DateTime?
+  dateEndDate          DateTime?
 }
 
 model TeamToTeamRoleLink {
-  id             Int     @id @default(autoincrement())
-  teamId         Int
-  teamRoleId     Int
-  teamRoleName   String?
+  id                   Int     @id @default(autoincrement())
+  teamId               Int
+  teamRoleId           Int
+  teamRoleName         String?
   /// True if this team is using this role right now
-  statusIsActive Boolean @default(true)
+  statusIsActiveInTeam Boolean @default(true)
 }

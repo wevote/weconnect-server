@@ -141,7 +141,7 @@ weconnectServer.use((req, res, next) => {
   } else if (req.user &&
     (req.path === '/account' || req.path.match(/^\/api/))) {
     req.session.returnTo = req.originalUrl;
-    console.log('test in weconnect-server isAuthenticated: ', req.isAuthenticated());
+    // console.log('test in weconnect-server isAuthenticated: ', req.isAuthenticated());
   }
   next();
 });
