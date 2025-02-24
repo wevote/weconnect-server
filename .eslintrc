@@ -5,6 +5,9 @@
     "mocha": true,
     "es6": true
   },
+  "parserOptions": {
+    "ecmaVersion": "latest"
+  },
   "plugins": ["chai-friendly"],
   "rules": {
     "array-bracket-spacing": [1, "never"],

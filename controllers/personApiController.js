@@ -8,8 +8,8 @@ const {
   PERSON_FIELDS_ACCEPTED, PERSON_FIELDS_ACCEPTED_ADMIN,
   removeProtectedFieldsFromPerson, findOnePerson, findPersonById, savePerson,
 } = require('../models/personModel');
-const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils'); // extractSearchParamsFromIncomingParams
-const { viewerCanSeeOrDoForThisTeam, viewerCanSeeOrDoForThisTeamMember } = require('./teamController');
+const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
+const { viewerCanSeeOrDoForThisTeamMember } = require('./teamController');
 const { getTeamAccessRightsForPerson, updateOrCreateTeamMember } = require('../models/teamModel');
 const { convertToInteger } = require('../utils/convertToInteger');
 const { sendEmailValidationCode } = require('./sendEmailController');
@@ -133,7 +133,8 @@ async function checkIsAdmin (req) {
   const personId = await getPersonIdBySessionId(req.sessionID || 0);
   const person = personId ? await findPersonById(personId || 0) : undefined;
   if (!person) {
-    console.error('Undefined person in checkIsAdmin isAuthenticated: ', isAuthenticated, ', req: ', req);
+    console.error('Undefined person in checkIsAdmin isAuthenticated: ', isAuthenticated);
+    return false;
   }
   // superusers allow access to grant admin rights, in a blank DB, or after a misconfiguration.
   const superUsers = ['dale.mcgrew@wevote.us', 'steve.podell@wevote.us']; // Feel free to revise
@@ -146,7 +147,30 @@ async function checkIsAdmin (req) {
 exports.personSave = async (request, response) => {
   let shouldCreatePerson = false;
   let shouldUpdatePerson = false;
+
   // const userIsAdmin = await checkIsAdmin(request);
+  //
+  // const searchFragment = request.url.substring(request.url.indexOf('?') + 1);
+  // const urlSearchParams = new URLSearchParams(searchFragment);
+  // const params = Object.fromEntries(urlSearchParams.entries());
+  //
+  // let personId = convertToInteger(params?.id || params.personId);
+  // const teamName = params?.teamName;
+  // const teamIdText = params?.teamId || 0;
+  // const teamId = convertToInteger(teamIdText) || 0;
+  // const teamMemberFirstName = params?.firstNameToBeSaved;
+  // const teamMemberLastName = params?.lastNameToBeSaved;
+  // const personChangeDict = extractVariablesToChangeFromIncomingParamsObject(
+  //   params,
+  //   userIsAdmin ? PERSON_FIELDS_ACCEPTED_ADMIN : PERSON_FIELDS_ACCEPTED,
+  // );
+  // if (personChangeDict.password) {
+  //   personChangeDict.password = await bcrypt.hash(personChangeDict.password, 10);
+  // }
+
+
+
+  const userIsAdmin = await checkIsAdmin(request);
   const results = await getAllAccessRightsForPerson(request);
   const { accessRights, personIdsByTeam, teamAccessRights } = results;
   // console.log('personSave accessRights: ', accessRights);
@@ -161,6 +185,7 @@ exports.personSave = async (request, response) => {
   // See if this viewer has accessRights
   const canAddPerson = await personCanSeeOrDo('canAddPerson', accessRights);
   const canAddTeamMemberAnyTeam = await personCanSeeOrDo('canAddTeamMemberAnyTeam', accessRights);
+  // eslint-disable-next-line no-unused-vars
   const canEditPermissionsAnyone = await personCanSeeOrDo('canEditPermissionsAnyone', accessRights);
   const canEditPersonAnyone = await personCanSeeOrDo('canEditPersonAnyone', accessRights);
   // See if this person is in a team this viewer has teamAccessRights for.
@@ -170,14 +195,16 @@ exports.personSave = async (request, response) => {
     queryParams,
     canEditPerson ? PERSON_FIELDS_ACCEPTED_ADMIN : PERSON_FIELDS_ACCEPTED,
   );
-
+  if (personChangeDict.password) {
+    personChangeDict.password = await bcrypt.hash(personChangeDict.password, 10);
+  }
   // Set up the default JSON response.
   const jsonData = {
     addPersonToTeamSuccessful: false,
     personCreated: false,
     personId: -1,
     personUpdated: false,
-    // userIsAdmin,
+    userIsAdmin,                    // Temp re-add 2/23/25
     status: '',
     success: true,
     updateErrors: [],
@@ -350,6 +377,7 @@ exports.signup = async (req, res) => {
       errors: validationErrors,
       personId: -1,
       signedIn: false,
+      person: '',
     });
   }
 };
@@ -375,6 +403,7 @@ exports.login = async (req, res, next) => {
         name: '',
         personId: -1,
         signedIn: false,
+        person: '',
       });
     }
     req.logIn(authenticatedPerson, (err2) => {
@@ -386,20 +415,21 @@ exports.login = async (req, res, next) => {
           name: '',
           personId: -1,
           signedIn: false,
+          person: '',
         });
       }
 
-
-      // Unsure about req.sessionID ... "67iyDTjJjok9Daw2QLZ1jf6Hmo0BWAA3"
+      console.log('login createSessionRecord req.sessionID', req.sessionID);
       createSessionRecord(authenticatedPerson.id, req.sessionID, req.useragent.source);
+      const filteredPerson = removeProtectedFieldsFromPerson(authenticatedPerson);
       res.json({
-        emailVerified: authenticatedPerson.emailVerified,
+        emailVerified: filteredPerson.emailVerified,
         errors: [],
-        name: authenticatedPerson.name,
-        personId: authenticatedPerson.id,
+        name: filteredPerson.name,
+        personId: filteredPerson.id,
         signedIn: true,
+        person: filteredPerson,
       });
-      console.log('test at bottom in login isAuthenticated: ', req.isAuthenticated());
     });
   })(req, res, next);
 };
@@ -423,6 +453,7 @@ exports.verifyEmailCode = async (req, res) => {
   if (parseInt(code) === parseInt(person.emailVerificationToken)) {
     console.log('verifyEmailCode token matched code');
     const person2 = await savePerson({ id: personId, emailVerified: true });
+    await createSessionRecord(personId, req.sessionID, req.useragent.source);   // TODO Test Feb 13 1pm
     return res.json({
       personId: person2.personId,
       emailVerified: person2.emailVerified,
@@ -460,17 +491,21 @@ exports.getAuth = async (req, res) => {
   const isAuthenticated = req.isAuthenticated();
   const personId = await getPersonIdBySessionId(req.sessionID || 0);
   const person = personId ? await findPersonById(personId || 0) : undefined;
+  const emailVerified = person && person.emailVerified;
+  const loggedInPersonIsAdmin = await checkIsAdmin(req);    // Temp re-add 2/23/25
   const accessRights = getAccessRightsForPerson(person);
   const teamAccessRights = await getTeamAccessRightsForPerson(person);
   // Feb 2025 See the evolving permissions plan: https://docs.google.com/spreadsheets/d/1xKRFzOb7MV8aM-O4s1_IBtu2NYgTM67vEPhoKxupkCc/edit?gid=257349954#gid=257349954
   // Replacing checkIsAdmin with /controllers/personController.js getAllAccessRightsForPerson and personCanSeeOrDo
   // const loggedInPersonIsAdmin = await checkIsAdmin(req);
   // console.log('test top in getAuth isAuthenticated: ', isAuthenticated, personId);
+  // Feb 23, 2025, I put some of this stuff back in temporarily, so my client side changes will continue to function
 
   return res.json({
+    emailVerified,
     accessRights,
     isAuthenticated,
-    // loggedInPersonIsAdmin,
+    loggedInPersonIsAdmin,        // Temp re-add 2/23/25
     person,
     personId,
     teamAccessRights,
