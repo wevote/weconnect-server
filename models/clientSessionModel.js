@@ -56,7 +56,7 @@ async function createSessionRecord (personId, sessionID, userAgent) {
         dateExpires,
       },
     });
-    console.log('session added or updated: ', session);
+    console.log('session added or updated: ', session.id, session.sessionID);
   } catch (e) {
     console.log('session NOT added: ', e);
   }

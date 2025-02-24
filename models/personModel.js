@@ -31,6 +31,7 @@ const PERSON_FIELDS_ACCEPTED = [
   'jobTitle',
   'lastName',
   'location',
+  'password',
   'stateCode',
   'zipCode',
 ];

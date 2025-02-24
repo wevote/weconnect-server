@@ -49,6 +49,17 @@ function extractQuestionAnswersFromIncomingParams (queryParams) {
   return updateDict;
 }
 
+function extractVariablesToChangeFromIncomingParamsObject (queryParamsObj, fieldsAccepted = {}) {
+  const updateDict = {};
+  Object.keys(queryParamsObj).forEach((key) => {
+    const cleanKey = key.replace('ToBeSaved', '');
+    if (fieldsAccepted.indexOf(cleanKey) > -1) {
+      updateDict[cleanKey] = queryParamsObj[key];
+    }
+  });
+  return updateDict;
+}
+
 function extractVariablesToChangeFromIncomingParams (queryParams, fieldsAccepted = {}) {
   let keyWithoutToBeSaved = '';
   let thisFieldAccepted = false;
@@ -151,5 +162,6 @@ function extractVariablesToChangeFromIncomingParams (queryParams, fieldsAccepted
 module.exports = {
   extractSearchParamsFromIncomingParams,
   extractQuestionAnswersFromIncomingParams,
+  extractVariablesToChangeFromIncomingParamsObject,
   extractVariablesToChangeFromIncomingParams,
 }; // Export the functions

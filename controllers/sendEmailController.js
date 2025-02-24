@@ -28,8 +28,8 @@ const readInHtmlFile = (recipientEmail, weVoteURL, code, unsubscribeEmail) => {
   return newHtml;
 };
 
-exports.sendEmailValidationCode = async (person, emailType) => {
-  console.log(person.lastName, emailType);
+exports.sendEmailValidationCode = async (person) => {
+  console.log('sendEmailValidationCode lastName: ', person.lastName);
   const code = Math.floor(Math.random() * 900000) + 100000;
   const emailFrom = 'We Vote <info@wevote.us>';
   const emailTo = `${displayFullNamePreferred(person)} <${person.emailPersonal}>`;
