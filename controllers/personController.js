@@ -27,9 +27,10 @@ async function getAllAccessRightsForPerson (request) {
   }
   return {
     accessRights,
+    isAuthenticated,
     personIdsByTeam,
     teamAccessRights,
-    isAuthenticated,
+    viewerPersonId,
   };
 }
 

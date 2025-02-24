@@ -5,6 +5,24 @@ const bcrypt = require('@node-rs/bcrypt');
 
 const prisma = new PrismaClient();
 
+const PERSON_AWAY_FIELDS_ACCEPTED = {
+  awayDescription: 'STRING',
+  awayDescriptionForTeamLeads: 'STRING',
+  dateEnd: 'DATE',
+  dateEndEstimated: 'DATE',
+  dateStart: 'DATE',
+  dateSubmitted: 'DATE',
+  personId: 'INTEGER',
+  reportedByPersonId: 'INTEGER',
+  isLeaveOfAbsence: 'BOOLEAN',
+  isMedicalLeave: 'BOOLEAN',
+  isNonResponsive: 'BOOLEAN',
+  isNotAttending: 'BOOLEAN',
+  isResigned: 'BOOLEAN',
+  isVacation: 'BOOLEAN',
+  isWorkTrip: 'BOOLEAN',
+};
+
 const PERSON_FIELDS_ACCEPTED = [
   'firstName',
   'firstNamePreferred',
@@ -95,6 +113,11 @@ function removeProtectedFieldsFromPerson (person) {
   delete modifiedPerson.passwordResetExpires;
   delete modifiedPerson.passwordResetToken;
   return modifiedPerson;
+}
+
+function removeProtectedFieldsFromPersonAway (personAway) {
+  const modifiedPersonAway = { ...personAway };
+  return modifiedPersonAway;
 }
 
 async function findPersonById (id, includeAllData = false) {
@@ -210,6 +233,18 @@ async function savePerson (person) {
   return updatePerson;
 }
 
+async function savePersonAway (personAway) {
+  // console.log('savePersonAway personAway:', personAway);
+  const updatePersonAway = await prisma.personAway.update({
+    where: {
+      id: personAway.id,
+    },
+    data: personAway,
+  });
+  // console.log(updatePersonAway);
+  return updatePersonAway;
+}
+
 async function updatePersonByPersonId (personId, person) {
   const updatePerson = await prisma.person.update({
     where: {
@@ -277,6 +312,11 @@ async function createPerson (updateDict) {
   return person;
 }
 
+async function createPersonAway (updateDict) {
+  const personAway = await prisma.personAway.create({ data: updateDict });
+  return personAway;
+}
+
 async function comparePassword (person, candidatePassword, cb) {
   try {
     const verified = await bcrypt.verify(candidatePassword, person.password);
@@ -287,10 +327,12 @@ async function comparePassword (person, candidatePassword, cb) {
 }
 
 module.exports = {
+  PERSON_AWAY_FIELDS_ACCEPTED,
   PERSON_FIELDS_ACCEPTED,
   PERSON_FIELDS_ACCEPTED_ADMIN,
   comparePassword,
   createPerson,
+  createPersonAway,
   deleteOne,
   extractPersonVariablesToChange,
   findOnePerson,
@@ -300,6 +342,8 @@ module.exports = {
   getAccessRightsForPerson,
   isoFutureDateDays,
   removeProtectedFieldsFromPerson,
+  removeProtectedFieldsFromPersonAway,
   savePerson,
+  savePersonAway,
   updatePersonByPersonId,
 }; // Export the functions

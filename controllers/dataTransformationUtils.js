@@ -17,7 +17,7 @@ function extractSearchParamsFromIncomingParams (queryParams, fieldsAccepted = {}
       // console.error('Error checking if field is accepted:', error);
       if (fieldsAccepted && key in fieldsAccepted) {
         // NEW WAY
-        console.log('==== *** NEW WAY worked: ', key);
+        // console.log('==== *** NEW WAY worked: ', key);
         thisFieldAccepted = true;
       } else {
         console.log('==== *** NEW WAY undefined: ', key);
@@ -98,6 +98,24 @@ function extractVariablesToChangeFromIncomingParams (queryParams, fieldsAccepted
               updateDict[keyWithoutToBeSaved] = false;
             } else {
               console.log('==== *** expected boolean, but invalid value: ', value);
+            }
+          } else if (fieldsAccepted[keyWithoutToBeSaved] === 'DATE') {
+            // console.log('==== *** DATE: ', value);
+            if (value && value.trim() !== '') {
+              // Parse the date string and create a new Date object
+              const dateObj = new Date(value);
+              // Check if the date is valid
+              if (!Number.isNaN(dateObj.getTime())) {
+                // Format the date as an ISO string (which Prisma can handle)
+                updateDict[keyWithoutToBeSaved] = dateObj.toISOString();
+              } else {
+                console.log('==== *** Invalid date format: ', value);
+                // You might want to handle invalid dates here, e.g., set to null or throw an error
+                updateDict[keyWithoutToBeSaved] = null;
+              }
+            } else {
+              // Handle empty date strings
+              updateDict[keyWithoutToBeSaved] = null;
             }
           } else if (fieldsAccepted[keyWithoutToBeSaved] === 'INTEGER') {
             // console.log('==== *** INTEGER: ', value);

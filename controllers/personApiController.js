@@ -4,16 +4,131 @@ const validator = require('validator');
 const passport = require('passport');
 const { getAllAccessRightsForPerson, personCanSeeOrDo } = require('./personController');
 const {
-  createPerson, findPersonListByParams, getAccessRightsForPerson,
+  createPerson, createPersonAway, findPersonListByParams, getAccessRightsForPerson, PERSON_AWAY_FIELDS_ACCEPTED,
   PERSON_FIELDS_ACCEPTED, PERSON_FIELDS_ACCEPTED_ADMIN,
-  removeProtectedFieldsFromPerson, findOnePerson, findPersonById, savePerson,
+  removeProtectedFieldsFromPerson, removeProtectedFieldsFromPersonAway,
+  findOnePerson, findPersonById, savePerson, savePersonAway,
 } = require('../models/personModel');
+
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { viewerCanSeeOrDoForThisTeamMember } = require('./teamController');
 const { getTeamAccessRightsForPerson, updateOrCreateTeamMember } = require('../models/teamModel');
 const { convertToInteger } = require('../utils/convertToInteger');
 const { sendEmailValidationCode } = require('./sendEmailController');
 const { createSessionRecord, getPersonIdBySessionId, deleteOneSessionRecord } = require('../models/clientSessionModel');
+
+/**
+ * GET /api/v1/person-away-save
+ */
+exports.personAwaySave = async (request, response) => {
+  let shouldCreatePersonAway = false;
+  let shouldUpdatePersonAway = false;
+  const results = await getAllAccessRightsForPerson(request);
+  const { accessRights, personIdsByTeam, teamAccessRights, viewerPersonId } = results;
+  // console.log('personAwaySave accessRights: ', accessRights);
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const queryParams = new URLSearchParams(parsedUrl.search);
+  const personAwayId = convertToInteger(queryParams.get('personAwayId'));
+  const personId = convertToInteger(queryParams.get('personId'));
+
+  // See if this viewer has accessRights
+  const isEditingSelf = viewerPersonId === personId;
+  const canEditPersonAnyone = await personCanSeeOrDo('canEditPersonAnyone', accessRights);
+  // See if this person is in a team this viewer has teamAccessRights for.
+  const canEditPersonThisTeam = await viewerCanSeeOrDoForThisTeamMember('canEditPersonThisTeam', personId, teamAccessRights, personIdsByTeam);
+  const canAddPersonAway = canEditPersonAnyone || canEditPersonThisTeam || isEditingSelf;
+  const canEditPersonAway = canEditPersonAnyone || canEditPersonThisTeam || isEditingSelf;
+  const personAwayChangeDict = extractVariablesToChangeFromIncomingParams(
+    queryParams,
+    PERSON_AWAY_FIELDS_ACCEPTED,
+  );
+  personAwayChangeDict.personId = personId;
+  personAwayChangeDict.reportedByPersonId = viewerPersonId;
+
+  // Set up the default JSON response.
+  const jsonData = {
+    personAwayCreated: false,
+    personAwayId: -1,
+    personId: -1,
+    personAwayUpdated: false,
+    reportedByPersonId: -1,
+    status: '',
+    success: true,
+    updateErrors: [],
+  };
+  try {
+    jsonData.personAwayId = personAwayId;
+    jsonData.personId = personId;
+    jsonData.reportedByPersonId = viewerPersonId;
+    jsonData.success = true;
+    const keys = Object.keys(personAwayChangeDict);
+    const values = Object.values(personAwayChangeDict);
+    for (let i = 0; i < keys.length; i++) {
+      jsonData[keys[i]] = values[i];
+    }
+  } catch (err) {
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+
+  try {
+    if (personAwayId >= 0) {
+      jsonData.status += 'PERSON_AWAY_FOUND ';
+      shouldUpdatePersonAway = true;
+    } else {
+      jsonData.status += 'PERSON_AWAY_TO_BE_CREATED ';
+      shouldCreatePersonAway = true;
+    }
+
+    if (shouldCreatePersonAway) {
+      if (canAddPersonAway) {
+        const personAway = await createPersonAway(personAwayChangeDict);
+        jsonData.personAwayId = personAway.id;
+        // console.log('Created new personAway:', personAway);
+        jsonData.personAwayCreated = true;
+        jsonData.status += 'PERSON_AWAY_CREATED ';
+        const modifiedPersonAwayDict = removeProtectedFieldsFromPersonAway(personAway);
+        const personAwayKeys = Object.keys(modifiedPersonAwayDict);
+        const personAwayValues = Object.values(modifiedPersonAwayDict);
+        for (let i = 0; i < personAwayKeys.length; i++) {
+          jsonData[personAwayKeys[i]] = personAwayValues[i];
+        }
+      } else {
+        jsonData.displayErrorMessage = true;
+        jsonData.personAwayCreated = false;
+        jsonData.status += 'canAddPersonAway-PERMISSION_DENIED ';
+        jsonData.success = false;
+      }
+    } else if (shouldUpdatePersonAway) {
+      if (canEditPersonAway) {
+        personAwayChangeDict.id = personAwayId;
+        // console.log('Updating personAway:', personAwayChangeDict);
+        const personAway = await savePersonAway(personAwayChangeDict);
+        jsonData.personAwayUpdated = true;
+        jsonData.personAwayId = personAway.id;
+        jsonData.status += 'PERSON_AWAY_UPDATED ';
+        const modifiedPersonAwayDict = removeProtectedFieldsFromPersonAway(personAway);
+        const personAwayKeys = Object.keys(modifiedPersonAwayDict);
+        const personAwayValues = Object.values(modifiedPersonAwayDict);
+        for (let i = 0; i < personAwayKeys.length; i++) {
+          jsonData[personAwayKeys[i]] = personAwayValues[i];
+        }
+      } else {
+        jsonData.displayErrorMessage = true;
+        jsonData.personAwayUpdated = false;
+        jsonData.status += 'canEditPersonAnyone-OR-canEditPersonThisTeam-PERMISSION_DENIED ';
+        jsonData.success = false;
+      }
+    }
+  } catch (err) {
+    console.error('Error while saving personAway:', err);
+    jsonData.displayErrorMessage = true;
+    jsonData.status += err.message;
+    jsonData.success = false;
+    jsonData.updateErrors.push('Missing required field: TBD');
+  }
+  response.json(jsonData);
+};
 
 
 /**
@@ -185,8 +300,7 @@ exports.personSave = async (request, response) => {
   // See if this viewer has accessRights
   const canAddPerson = await personCanSeeOrDo('canAddPerson', accessRights);
   const canAddTeamMemberAnyTeam = await personCanSeeOrDo('canAddTeamMemberAnyTeam', accessRights);
-  // eslint-disable-next-line no-unused-vars
-  const canEditPermissionsAnyone = await personCanSeeOrDo('canEditPermissionsAnyone', accessRights);
+  // const canEditPermissionsAnyone = await personCanSeeOrDo('canEditPermissionsAnyone', accessRights);
   const canEditPersonAnyone = await personCanSeeOrDo('canEditPersonAnyone', accessRights);
   // See if this person is in a team this viewer has teamAccessRights for.
   const canEditPersonThisTeam = await viewerCanSeeOrDoForThisTeamMember('canEditPersonThisTeam', personId, teamAccessRights, personIdsByTeam);
