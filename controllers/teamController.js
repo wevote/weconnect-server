@@ -27,8 +27,6 @@ async function viewerCanSeeOrDoForThisTeamMember (accessRightName, personId, tea
           // console.log('viewerCanSeeOrDoForThisTeamMember returning true for teamId:', teamId, ', accessRightName:', accessRightName);
           return true;
         }
-      } else {
-        console.error('Undefined team or access right in viewerCanSeeOrDoForThisTeamMember, teamId: ', teamId, ', accessRightName: ', accessRightName, ', teamAccessRights: ', teamAccessRights);
       }
     }
   }

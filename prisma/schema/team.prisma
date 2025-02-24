@@ -71,6 +71,26 @@ model TeamMember {
   @@id([personId, teamId], name: "teamMemberId")
 }
 
+model TeamMemberAway {
+  id                          Int       @id @default(autoincrement())
+  awayDescription             String?
+  awayDescriptionForTeamLeads String?
+  dateEnd                     DateTime?
+  dateEndEstimated            DateTime?
+  dateStart                   DateTime  @default(now())
+  dateSubmitted               DateTime  @default(now())
+  isLeaveOfAbsence            Boolean?
+  isMedicalLeave              Boolean?
+  isNonResponsive             Boolean?
+  isNotAttending              Boolean?
+  isResigned                  Boolean?
+  isVacation                  Boolean?
+  isWorkTrip                  Boolean?
+  personId                    Int
+  reportedByPersonId          Int?
+  teamId                      Int
+}
+
 /// This table holds people who were active for a stretch of time, but are no longer active
 /// If a volunteer starts, then stops, then starts again and stops again, they would have two entries
 model TeamMemberFormer {

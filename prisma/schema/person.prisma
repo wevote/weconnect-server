@@ -87,3 +87,24 @@ model Person {
   QuestionAnswer QuestionAnswer[]
   TeamMember     TeamMember[]
 }
+
+model PersonAway {
+  id                          Int       @id @default(autoincrement())
+  awayDescription             String?
+  awayDescriptionForTeamLeads String?
+  dateEnd                     DateTime?
+  dateEndEstimated            DateTime?
+  dateStart                   DateTime  @default(now())
+  dateSubmitted               DateTime  @default(now())
+  personId                    Int
+  reportedByPersonId          Int?
+
+  // Only one of these is meant to be checked at a time
+  isLeaveOfAbsence Boolean?
+  isMedicalLeave   Boolean?
+  isNonResponsive  Boolean?
+  isNotAttending   Boolean?
+  isResigned       Boolean?
+  isVacation       Boolean?
+  isWorkTrip       Boolean?
+}
