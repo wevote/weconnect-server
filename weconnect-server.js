@@ -94,7 +94,6 @@ weconnectServer.use(session({
   store: new (connectPgSimple(session))({
     createTableIfMissing: true,
   }),
-  // store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI })    WHAT ABOUT POSTGRES??????
 }));
 
 weconnectServer.use(passport.initialize());   // init passport on every route call.
@@ -118,13 +117,13 @@ weconnectServer.use((req, res, next) => {
 // weconnectServer.use(lusca.xssProtection(true));
 weconnectServer.disable('x-powered-by');
 weconnectServer.use((req, res, next) => {
-  res.locals.user = req.user;
+  res.locals.user = req.user;   // TODO useless Feb 19th
   next();
 });
 
 // Add isSignedIn to response if true
 weconnectServer.use((req, res, next) => {
-  res.locals.isSignedIn = true; // TODO hack
+  res.locals.isSignedIn = true; // TODO hack maybe useless
   next();
 });
 
@@ -148,7 +147,7 @@ weconnectServer.use((req, res, next) => {
 
 // make the req.user available globally to be able to check logged in status
 weconnectServer.use((req, res, next) => {
-  res.locals.login = req.user;
+  res.locals.login = req.user;   // TODO user seems to be always undefined, so probably useless
   next();
 });
 
