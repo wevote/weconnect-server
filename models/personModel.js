@@ -222,7 +222,7 @@ async function deleteOne (id) {
 }
 
 async function savePerson (person) {
-  // console.log('savePerson person:', person);
+  // console.log('savePerson person:', person?.id, person);
   const updatePerson = await prisma.person.update({
     where: {
       id: person.id,

@@ -12,6 +12,7 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/person-away-save', personApiController.personAwaySave);
   weconnectServer.get('/apis/v1/person-list-retrieve', personApiController.personListRetrieve);
   weconnectServer.get('/apis/v1/person-retrieve', personApiController.personRetrieve);
+  weconnectServer.get('/apis/v1/person-retrieve-by-email', personApiController.personRetrieveByEmail);
   weconnectServer.get('/apis/v1/person-save', personApiController.personSave);
   weconnectServer.get('/apis/v1/question-list-retrieve', questionnaireApiController.questionListRetrieve);
   weconnectServer.get('/apis/v1/questionnaire-list-retrieve', questionnaireApiController.questionnaireListRetrieve);

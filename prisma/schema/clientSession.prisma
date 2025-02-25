@@ -4,7 +4,7 @@ model ClientSession {
   id                    Int      @id @default(autoincrement())
   personId              Int
   sessionID             String   @unique
-  dateCreated           DateTime @default(now()) @updatedAt
+  dateCreated           DateTime @default(now())
   dateExpires           DateTime
   userAgent             String
 }

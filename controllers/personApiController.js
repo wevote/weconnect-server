@@ -175,8 +175,29 @@ exports.personListRetrieve = async (request, response) => {
 };
 
 /**
+ * GET /api/v1/person-retrieve-by-email
+ * Retrieve one person by email.
+ */
+exports.personRetrieveByEmail = async (request, response) => {
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const queryParams = new URLSearchParams(parsedUrl.search);
+  const emailPersonal = queryParams.get('emailPersonal');
+  let filteredPerson = {};
+  try {
+    const person = await findOnePerson({ emailPersonal });
+    filteredPerson = removeProtectedFieldsFromPerson(person);
+    filteredPerson.status = '';
+    filteredPerson.success = true;
+  } catch (err) {
+    filteredPerson.status = err.message;
+    filteredPerson.success = false;
+  }
+  response.json(filteredPerson);
+};
+
+/**
  * GET /api/v1/person-retrieve
- * Retrieve one person.
+ * Retrieve one person by id.
  */
 exports.personRetrieve = async (request, response) => {
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
@@ -568,12 +589,13 @@ exports.verifyEmailCode = async (req, res) => {
     console.log('verifyEmailCode token matched code');
     const person2 = await savePerson({ id: personId, emailVerified: true });
     await createSessionRecord(personId, req.sessionID, req.useragent.source);   // TODO Test Feb 13 1pm
+    console.log('verifyEmailCode token matched person2.personId: ', person2.id, personId);
     return res.json({
-      personId: person2.personId,
+      personId: person2.id,
       emailVerified: person2.emailVerified,
     });
   } else {
-    console.log('verifyEmailCode token DID NOT MATCH incoming code');
+    console.log('verifyEmailCode token DID NOT MATCH incoming code: ', code, person.emailVerificationToken, person.id);
     return res.json({
       personId,
       emailVerified: false,
@@ -604,6 +626,7 @@ exports.getAuth = async (req, res) => {
    */
   const isAuthenticated = req.isAuthenticated();
   const personId = await getPersonIdBySessionId(req.sessionID || 0);
+  // console.log('getAuth personId from sessionId', personId, req.sessionID);
   const person = personId ? await findPersonById(personId || 0) : undefined;
   const emailVerified = person && person.emailVerified;
   const loggedInPersonIsAdmin = await checkIsAdmin(req);    // Temp re-add 2/23/25
