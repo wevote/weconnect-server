@@ -535,7 +535,6 @@ exports.login = async (req, res, next) => {
       return res.json({
         emailVerified: false,
         error: info,
-        name: '',
         personId: -1,
         signedIn: false,
         person: '',
@@ -547,7 +546,6 @@ exports.login = async (req, res, next) => {
         res.json({
           emailVerified: false,
           error: msg,
-          name: '',
           personId: -1,
           signedIn: false,
           person: '',
@@ -560,7 +558,6 @@ exports.login = async (req, res, next) => {
       res.json({
         emailVerified: filteredPerson.emailVerified,
         errors: [],
-        name: filteredPerson.lastName,
         personId: filteredPerson.id,
         signedIn: true,
         person: filteredPerson,
@@ -624,8 +621,11 @@ exports.getAuth = async (req, res) => {
        returns “true” in case an authenticated user is present in “req.session.passport.user”, or
        returns “false” in case no authenticated user is present in “req.session.passport.user”.
    */
-  const isAuthenticated = req.isAuthenticated();
+  let isAuthenticated = req.isAuthenticated();
   const personId = await getPersonIdBySessionId(req.sessionID || 0);
+  if (personId && !isAuthenticated) {
+    isAuthenticated = true;             // 2/23/25 This is a hack, for after reset password, to be investigated
+  }
   // console.log('getAuth personId from sessionId', personId, req.sessionID);
   const person = personId ? await findPersonById(personId || 0) : undefined;
   const emailVerified = person && person.emailVerified;
