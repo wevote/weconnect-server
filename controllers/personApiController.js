@@ -560,7 +560,7 @@ exports.login = async (req, res, next) => {
       res.json({
         emailVerified: filteredPerson.emailVerified,
         errors: [],
-        name: filteredPerson.name,
+        name: filteredPerson.lastName,
         personId: filteredPerson.id,
         signedIn: true,
         person: filteredPerson,
