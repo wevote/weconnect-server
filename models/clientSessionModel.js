@@ -6,10 +6,11 @@ const prisma = new PrismaClient();
 
 async function deleteOneSessionRecord (sessionID) {
   console.log('deleting session: ', sessionID);
+  const sess = sessionID;
   try {
     await prisma.clientSession.delete({
       where: {
-        sessionID,
+        sessionID: sess,
       },
     });
   } catch (e) {

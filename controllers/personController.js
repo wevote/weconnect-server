@@ -18,7 +18,9 @@ async function getAllAccessRightsForPerson (request) {
   const viewerPersonId = await getPersonIdBySessionId(request.sessionID || 0);
   const viewerPerson = viewerPersonId ? await findPersonById(viewerPersonId || 0) : undefined;
   if (!viewerPerson) {
-    console.error('Undefined viewerPerson in getAllAccessRightsForPerson isAuthenticated: ', isAuthenticated, ', request: ', request);
+    // 2/28/24 TODO: After a logout there will not be a viewerPerson, and logging the request floods the log
+    // console.error('Undefined viewerPerson in getAllAccessRightsForPerson isAuthenticated: ', isAuthenticated, ', request: ', request);
+    console.error('Undefined viewerPerson in getAllAccessRightsForPerson isAuthenticated: ', isAuthenticated);
     return {};
   } else {
     accessRights = getAccessRightsForPerson(viewerPerson);
