@@ -3,7 +3,7 @@ const lusca = require('lusca');
 const passport = require('passport');
 const multer = require('multer');
 
-const passportConfig = require('../config/passport');
+const passportConfig = require('../strategy/passport');
 const homeController = require('../controllers/home');
 const prismaUserController = require('../controllers/userController');
 const apiController = require('../controllers/futureOptionsApiController');
