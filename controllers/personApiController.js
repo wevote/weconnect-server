@@ -527,7 +527,7 @@ exports.signup = async (req, res) => {
  * Sign in using email and password.
  */
 exports.login = async (req, res, next) => {
-  console.log('test top in login, isAuthenticated: ', req.isAuthenticated());
+  // console.log('test top in login, isAuthenticated: ', req.isAuthenticated());
 
   req.body.email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
   req.body.personalEmail = req.body.email;
