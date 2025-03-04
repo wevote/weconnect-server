@@ -209,6 +209,14 @@ Then fill in the run configuration...
 3) And press "OK" to save
 <br><img src="docs/images/NodeConfigFillIn.png" alt="Alt Text" width="600" >
 <br><br>
+
+### Install postgres
+If you have already installed Postgres, for some other project, or for the WeVote python based WeVoteServer, skip this step!
+
+```
+brew install postgresql@14
+```
+
  
 ### Create a run config to start postgres
 Next create a run config to start postgres
@@ -243,6 +251,9 @@ And in the Connection tab set the Host name as localhost — also add your postg
 
 <img src="docs/images/RegisterPgAdminHost.png" alt="Alt Text" width="600" >
 <br><br>
+
+If you already had Postgres installed, you will have other databases on the Databases list, this is not a problem, just continue
+with this step to create new one for the weconnect-server.
 
 On the left pane "Object Explorer" right click on "Databases" and add the "WeConnectDB"
 
@@ -332,3 +343,16 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+### Debugging Postgres Server Problems
+
+Work in progress
+
+
+Show your low level postgres databases, owners, and access privileges
+```
+stevepodell@Steves-MBP-M1-Dec2021 weconnect-client % ps aux | grep /usr/local/var/postgresl
+stevepodell      99193   0.0  0.0 410724048   1408 s002  S+    9:47AM   0:00.00 grep /usr/local/var/postgresl
+stevepodell@Steves-MBP-M1-Dec2021 weconnect-client % `
+```
