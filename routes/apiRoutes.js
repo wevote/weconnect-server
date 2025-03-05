@@ -34,7 +34,8 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.post('/apis/v1/get-auth', personApiController.getAuth);
   weconnectServer.post('/apis/v1/login', personApiController.login);
   weconnectServer.post('/apis/v1/logout', personApiController.logout);
-  weconnectServer.post('/apis/v1/signup', personApiController.signup);
+  weconnectServer.post('/apis/v1/save-password', personApiController.savePassword);
   weconnectServer.post('/apis/v1/send-email-code', personApiController.sendEmailCode);
+  weconnectServer.post('/apis/v1/signup', personApiController.signup);
   weconnectServer.post('/apis/v1/verify-email-code', personApiController.verifyEmailCode);
 };

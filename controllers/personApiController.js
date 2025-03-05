@@ -390,7 +390,7 @@ exports.personSave = async (request, response) => {
         jsonData.success = false;
       }
     } else if (shouldUpdatePerson) {
-      if (canEditPerson) {
+      if (canEditPerson || ('password' in personChangeDict)) {   // Have to let a person change their password
         personChangeDict.id = personId;
         // console.log('Updating person:', personChangeDict);
         const person = await savePerson(personChangeDict);
@@ -462,6 +462,7 @@ exports.signup = async (req, res) => {
       personCreated: false,
       errors: validationErrors,
       personId: -1,
+      person: undefined,
       signedIn: false,
     });
   }
@@ -474,6 +475,7 @@ exports.signup = async (req, res) => {
         personCreated: false,
         errors: validationErrors,
         personId: -1,
+        person: undefined,
         signedIn: false,
       });
     }
@@ -494,13 +496,16 @@ exports.signup = async (req, res) => {
           personCreated: false,
           errors: validationErrors,
           personId: -1,
+          person: undefined,
           signedIn: false,
         });
       }
+      const filteredPerson = removeProtectedFieldsFromPerson(person);
       return res.json({
         personCreated: true,
         errors: validationErrors.toString(),
         personId: person.id,
+        person: filteredPerson,
         signedIn: true,
       });
     });
@@ -511,8 +516,8 @@ exports.signup = async (req, res) => {
       personCreated: false,
       errors: validationErrors,
       personId: -1,
+      person: undefined,
       signedIn: false,
-      person: '',
     });
   }
 };
@@ -522,7 +527,7 @@ exports.signup = async (req, res) => {
  * Sign in using email and password.
  */
 exports.login = async (req, res, next) => {
-  console.log('test top in login, isAuthenticated: ', req.isAuthenticated());
+  // console.log('test top in login, isAuthenticated: ', req.isAuthenticated());
 
   req.body.email = validator.normalizeEmail(req.body.email, { gmail_remove_dots: false });
   req.body.personalEmail = req.body.email;
@@ -585,7 +590,7 @@ exports.verifyEmailCode = async (req, res) => {
   if (parseInt(code) === parseInt(person.emailVerificationToken)) {
     console.log('verifyEmailCode token matched code');
     const person2 = await savePerson({ id: personId, emailVerified: true });
-    await createSessionRecord(personId, req.sessionID, req.useragent.source);   // TODO Test Feb 13 1pm
+    await createSessionRecord(personId, req.sessionID, req.useragent.source);
     console.log('verifyEmailCode token matched person2.personId: ', person2.id, personId);
     return res.json({
       personId: person2.id,
@@ -603,13 +608,55 @@ exports.verifyEmailCode = async (req, res) => {
 };
 
 /**
+ * POST /apis/v1/save-password
+ * Change the signed in person's password, with checks for security
+ */
+exports.savePassword = async (req, res) => {
+  const { personId, password } = req.body;
+
+  const person = await findPersonById(personId, true);
+  // const personIdFromSession = await getPersonIdBySessionId(req.sessionID)  || person.personId;
+  const personIdFromSession = personId;  // TODO: can't get the session until they are signed in, so if not signed in...
+
+  if (person.personId !== personIdFromSession || !person.emailVerified) {
+    const error = person.personId !== personIdFromSession ?
+      'POTENTIAL_MAN_IN_MIDDLE: Can only change the password for the user of their session' :
+      'Can only change the password for the user with a verified email';
+    console.error(error);
+    return res.json({
+      personId,
+      person: undefined,
+      error,
+    });
+  }
+
+  console.log('Updating person password:', password);
+  const personToSave = {};
+  personToSave.id = person.id;
+  personToSave.password = await bcrypt.hash(password, 10);
+  const personFromSave = await savePerson(personToSave);
+  const filteredPerson = removeProtectedFieldsFromPerson(personFromSave);
+
+  return res.json({
+    personId,
+    person: filteredPerson,
+    error: '',
+  });
+};
+
+
+/**
  * POST /logout
  * Log out.
  */
 exports.logout = async (req, res) => {
   await deleteOneSessionRecord(req.sessionID);
   req.logout((err) => {
-    if (err) console.log('Error : Failed to logout.', err);
+    if (err) console.log('Error : Failed to logout req.logout: ', err);
+  });
+  // This might be unnecessary (or harmful in the future) https://stackoverflow.com/a/14277819/1893089
+  req.session.destroy((err) => {
+    if (err) console.log('Error : Failed to logout req.session.destroy: ', err);
   });
   return res.json({
     authenticated: req.isAuthenticated(),
@@ -623,13 +670,13 @@ exports.getAuth = async (req, res) => {
    */
   let isAuthenticated = req.isAuthenticated();
   const personId = await getPersonIdBySessionId(req.sessionID || 0);
-  if (personId && !isAuthenticated) {
+  if (personId > 0 && !isAuthenticated) {
     isAuthenticated = true;             // 2/23/25 This is a hack, for after reset password, to be investigated
   }
   // console.log('getAuth personId from sessionId', personId, req.sessionID);
-  const person = personId ? await findPersonById(personId || 0) : undefined;
-  const emailVerified = person && person.emailVerified;
-  const loggedInPersonIsAdmin = await checkIsAdmin(req);    // Temp re-add 2/23/25
+  const person = personId > 0 ? await findPersonById(personId) : undefined;
+  const emailVerified = person && personId > 0 && person.emailVerified;
+  const loggedInPersonIsAdmin = personId > 0 && await checkIsAdmin(req);
   const accessRights = getAccessRightsForPerson(person);
   const teamAccessRights = await getTeamAccessRightsForPerson(person);
   // Feb 2025 See the evolving permissions plan: https://docs.google.com/spreadsheets/d/1xKRFzOb7MV8aM-O4s1_IBtu2NYgTM67vEPhoKxupkCc/edit?gid=257349954#gid=257349954

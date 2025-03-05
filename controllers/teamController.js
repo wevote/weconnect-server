@@ -16,6 +16,10 @@ async function viewerCanSeeOrDoForThisTeam (accessRightName, teamId, teamAccessR
 // Parallel to weconnect-client viewerCanSeeOrDoForThisTeamMember
 async function viewerCanSeeOrDoForThisTeamMember (accessRightName, personId, teamAccessRights, personIdsByTeam) {
   // console.log('viewerCanSeeOrDoForThisTeamMember Checking access right for personId:', personId, ', accessRightName:', accessRightName, ', personIdsByTeam: ', personIdsByTeam);
+  if (!personIdsByTeam) {
+    console.error('viewerCanSeeOrDoForThisTeamMember received null personIdsByTeam (probably after logout');
+    return false;
+  }
   for (let i = 0; i < Object.entries(personIdsByTeam).length; i++) {
     const [teamId, teamMembers] = Object.entries(personIdsByTeam)[i];
     // Loop team-by-team until we find a team where personId is a member.
