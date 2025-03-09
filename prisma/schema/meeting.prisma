@@ -1,0 +1,79 @@
+enum DayOfTheWeek {
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+}
+
+enum MeetingFrequency {
+  WEEKLY
+  EVERY_OTHER_WEEK
+  MONTHLY
+}
+
+enum TimeZones {
+  CENTRAL_TIMEZONE
+  EASTERN_TIMEZONE
+  MOUNTAIN_TIMEZONE
+  PACIFIC_TIMEZONE
+}
+
+/// One meeting at one meeting time for one team
+// When I edit a meeting, I am asked "edit all, or only this one"
+// If "only this one" we just save the info in Meeting, and set meetingLocked to True
+// If "all", we can update the RecurringMeeting and then all subsequent Meeting entries
+model Meeting {
+  id                         Int          @id @default(autoincrement())
+  /// This meeting was created from RecurringMeeting, and "holds the spot" of the meeting this week.
+  ///  This allows us to change RecurringMeeting to another day each week,
+  ///  and we know this Meeting can be moved to that new day of the week.
+  childOfRecurringMondayDate DateTime?
+  createdByPersonId          Int?
+  dayOfTheWeek               DayOfTheWeek @default(MONDAY)
+  meetingDate                DateTime
+  meetingDescription         String?
+  /// Do not update from RecurringMeeting -- we have made an edit to this meeting, and this record is now the master
+  meetingLocked              Boolean      @default(false)
+  meetingName                String?
+  /// Military time: 0900 for 9am, 1300 for 1pm
+  meetingEndTime             DateTime?
+  meetingStartTime           DateTime?
+  meetingTimeZone            TimeZones    @default(PACIFIC_TIMEZONE)
+  recurringMeetingId         Int?
+  teamId                     Int
+}
+
+/// A record that is the source of truth for "children" meetings from today forward
+model RecurringMeeting {
+  id                       Int          @id @default(autoincrement())
+  createdByPersonId        Int?
+  dayOfTheWeek             DayOfTheWeek @default(MONDAY)
+  meetingDescription       String?
+  meetingName              String?
+  meetingSequenceEndDate   DateTime?
+  meetingSequencePaused    Boolean      @default(false) /// Do not generate any more Meeting children
+  meetingSequenceStartDate DateTime?
+  /// Military time: 0900 for 9am, 1300 for 1pm
+  meetingEndTime           DateTime?
+  meetingStartTime         DateTime?
+  meetingTimeZone          TimeZones    @default(PACIFIC_TIMEZONE)
+  teamId                   Int
+}
+
+model MeetingAttendee {
+  awayDescription             String?
+  awayDescriptionForTeamLeads String?
+  dateSubmitted               DateTime @default(now())
+  didAttend                   Boolean?
+  didNotAttend                Boolean?
+  meetingId                   Int
+  personFullName              String?
+  personId                    Int
+  reportedByPersonId          Int?
+  teamId                      Int
+
+  @@id(name: "meetingIdPersonId", [meetingId, personId])
+}
