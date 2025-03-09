@@ -13,7 +13,7 @@ model Person {
   hoursPerWeekEstimate   Int?
   /// Estimate of total hours volunteered
   hoursVolunteered       Int?
-  /// Stored as number of calendar days, but displayed in years, months & weeks
+  /// Stored as number of days, but displayed in years, months & weeks
   howLongAtOrg           Int?
   jobTitle               String?
   lastName               String?
@@ -101,7 +101,7 @@ model PersonAway {
 
   // Only one of these is meant to be checked at a time
   isLeaveOfAbsence Boolean?
-  isMedicalLeave   Boolean?
+  isNotFeelingWell Boolean?
   isNonResponsive  Boolean?
   isNotAttending   Boolean?
   isResigned       Boolean?

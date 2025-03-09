@@ -1,7 +1,8 @@
-const taskApiController = require('../controllers/taskApiController');
-const teamApiController = require('../controllers/teamApiController');
+const meetingApiController = require('../controllers/meetingApiController');
 const personApiController = require('../controllers/personApiController');
 const questionnaireApiController = require('../controllers/questionnaireApiController');
+const taskApiController = require('../controllers/taskApiController');
+const teamApiController = require('../controllers/teamApiController');
 
 /**
  * WeConnect API routes.
@@ -9,6 +10,7 @@ const questionnaireApiController = require('../controllers/questionnaireApiContr
 module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/add-person-to-team', teamApiController.addPersonToTeam);
   weconnectServer.get('/apis/v1/answer-list-save', questionnaireApiController.answerListSave);
+  weconnectServer.get('/apis/v1/meeting-save', meetingApiController.meetingSave);
   weconnectServer.get('/apis/v1/person-away-save', personApiController.personAwaySave);
   weconnectServer.get('/apis/v1/person-list-retrieve', personApiController.personListRetrieve);
   weconnectServer.get('/apis/v1/person-retrieve', personApiController.personRetrieve);

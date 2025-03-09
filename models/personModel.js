@@ -15,7 +15,7 @@ const PERSON_AWAY_FIELDS_ACCEPTED = {
   personId: 'INTEGER',
   reportedByPersonId: 'INTEGER',
   isLeaveOfAbsence: 'BOOLEAN',
-  isMedicalLeave: 'BOOLEAN',
+  isNotFeelingWell: 'BOOLEAN',
   isNonResponsive: 'BOOLEAN',
   isNotAttending: 'BOOLEAN',
   isResigned: 'BOOLEAN',
