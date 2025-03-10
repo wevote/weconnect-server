@@ -27,6 +27,15 @@ async function findTeamById (id) {
   return team;
 }
 
+async function findTeamByName (teamName) {
+  const team = await prisma.team.findUnique({
+    where: {
+      teamName,
+    },
+  });
+  return team;
+}
+
 async function findTeamMemberListByParams (params = {}) {
   const teamList = await prisma.teamMember.findMany({
     where: params,
@@ -127,11 +136,11 @@ async function createTeamMember (updateDict) {
   return prisma.teamMember.create({ data: mergedTeam });
 }
 
-function updateOrCreateTeamMember (personId, teamId, updateDict) {
+async function updateOrCreateTeamMember (personId, teamId, updateDict) {
   // eslint-disable-next-line prefer-object-spread
   const createDict = Object.assign({}, { personId, teamId }, updateDict);
   try {
-    const upResult =  prisma.teamMember.upsert({
+    const upResult =  await prisma.teamMember.upsert({
       where: {
         teamMemberId: {
           personId,
@@ -215,6 +224,7 @@ module.exports = {
   deleteTeam,
   findOneTeam,
   findTeamById,
+  findTeamByName,
   findTeamListByParams,
   findTeamMemberListByParams,
   getPersonIdsByTeamDict,

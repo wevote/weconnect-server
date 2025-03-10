@@ -22,7 +22,9 @@ Our current version of our public facing web app is here [https://WeVote.US](htt
 
 These instruction assume that you are installing on a Mac.  If you use Windows or Linux, the installation procedure should be similar.
 
-This procedure is based on using the free Community edition of WebStorm, which has great Git integraton, a great integrated Node debugger, and is an excellent editor.  If you have the paid version of WebStorm the instructions should be the same.  If you have some other preferred editor, we recommend that you still do this install, and then use your other editor as you wish! 
+This procedure is based on using the free Community edition of WebStorm, which has great Git integraton, a great integrated Node debugger, and is an excellent editor.  
+If you have the paid version of WebStorm the instructions should be the same.  
+**If you have some other preferred editor, we recommend that you still do this install, and then use your other editor as you wish!** 
 <br><br>
 
 ### If you don't already have one, create an account in [GitHub](https://github.com/)
@@ -39,9 +41,10 @@ Once installed, start WebStorm from Launch Pad or Spotlight
 <img src="docs/images/WelcomeToWebStorm.png" alt="Alt Text" width="600" >
 
 The first step is to press that "Clone Repository" button to clone the https://github.com/wevote/weconnect-server repository. 
-Enter the URL and press the Clone button.
+Enter the URL and press the Clone button.  (Your clone dialog should look just like this, but will probably have a black
+background instead of a white one!)
 
-<img src="docs/images/CloneRepository.png" alt="Alt Text" width="600" >
+<img src="docs/images/WebstormCloneRepository.png" alt="Alt Text" width="600" >
 
 Now the latest code is on your machine.
 
@@ -297,6 +300,9 @@ stevepodell@Steves-MacBook-Air weconnect-server %
 ```
 <br><br>
 
+### Generate Self Signed SSL Certificates for the https protocol
+
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 3650 -nodes -subj "/C=US/ST=California/L=Oakland/O=WeVote/OU=dev/CN=wevote.us"
 
 ### Start the app!
 First start postgres via the run configuration

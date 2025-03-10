@@ -83,6 +83,7 @@ model Person {
   statusOnLeave             Boolean?
   /// Person notified us they have resigned
   statusResigned            Boolean?
+  importNote                String?
 
   QuestionAnswer QuestionAnswer[]
   TeamMember     TeamMember[]
