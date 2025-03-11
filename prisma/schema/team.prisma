@@ -1,7 +1,7 @@
 /// One team that has specific members and meeting time
 model Team {
   id           Int          @id @default(autoincrement())
-  teamName     String
+  teamName     String       @unique
   description  String?
   /// Monday, Tues, etc.
   meetingDay   String?
@@ -65,6 +65,7 @@ model TeamMember {
   teamId                     Int
   teamMemberFirstName        String?
   teamMemberLastName         String?
+  dateCreated                DateTime  @default(now())
   Person                     Person    @relation(fields: [personId], references: [id])
   Team                       Team      @relation(fields: [teamId], references: [id])
 

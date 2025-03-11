@@ -267,7 +267,7 @@ exports.personRetrieve = async (request, response) => {
 async function checkIsAdmin (req) {
   const isAuthenticated = req.isAuthenticated();
   const personId = await getPersonIdBySessionId(req.sessionID || 0);
-  const person = personId ? await findPersonById(personId || 0) : undefined;
+  const person = personId ? await findPersonById(personId || 0, true) : undefined;
   if (!person) {
     console.error('Undefined person in checkIsAdmin isAuthenticated: ', isAuthenticated);
     return false;
