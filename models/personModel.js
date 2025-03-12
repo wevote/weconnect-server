@@ -37,6 +37,10 @@ const PERSON_FIELDS_ACCEPTED = [
 ];
 const PERSON_FIELDS_ACCEPTED_ADMIN = PERSON_FIELDS_ACCEPTED.concat([
   'isAdmin',
+  'isHRAdmin',
+  'isHROfferAdmin',
+  'isHRGeneralist1',
+  'isHRGeneralist2',
   'isHiringManager',
   'isIntern',
   'isTeamLead',
@@ -47,7 +51,7 @@ const PERSON_FIELDS_ACCEPTED_ADMIN = PERSON_FIELDS_ACCEPTED.concat([
 
 const ACCESS_RIGHTS_OPTIONS = [
   'canAddPerson', 'canAddPersonDataAnyone', 'canAddTeam',
-  'canAddTeamMemberAnyTeam', 'canCreateOrgEmailAccount',
+  'canAddTeamMemberAnyTeam', 'canCreateOrgEmailAccount', 'canDoAnythingIsAdmin',
   'canEditPermissionsAnyone', 'canEditPersonAnyone',
   'canEditTeamAnyTeam',
   'canRemoveTeam', 'canRemoveTeamMemberAnyTeam',

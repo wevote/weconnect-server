@@ -84,6 +84,9 @@ model Person {
   /// Person notified us they have resigned
   statusResigned            Boolean?
   importNote                String?
+  // nonAuthoritativeImport === true, means that while importing from csv, so that we can build the team while proceeding down the sheet
+  // knowing that we will replace them with the authoritative copy when we encounter them.  This is in the DB in case the import crashes and we lose track
+  nonAuthoritativeImport    Boolean   @default(false)
 
   QuestionAnswer QuestionAnswer[]
   TeamMember     TeamMember[]

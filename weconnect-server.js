@@ -64,7 +64,8 @@ const corsConfig = {
 };
 weconnectServer.use(cors(corsConfig));
 weconnectServer.use(logger('dev'));
-weconnectServer.use(bodyParser.json());
+// weconnectServer.use(express.bodyParser({limit: '10mb'}));
+weconnectServer.use(bodyParser.json({limit: '10mb'}));
 weconnectServer.use(bodyParser.urlencoded({ extended: true }));
 weconnectServer.use(limiter);
 weconnectServer.use(cookieParser());
@@ -127,8 +128,6 @@ weconnectServer.use((req, res, next) => {
   next();
 });
 
-
-
 // After successful login, redirect back to the intended page
 weconnectServer.use((req, res, next) => {
   if (!req.user &&
@@ -150,8 +149,6 @@ weconnectServer.use((req, res, next) => {
   res.locals.login = req.user;   // TODO user seems to be always undefined, so probably useless
   next();
 });
-
-
 
 weconnectServer.use('/', express.static(path.join(__dirname, 'public'), { maxAge: 31557600000 }));
 weconnectServer.use('/js/lib', express.static(path.join(__dirname, 'node_modules/chart.js/dist'), { maxAge: 31557600000 }));

@@ -3,6 +3,7 @@ const personApiController = require('../controllers/personApiController');
 const questionnaireApiController = require('../controllers/questionnaireApiController');
 const taskApiController = require('../controllers/taskApiController');
 const teamApiController = require('../controllers/teamApiController');
+const { updateDbFromCsv } = require('../controllers/updateSqlFromCsvController');
 
 /**
  * WeConnect API routes.
@@ -34,6 +35,7 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
 
   weconnectServer.post('/apis/v1/get-auth', personApiController.getAuth);
+  weconnectServer.post('/apis/v1/update-db-from-csv', updateDbFromCsv);
   weconnectServer.post('/apis/v1/login', personApiController.login);
   weconnectServer.post('/apis/v1/logout', personApiController.logout);
   weconnectServer.post('/apis/v1/save-password', personApiController.savePassword);

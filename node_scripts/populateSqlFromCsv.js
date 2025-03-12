@@ -31,17 +31,17 @@ const usaDateToIso = (dateString) => {
 
 const createPersonUpdateDict = (row) => {
   const dict = {};
-  let isAuthoritative = true;
+  let isFlagedInCsvAsAuthoritative = true;
   let who = row.Who;
   try {
     // Name
     who = who.replace('\n', '');
     if (who.startsWith('*')) {
-      isAuthoritative = false;
+      isFlagedInCsvAsAuthoritative = false;
       who = who.replace('* ', '');
     }
     const dashedParts = who.split(' - ');
-    const leave = (dashedParts[1] && dashedParts[1].toLowerCase().includes('break')) || false;
+    const leave = (dashedParts[1] && (dashedParts[1].toLowerCase().includes('break') || dashedParts[1].toLowerCase().includes('leave'))) || false;
     const resigned = (dashedParts[1] && dashedParts[1].toLowerCase().includes('resigned')) || false;
     dict.statusResigned = resigned;
     dict.statusActive = !leave && !resigned;
@@ -73,6 +73,10 @@ const createPersonUpdateDict = (row) => {
       dict.emailOfficial = secondary;
       dict.emailPersonal = primary;
     }
+    if (dict.emailPersonal.length === 0) {
+      dict.emailPersonal = dict.emailOfficial;
+    }
+
     dict.dateStarted = usaDateToIso(row['Start date']);
     dict.dateEndDate = usaDateToIso(row['Known End date']);
     dict.emailPersonalAlternate = row['Third email'];
@@ -120,7 +124,7 @@ const createPersonUpdateDict = (row) => {
   } catch (e) {
     console.log('Exception in createPersonUpdateDict: ', e);
   }
-  return { isAuthoritative, dict, who };
+  return { isFlagedInCsvAsAuthoritative, dict, who };
 };
 
 
@@ -146,7 +150,6 @@ function isTeamATeamName (str) {
 }
 
 const processCsv = async (file) => {
-  const authoritativePersons = [];
   let teamFromSql;
   let teamsAdded = 0;
   let peopleAdded = 0;
@@ -174,35 +177,38 @@ const processCsv = async (file) => {
           if (!teamFromSql) {
             teamFromSql = await createTeam(teamDict);
             teamsAdded += 1;
+            console.log('------------------- Team Created ---------------------', row.Team);
           }
-          console.log('------------------- Team Created ---------------------', row.Team);
         } else {
           // Person save or update (or don't save person if person exists and this row is non-authoritative)
-          const { isAuthoritative, dict: personUpdateDict, who } = createPersonUpdateDict(row);
+          const { isFlagedInCsvAsAuthoritative, dict: personUpdateDict, who } = createPersonUpdateDict(row);
           let person = await findPersonListByParams({ emailPersonal: personUpdateDict.emailPersonal }, true);
           person = (person.length > 0) ? person[0] : undefined;
+          const isNonAuthoritativeInSQL = person?.nonAuthoritativeImport || false;
 
           console.log(`ROW ${personUpdateDict.lastName} ${personUpdateDict.emailPersonal} ${personUpdateDict.emailOfficial}`);
           if (personUpdateDict.emailPersonal.length === 0 && personUpdateDict.emailOfficial.length === 0) {
             console.log(`ROW SKIPPED: No valid personal or official ('2nd Email' or 'Primary Email') in row #${i}: ${who}`);
           }
-          if (isAuthoritative && !person) {
+          if (isFlagedInCsvAsAuthoritative && !person) {
             // First instance of a person in the sheet, is authoritative, and does not exist in SQL
             console.log(`Authoritative Person creates new person: '${who}'  '${personUpdateDict.firstName}'  '${personUpdateDict.lastName}'  '${personUpdateDict.emailPersonal}'`);
+            personUpdateDict.nonAuthoritativeImport = false;   // nonAuthoritativeImport Already defaults as false, but here for self-documentation
             person = await createPerson(personUpdateDict);
-            authoritativePersons.push(person.emailPersonal);
+            // authoritativePersons.push(person.emailPersonal);
             peopleAdded += 1;
-          }  else if (isAuthoritative && person) {
+          }  else if (isFlagedInCsvAsAuthoritative && person && isNonAuthoritativeInSQL) {
             // If the first instance of a person in the sheet was non-authoritative (starts with a  '*'), we saved them so that
-            // we could add them to a team.  This instance is authoritative, so overwrite the person with this authoritative row
+            // we could add them to a team.  This instance is authoritative, so overwrite the non-authoritative person with this authoritative row
             console.log(`Authoritative Person overwrites non-authoritative: '${who}'  '${personUpdateDict.firstName}'  '${personUpdateDict.lastName}'  '${personUpdateDict.emailPersonal}'`);
             personUpdateDict.id = person.id;
+            personUpdateDict.nonAuthoritativeImport = false;
             person = await savePerson(personUpdateDict);
-            authoritativePersons.push(person.emailPersonal);
             peopleAdded += 1;
-          } else if (!isAuthoritative && !person && !authoritativePersons.includes(personUpdateDict.emailPersonal)) {
+          } else if (!isFlagedInCsvAsAuthoritative && !person) {
             // Save a non-authoritative person, since that person does not exist in SQL, and we need to add them to a team
             console.log(`Non-authoritative Person created: '${who}'  '${personUpdateDict.firstName}'  '${personUpdateDict.lastName}'  '${personUpdateDict.emailPersonal}'`);
+            personUpdateDict.nonAuthoritativeImport = true;   // This case is the reason we need this field
             person = await createPerson(personUpdateDict);
           } else {
             console.log(`Non-authoritative Person NOT saved: '${who}'  '${personUpdateDict.firstName}'  '${personUpdateDict.lastName}'  '${personUpdateDict.emailPersonal}'`);
@@ -220,7 +226,7 @@ const processCsv = async (file) => {
           // console.log(teamMember);
         }
       }
-      console.log(`\n\nDONE -------- teams added: ${teamsAdded} ---- people added (or overwritten): ${peopleAdded}`);
+      console.log(`\n\nDONE ---------------- teams added: ${teamsAdded} ---- people added: ${peopleAdded}`);
     });
 };
 
