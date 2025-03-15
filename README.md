@@ -233,7 +233,7 @@ Next step: [Use the Prisma ORM to migrate the weconnect-server table definitions
 1) Determine if postgres is installed by entering `which postgres` in a terminal window (at the bottom of Webstorm)  
 if you see a path to postgres, it is installed (and hopefully you will see homebrew in that path -- which makes things easier)
 
-<br><img src="docs/images/WhichPostgres.png" alt="Alt Text" width="600" >
+<br><img src="docs/images/WhichPostgres.png" alt="Alt Text" width="600" style="box-shadow: 2px 4px #888888; border: 1px solid">
 
 This command line result shows that postgres has been installed by homebrew, if no path to postgres is displayed, then postgres has not been previously installed
 
