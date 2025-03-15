@@ -264,14 +264,14 @@ stevepodell@Steves-MacBook-Air weconnect-server %
 ```
 
 Next confirm that you have pgAdmin 4 installed.  In spotlight type 'pgAdmin 4.app' if you find it, start it up.
-Otherwise, go to [Install pgAdmin4, a Mac based browser app for the postgres database:](#install-pgadmin4-a-mac-based-browser-app-for-the-postgres-database)
+Otherwise, go to [If you need to install pgAdmin4 a Mac based browser app for the postgres database:](#if-you-need-to-install-pgadmin4-a-mac-based-browser-app-for-the-postgres-database)
 After installing pgAdmin 4, go to [If you know you have postgres installed and it is running and you have pgAdmin running] and follow those directions.
 
 ### If you have never installed Postgres for any other project including school projects
 Use home brew to install postgres Version 14, the point version does not matter.  It can take a few minutes for brew to complete.
 ```
 stevepodell@Steves-MacBook-Air weconnect-server %brew install postgresql@14
-... Homebrew logs a whole bunch of lines about updating formulas, fetching, downloading, and "pouring" formulae...
+... Homebrew logs a whole bunch of lines about updating formulas, fetching, downloading, and pouring formulae...
 ... then finally it logs ...
 This formula has created a default database cluster with:
   initdb --locale=C -E UTF-8 /usr/local/var/postgresql@14
@@ -284,11 +284,11 @@ stevepodell@Steves-MacBook-Air weconnect-server %
 ```
 Those lines at the end provide useful information.  
 * initdb was run to create a bare minimum database for postgres, so it can store privileges, logins, and other configuration info.
-* if you want to run postgres as a daemon service (it is always running in the background), you can use this command in 
-  a webstorm terminal window `brew services start postgresql@14` and then ever your Mac is running, postgres will then be running
-  (If you want to stop it running as a background service just type `brew services stop postgresql@14`)
-* Alternatively, if you just want to be able to turn on postgres when you want it (and not have it run as a daemon service) use this command in a Webstorm terminal 
-  `/usr/local/opt/postgresql@14/bin/postgres -D /usr/local/var/postgresql@14` and when you are done, press Ctrl-c in that terminal
+* if you want to run postgres as a daemon service (so it is always running in the background), you can use this command in 
+  a webstorm terminal window <br />`brew services start postgresql@14`<br /> and then ever your Mac is running, postgres will then be running
+  (If you want to stop it running as a background service just type <br />`brew services stop postgresql@14`)
+* Alternatively, if you just want to be able to turn on postgres when you want it (and not have it run as a daemon service) use this command in a Webstorm terminal<br/>
+  `/usr/local/opt/postgresql@14/bin/postgres -D /usr/local/var/postgresql@14` <br />and when you are done, press Ctrl+C in that terminal
   window to stop postgres.
 
 Now start postgres running as a daemon service:
@@ -370,7 +370,7 @@ stevepodell@Steves-MacBook-Air weconnect-server %
 
 Prior to starting the app, you need to get the SSL certificates that allow the server to run in 'https' mode.
 We don't want to publish these certificates in our git repository, but you can get them from anyone on your team or from Dale.
-The file names are `wevotedeveloper.com.crt` and `wevotedeveloper.com_key.txt`. put them in the weconnect-server/cert directory.
+The file names are `wevotedeveloper.com.crt` and `wevotedeveloper.com_key.txt` -- put them in the weconnect-server/cert directory.
 
 Postgres should be running, due to your earlier steps, if it is not running all API queries from weconnect-client will fail.
 
