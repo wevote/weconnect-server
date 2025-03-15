@@ -14,6 +14,7 @@ const logger = require('morgan');
 const errorHandler = require('errorhandler');
 const lusca = require('lusca');
 const dotenv = require('dotenv');
+const dotenvExpand = require('dotenv-expand');
 const passport = require('passport');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
@@ -24,6 +25,8 @@ const useragent = require('express-useragent');
  * Load environment variables from .env file, where API keys and passwords are configured.
  */
 dotenv.config({ path: '.env' });
+dotenvExpand.expand(dotenv.config());
+// console.log(process.env);
 
 /**
  * Set config values
@@ -146,7 +149,7 @@ weconnectServer.use((req, res, next) => {
 
 // make the req.user available globally to be able to check logged in status
 weconnectServer.use((req, res, next) => {
-  res.locals.login = req.user;   // TODO user seems to be always undefined, so probably useless
+  res.locals.login = req.user;   // sometimes undefined ...?
   next();
 });
 
@@ -204,8 +207,8 @@ if (process.env.PROTOCOL.includes('https')) {
   // chrome://flags/#unsafely-treat-insecure-origin-as-secure            https://localhost    Enabled
   // open -a "Google Chrome" --args --disable-web-security
   try {
-    privateKey =  fs.readFileSync('./cert/wevotedeveloper.com_key.txt', 'utf8');
-    certificate = fs.readFileSync('./cert/wevotedeveloper.com.crt', 'utf8');
+    privateKey =  fs.readFileSync(process.env.HTTPS_SSL_KEY, 'utf8');
+    certificate = fs.readFileSync(process.env.HTTPS_SSL_CERT, 'utf8');
   } catch (err) {
     console.error('Error reading certificate:', err);
   }
