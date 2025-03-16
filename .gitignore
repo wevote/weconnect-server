@@ -8,12 +8,15 @@ lib-cov
 *.gz
 *.swp
 .env
-.env-template
 
 pids
 logs
 results
 tmp
+
+# SSL Certificates
+wevotedeveloper.com.crt
+wevotedeveloper.com_key.txt
 
 # Optional npm cache directory
 .npm
