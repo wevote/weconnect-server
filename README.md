@@ -366,7 +366,7 @@ stevepodell@Steves-MacBook-Air weconnect-server %
 ```
 <br><br>
 
-### Add `wevotedeveloper.com` to your /etc/hosts file
+## Add `wevotedeveloper.com` to your /etc/hosts file
 
 sudo chmod -R 0777 /etc/hosts
 
