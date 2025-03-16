@@ -327,7 +327,7 @@ Continue on to setup the Prisma ORM.
 ## Use the Prisma ORM to migrate the weconnect-server table definitions to the WeConnectDB database
 (This is the next step after getting postgres and pgAdmin 4 installed and running)
 
-Generate the schema from prisma/schema.prisma to node_modules
+Generate the schema from prisma/schema.prisma to node_modules. Note that if `prisma generate` doesn't work, try `npx prisma generate` as well as `npx prisma migrate dev --name init`.
 ```
 stevepodell@Steves-MacBook-Air weconnect-server % prisma generate
 Environment variables loaded from .env
@@ -365,6 +365,18 @@ stevepodell@Steves-MacBook-Air weconnect-server %
 
 ```
 <br><br>
+
+## Add `wevotedeveloper.com` to your /etc/hosts file
+
+sudo chmod -R 0777 /etc/hosts
+
+Edit with vi the /etc/hosts file, and add `wevotedeveloper.com` to the right of your local IP, so your /etc/hosts file looks something like this:
+
+```
+127.0.0.1       localhost wevotedeveloper.com
+255.255.255.255 broadcasthost
+::1             localhost
+```
 
 ## Start the app!
 
