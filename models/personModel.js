@@ -24,12 +24,19 @@ const PERSON_AWAY_FIELDS_ACCEPTED = {
 };
 
 const PERSON_FIELDS_ACCEPTED = [
+  'birthdayMonthAndDay',
   'firstName',
   'firstNamePreferred',
+  'emailOfficial',
+  'emailOfficialAlternate',
   'emailPersonal',
+  'emailPersonalAlternate',
+  'emailPreferred',
   'hoursPerWeekEstimate',
+  'jazzHrUrl', // We should allow saving, but front end interface shouldn't show as option
   'jobTitle',
   'lastName',
+  'linkedInUrl',
   'location',
   'password',
   'stateCode',
