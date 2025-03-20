@@ -225,7 +225,7 @@ Within pgAdmin 4, under the server that you have running (which will probably be
 
 That's it, you are ready to continue on setting up the weconnect-server
 
-This picture shows the the WeVoteServer in Postgres that was previously setup for the WeVoteServerDB (Python API Server), with an additional database
+This picture shows the WeVoteServer in Postgres that was previously setup for the WeVoteServerDB (Python API Server), with an additional database
 that you just created for WeConnectDB.  (No problem at all, if you don't have a WeVoteServerDB)
 
 <br><img src="docs/images/PgAdminObjectExplorer.png" alt="Alt Text" width="600" >
@@ -334,7 +334,7 @@ Continue on to setup the Prisma ORM.
 ## Use the Prisma ORM to migrate the weconnect-server table definitions to the WeConnectDB database
 (This is the next step after getting postgres and pgAdmin 4 installed and running)
 
-Generate the schema from prisma/schema.prisma to node_modules. Note that if `prisma generate` doesn't work, try `npx prisma generate` as well as `npx prisma migrate dev --name init`.
+Generate the schema from prisma/schema.prisma to node_modules
 ```
 stevepodell@Steves-MacBook-Air weconnect-server % prisma generate
 Environment variables loaded from .env
@@ -372,18 +372,6 @@ stevepodell@Steves-MacBook-Air weconnect-server %
 
 ```
 <br><br>
-
-## Add `wevotedeveloper.com` to your /etc/hosts file
-
-sudo chmod -R 0777 /etc/hosts
-
-Edit with vi the /etc/hosts file, and add `wevotedeveloper.com` to the right of your local IP, so your /etc/hosts file looks something like this:
-
-```
-127.0.0.1       localhost wevotedeveloper.com
-255.255.255.255 broadcasthost
-::1             localhost
-```
 
 ## Start the app!
 
