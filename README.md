@@ -225,6 +225,13 @@ Within pgAdmin 4, under the server that you have running (which will probably be
 
 That's it, you are ready to continue on setting up the weconnect-server
 
+This picture shows the the WeVoteServer in Postgres that was previously setup for the WeVoteServerDB (Python API Server), with an additional database
+that you just created for WeConnectDB.  (No problem at all, if you don't have a WeVoteServerDB)
+
+<br><img src="docs/images/PgAdminObjectExplorer.png" alt="Alt Text" width="600" >
+
+
+
 Next step: [Use the Prisma ORM to migrate the weconnect-server table definitions to the WeConnectDB database:](#use-the-prisma-orm-to-migrate-the-weconnect-server-table-definitions-to-the-weconnectdb-database)
 
 
