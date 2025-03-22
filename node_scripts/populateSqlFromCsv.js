@@ -77,7 +77,7 @@ const createPersonUpdateDict = (row) => {
       dict.emailPersonal = dict.emailOfficial;
     }
 
-    dict.dateStarted = usaDateToIso(row['Start date']);
+    dict.dateStartDate = usaDateToIso(row['Start date']);
     dict.dateEndDate = usaDateToIso(row['Known End date']);
     dict.emailPersonalAlternate = row['Third email'];
     dict.birthdayMonthAndDay = row['Birthday Month / Day'];

@@ -54,7 +54,7 @@ model Person {
   dateLastResigned          DateTime?
   dateOfferLetterCreated    DateTime?
   dateOfferLetterSigned     DateTime?
-  dateStarted               DateTime?
+  dateStartDate             DateTime?
   /// This person has admin rights
   isAdmin                   Boolean?
   isHRAdmin                 Boolean?
@@ -96,9 +96,9 @@ model PersonAway {
   id                          Int       @id @default(autoincrement())
   awayDescription             String?
   awayDescriptionForTeamLeads String?
-  dateEnd                     DateTime?
-  dateEndEstimated            DateTime?
-  dateStart                   DateTime  @default(now())
+  dateEndDate                 DateTime?
+  dateEndDateEstimated        DateTime?
+  dateStartDate               DateTime  @default(now())
   dateSubmitted               DateTime  @default(now())
   personId                    Int
   reportedByPersonId          Int?
