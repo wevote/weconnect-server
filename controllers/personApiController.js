@@ -304,8 +304,6 @@ exports.personSave = async (request, response) => {
   //   personChangeDict.password = await bcrypt.hash(personChangeDict.password, 10);
   // }
 
-
-
   const userIsAdmin = await checkIsAdmin(request);
   const results = await getAllAccessRightsForPerson(request);
   const { accessRights, personIdsByTeam, teamAccessRights } = results;
