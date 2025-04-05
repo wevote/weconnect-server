@@ -100,7 +100,7 @@ exports.taskStatusListRetrieve = async (request, response) => {
   // console.log('queryParams:', queryParams);
   const personIdListIncoming = queryParams.getAll('personIdList[]');
   const personIdList = personIdListIncoming.map(convertToInteger);
-  console.log('taskStatusListRetrieve personIdList:', personIdList);
+  // console.log('taskStatusListRetrieve personIdList:', personIdList);
 
   const jsonData = {
     isSearching: false,

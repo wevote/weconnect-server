@@ -31,20 +31,21 @@ const usaDateToIso = (dateString) => {
 
 const createPersonUpdateDict = (row) => {
   const dict = {};
-  let isFlagedInCsvAsAuthoritative = true;
+  let isFlaggedInCsvAsAuthoritative = true;
   let who = row.Who;
   try {
     // Name
     who = who.replace('\n', '');
     if (who.startsWith('*')) {
-      isFlagedInCsvAsAuthoritative = false;
+      isFlaggedInCsvAsAuthoritative = false;
       who = who.replace('* ', '');
     }
     const dashedParts = who.split(' - ');
     const leave = (dashedParts[1] && (dashedParts[1].toLowerCase().includes('break') || dashedParts[1].toLowerCase().includes('leave'))) || false;
     const resigned = (dashedParts[1] && dashedParts[1].toLowerCase().includes('resigned')) || false;
     dict.statusResigned = resigned;
-    dict.statusActive = !leave && !resigned;
+    // Moved to an explicit row named "Active", instead of a calculated value
+    // dict.statusActive = !leave && !resigned;
     dict.statusOnLeave = leave;
     let cleaned = dashedParts.length > 1 ? dashedParts[0] : who;
     const nickName = cleaned.match(/.*?\((.*?)\).*?/);
@@ -59,6 +60,7 @@ const createPersonUpdateDict = (row) => {
     dict.importNote = dashedParts[1] || '';
 
     dict.statusOfferLetterSigned = row['Offer Letter Status (before purple line)'].trim() === 'Signed';
+    dict.statusOfferApproved = dict.statusOfferLetterSigned;
     // dict.???  = row['Team On- boarding Status'].trim() === 'Complete';
     dict.jazzHrUrl = row['Jazz Link'];
     dict.location = row.Location;
@@ -79,6 +81,8 @@ const createPersonUpdateDict = (row) => {
 
     dict.dateStartDate = usaDateToIso(row['Start date']);
     dict.dateEndDate = usaDateToIso(row['Known End date']);
+    dict.statusActive = row.Active === 1 || row.Active === '1'; // Making this an explicit column instead of calculated
+    dict.statusAvailableForSpecialProjects = row['Available for Special Projects'] === 1 || row['Available for Special Projects'] === '1';
     dict.emailPersonalAlternate = row['Third email'];
     dict.birthdayMonthAndDay = row['Birthday Month / Day'];
     dict.linkedInUrl = row.LinkedIn;
@@ -124,7 +128,7 @@ const createPersonUpdateDict = (row) => {
   } catch (e) {
     console.log('Exception in createPersonUpdateDict: ', e);
   }
-  return { isFlagedInCsvAsAuthoritative, dict, who };
+  return { isFlaggedInCsvAsAuthoritative, dict, who };
 };
 
 
@@ -132,11 +136,14 @@ const results = [];
 
 const args = process.argv.slice(2);
 
-const headerStr = 'Team,Who,D1,D2,D3,D4,D5,Offer Letter Status (before purple line),Team On- boarding Status,Jazz Link,Location,State,*Title / Volunteering Love,c3/ c4,Primary Email,2nd Email,Start date,Known End date,Third email,Birthday Month / Day,LinkedIn,Hours per week,Hours spent (Active),How long at We Vote?,,End Date in Past,Is Active,For Active Sum,,Attended Intro to We Vote,IDE installed? (DM),Eng Pair Scheduled (DM),Team meeting OR 2nd interview,Confirmation questions sent?,Invite to Slack,Answers received,"*We Vote Email Created\n' +
+const headerStr = 'Team,' +
+  'Who,D1,D2,D3,D4,D5,Offer Letter Status (before purple line),Team On- boarding Status,Jazz Link,Location,State,*Title / Volunteering Love,c3/ c4,Primary Email,2nd Email,Start date,' +
+  'Known End date,Active,Available for Special Projects,' +
+  'Third email,Birthday Month / Day,LinkedIn,Hours per week,Hours spent (Active),How long at We Vote?,,End Date in Past,Is Active,For Active Sum,,Attended Intro to We Vote,IDE installed? (DM),Eng Pair Scheduled (DM),Team meeting OR 2nd interview,Confirmation questions sent?,Invite to Slack,Answers received,"*We Vote Email Created\n' +
   '(link)",Email Credentials sent via Slack,"JazzHR ""New WeVote Email"" Message",*Offer Letter Created,Create Offer Letter,Offer Letter Signed by Dale,Offer Letter Signed by Volunteer,"""Welcome to the team!""",Access to Google Drive,Update status in JazzHR,"Slack Profile\n' +
   'Reminder",,Small Team Slack,Large Team Slack,Calendar Event (Sephra / Dale),Listserv (wevote email) (Meli),,Signed PDF in folder? (Meli),We Vote email signature,Public Intranet Edit Access,Private Intranet Edit Access,Add to Staff History,"Com- munica- tion\n' +
   'Part 1",Part 2,Part 3,Part 4,Part 5,* Added to We Vote LinkedIn?,Birthday fundraiser reminders (NA),,"JazzHR ""Getting Started w/ Community Outreach""",Community Outreach Google Drive,Marketing Google Drive,Design Google Drive,Figma Read Only (Dale),Access to Canva (Sephra),Access to Hubspot,,"JazzHR ""Getting Started with Product Design""",Marketing Google Drive,Design Google Drive,"Figma\n' +
-  '(Dale)",Access to Canva (Sephra),Access to Jira,Pageflows,Access to OpenReplay,,"JazzHR ""Getting Started w/ Marketing""",Marketing Google Drive,Strategy Google Drive link,Design Google Drive,Videos & Photos,Access to Jira,Access to Canva (Sephra),Mailchimp (news- letter team),,Hootsuite Password Google Doc,X.com,TikTok Pass Google Doc,Facebook/Insta,BlueSky,LinkedIn,,"JazzHR ""Getting Started w/ Marketing Analytics""",Marketing Google Drive,Access to Jira,,Access to API Server (Optional),Access to OpenReplay,Google Analytics,Google Tag Manager,Google Ads (c3 &c4),Google Search Console,New Relic,,"JazzHR ""Getting Started w/ Engineering""",Github Team,"Access to Jira\n' +
+  '(Dale)",Access to Canva (Sephra),Access to Jira,Pageflows,Access to OpenReplay,,"JazzHR ""Getting Started w/ Marketing""",Marketing Google Drive,Strategy Google Drive link,Design Google Drive,Videos & Photos,Access to Jira,Access to Canva (Sephra),Mailchimp (news- letter team),,Hootsuite Password Google Doc,X.com,TikTok Pass Google Doc,Facebook/Insta,BlueSky,LinkedIn Access,,"JazzHR ""Getting Started w/ Marketing Analytics""",Marketing Google Drive,Access to Jira,,Access to API Server (Optional),Access to OpenReplay,Google Analytics,Google Tag Manager,Google Ads (c3 &c4),Google Search Console,New Relic,,"JazzHR ""Getting Started w/ Engineering""",Github Team,"Access to Jira\n' +
   '(link)","JazzHR ""Getting Started w/ WebApp & WeVoteServer""",Engineering Google Drive (link),Access to API Server,,OpenReplay Invitation,Browser Stack,,"JazzHR ""Getting Started w/ Political Data""",Access to API Server,Political Data Google Drive,Data & Standards Google Drive,,"JazzHR ""Getting Started w/ Talent Acquisition""",Access to JazzHR,Volunteer Management Google Drive,Jira Access (link),Access to VolunteerMatch,Access to Idealist,Access to Handshake,,"JazzHR ""Getting Started w/ HR",Access to JazzHR,Volunteer Management Google Drive (link),Jira User Admin Access (link),WeVote API Server Voter Manager,Admin.Google User/Groups Mgmnt,,"JazzHR ""Getting Started w/ Donor Management""",Access to Hubspot,,"JazzHR ""Getting Started w/ Writing & Training""",Jira User Admin Access (link),Writing & Training Google Drive (link),Volunteer Management Drive (link),,Checking in: Still interested?,Service Ending? email sent,Service ended email,Removed from Slack,Removed from Slack teams (NA),Email account deleted? (SR),Removed from listservs (MM),Google drive access removed,Access to collaboration tools (further left),Final JazzHR Status Updated';
 const headerStrLessDoubleQuotes = headerStr.replaceAll('"', '');
 const columnTitles = headerStrLessDoubleQuotes.split(',');
@@ -181,7 +188,7 @@ const processCsv = async (file) => {
           }
         } else {
           // Person save or update (or don't save person if person exists and this row is non-authoritative)
-          const { isFlagedInCsvAsAuthoritative, dict: personUpdateDict, who } = createPersonUpdateDict(row);
+          const { isFlaggedInCsvAsAuthoritative, dict: personUpdateDict, who } = createPersonUpdateDict(row);
           let person = await findPersonListByParams({ emailPersonal: personUpdateDict.emailPersonal }, true);
           person = (person.length > 0) ? person[0] : undefined;
           const isNonAuthoritativeInSQL = person?.nonAuthoritativeImport || false;
@@ -190,14 +197,14 @@ const processCsv = async (file) => {
           if (personUpdateDict.emailPersonal.length === 0 && personUpdateDict.emailOfficial.length === 0) {
             console.log(`ROW SKIPPED: No valid personal or official ('2nd Email' or 'Primary Email') in row #${i}: ${who}`);
           }
-          if (isFlagedInCsvAsAuthoritative && !person) {
+          if (isFlaggedInCsvAsAuthoritative && !person) {
             // First instance of a person in the sheet, is authoritative, and does not exist in SQL
             console.log(`Authoritative Person creates new person: '${who}'  '${personUpdateDict.firstName}'  '${personUpdateDict.lastName}'  '${personUpdateDict.emailPersonal}'`);
             personUpdateDict.nonAuthoritativeImport = false;   // nonAuthoritativeImport Already defaults as false, but here for self-documentation
             person = await createPerson(personUpdateDict);
             // authoritativePersons.push(person.emailPersonal);
             peopleAdded += 1;
-          }  else if (isFlagedInCsvAsAuthoritative && person && isNonAuthoritativeInSQL) {
+          }  else if (isFlaggedInCsvAsAuthoritative && person && isNonAuthoritativeInSQL) {
             // If the first instance of a person in the sheet was non-authoritative (starts with a  '*'), we saved them so that
             // we could add them to a team.  This instance is authoritative, so overwrite the non-authoritative person with this authoritative row
             console.log(`Authoritative Person overwrites non-authoritative: '${who}'  '${personUpdateDict.firstName}'  '${personUpdateDict.lastName}'  '${personUpdateDict.emailPersonal}'`);
@@ -205,7 +212,7 @@ const processCsv = async (file) => {
             personUpdateDict.nonAuthoritativeImport = false;
             person = await savePerson(personUpdateDict);
             peopleAdded += 1;
-          } else if (!isFlagedInCsvAsAuthoritative && !person) {
+          } else if (!isFlaggedInCsvAsAuthoritative && !person) {
             // Save a non-authoritative person, since that person does not exist in SQL, and we need to add them to a team
             console.log(`Non-authoritative Person created: '${who}'  '${personUpdateDict.firstName}'  '${personUpdateDict.lastName}'  '${personUpdateDict.emailPersonal}'`);
             personUpdateDict.nonAuthoritativeImport = true;   // This case is the reason we need this field
@@ -213,17 +220,21 @@ const processCsv = async (file) => {
           } else {
             console.log(`Non-authoritative Person NOT saved: '${who}'  '${personUpdateDict.firstName}'  '${personUpdateDict.lastName}'  '${personUpdateDict.emailPersonal}'`);
           }
-          // Add the person to the team
-          const teamUpdateDict = {
-            teamMemberFirstName: person.firstName,
-            teamMemberLastName: person.lastName,
-            teamName: teamFromSql.teamName,
-            statusIsActiveInTeam: true,
-          };
-          console.log(`updateOrCreateTeamMember: '${who}'  '${person.id}' '${teamFromSql.id}'  '${teamUpdateDict}'`);
-          // const teamMember =
-          await updateOrCreateTeamMember(person.id, teamFromSql.id, teamUpdateDict);
-          // console.log(teamMember);
+          if (person && teamFromSql) {
+            // Add the person to the team
+            const teamUpdateDict = {
+              teamMemberFirstName: person.firstName,
+              teamMemberLastName: person.lastName,
+              teamName: teamFromSql.teamName,
+              statusIsActiveInTeam: true,
+            };
+            console.log(`updateOrCreateTeamMember: '${who}'  '${person.id}' '${teamFromSql.id}'  '${teamUpdateDict}'`);
+            // const teamMember =
+            await updateOrCreateTeamMember(person.id, teamFromSql.id, teamUpdateDict);
+            // console.log(teamMember);
+          } else {
+            console.log(`\n\nERROR: Team or Person not found, person: ${person}, team: ${teamFromSql}\n\n`);
+          }
         }
       }
       console.log(`\n\nDONE ---------------- teams added: ${teamsAdded} ---- people added: ${peopleAdded}`);

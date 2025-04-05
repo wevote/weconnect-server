@@ -55,6 +55,7 @@ const PERSON_FIELDS_ACCEPTED_ADMIN = {
   jazzHrUrl: 'STRING',
   jobTitle: 'STRING',
   statusActive: 'BOOLEAN',
+  statusAvailableForSpecialProjects: 'BOOLEAN',
   statusOfferLetterSigned: 'BOOLEAN',
   statusOnLeave: 'BOOLEAN',
   statusResigned: 'BOOLEAN',
@@ -209,6 +210,7 @@ async function findPersonListByParams (params = {}, includeAllData = false) {
       modifiedPersonList.push(modifiedPerson);
     });
   }
+  // console.log('findPersonListByParams modifiedPersonList:', modifiedPersonList);
   return modifiedPersonList;
 }
 
