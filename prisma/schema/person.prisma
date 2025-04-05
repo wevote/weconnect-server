@@ -4,7 +4,8 @@ model Person {
   birthdayMonthAndDay    String?
   emailOfficial          String? // This can't be set to unique, since it would make it non-optional ... eg: the field blank on two rows
   emailOfficialAlternate String?
-  emailPersonal          String  @unique
+  emailPersonal          String   @unique
+  emailPersonalOkToShare Boolean? // Volunteer approves sharing personal email with other WeVote volunteers
   emailPersonalAlternate String?
   emailPreferred         String?
   firstName              String
@@ -44,49 +45,52 @@ model Person {
   twitterHandle String?
   websiteUrl    String?
 
-  dateCreated               DateTime  @default(now())
-  dateEmailCreated          DateTime?
+  dateCreated                       DateTime  @default(now())
+  dateEmailCreated                  DateTime?
   /// Date they ended service, or for interns, the planned end date
-  dateEndDate               DateTime?
-  dateLastActive            DateTime?
-  dateLastOnLeave           DateTime?
-  dateLastUpdated           DateTime  @default(now()) @updatedAt
-  dateLastResigned          DateTime?
-  dateOfferLetterCreated    DateTime?
-  dateOfferLetterSigned     DateTime?
-  dateStartDate             DateTime?
+  dateEndDate                       DateTime?
+  dateLastActive                    DateTime?
+  dateLastOnLeave                   DateTime?
+  dateLastUpdated                   DateTime  @default(now()) @updatedAt
+  dateLastResigned                  DateTime?
+  dateOfferLetterCreated            DateTime?
+  dateOfferLetterSigned             DateTime?
+  dateStartDate                     DateTime?
   /// This person has admin rights
-  isAdmin                   Boolean?
-  isHRAdmin                 Boolean?
-  isHROfferAdmin            Boolean?
+  isAdmin                           Boolean?
+  isHRAdmin                         Boolean?
+  isHROfferAdmin                    Boolean?
   /// Has HR Generalist rights
-  isHRGeneralist1           Boolean?
-  isHRGeneralist2           Boolean?
+  isHRGeneralist1                   Boolean?
+  isHRGeneralist2                   Boolean?
   /// Has hiring manager rights
-  isHiringManager           Boolean?
-  isIntern                  Boolean?
+  isHiringManager                   Boolean?
+  isIntern                          Boolean?
   /// Has team lead rights
-  isTeamLead                Boolean?
-  statusActive              Boolean?
-  statusEmailCreated        Boolean?
-  statusActiveInLast90Days  Boolean?
-  /// Person has stopped responding to inquiries, so we assume they are resigned
-  statusNonresponsive       Boolean?
-  statusOfferLetterCreated  Boolean?
-  statusOfferLetterSigned   Boolean?
-  statusOfferDecisionNeeded Boolean   @default(false)
-  /// Hiring manager would like an offer sent to this person
-  statusOfferApproved       Boolean?
+  isTeamLead                        Boolean?
+  statusActive                      Boolean?
+  /// They are no longer active, but might be available for special projects
+  statusAvailableForSpecialProjects Boolean?
   /// Hiring manager does not think this is a suitable candidate
-  statusOfferWillNotBeMade  Boolean?
+  statusEmailCreated                Boolean?
+  statusActiveInLast90Days          Boolean?
+  /// Person has stopped responding to inquiries, so we assume they are resigned
+  statusNonresponsive               Boolean?
+  statusOfferLetterCreated          Boolean?
+  statusOfferLetterSigned           Boolean?
+  statusOfferDecisionNeeded         Boolean   @default(false)
+  /// Hiring manager would like an offer sent to this person
+  statusOfferApproved               Boolean?
+  /// Hiring manager does not think this is a suitable candidate
+  statusOfferWillNotBeMade          Boolean?
   /// Person notified us they are on leave
-  statusOnLeave             Boolean?
+  statusOnLeave                     Boolean?
   /// Person notified us they have resigned
-  statusResigned            Boolean?
-  importNote                String?
+  statusResigned                    Boolean?
+  importNote                        String?
   // nonAuthoritativeImport === true, means that while importing from csv, so that we can build the team while proceeding down the sheet
   // knowing that we will replace them with the authoritative copy when we encounter them.  This is in the DB in case the import crashes and we lose track
-  nonAuthoritativeImport    Boolean   @default(false)
+  nonAuthoritativeImport            Boolean   @default(false)
 
   QuestionAnswer QuestionAnswer[]
   TeamMember     TeamMember[]
