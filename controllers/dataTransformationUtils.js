@@ -49,6 +49,23 @@ function extractQuestionAnswersFromIncomingParams (queryParams) {
   return updateDict;
 }
 
+function extractQuestionOrderDictFromIncomingParams (queryParams) {
+  const updateDict = {};
+  let questionIdString = '';
+  let questionId = -1;
+  const keys = Array.from(queryParams.keys());
+  const values = Array.from(queryParams.values());
+  for (let i = 0; i < keys.length; i++) {
+    // console.log('==== extractQuestionAnswersFromIncomingParams key:', keys[i], ', value:', values[i]);
+    if (keys[i].startsWith('questionOrder-')) {
+      questionIdString = keys[i].replace('questionOrder-', '');
+      questionId = parseInt(questionIdString, 10);
+      updateDict[questionId] = values[i];
+    }
+  }
+  return updateDict;
+}
+
 function extractVariablesToChangeFromIncomingParamsObject (queryParamsObj, fieldsAccepted = {}) {
   const updateDict = {};
   Object.keys(queryParamsObj).forEach((key) => {
@@ -162,6 +179,7 @@ function extractVariablesToChangeFromIncomingParams (queryParams, fieldsAccepted
 module.exports = {
   extractSearchParamsFromIncomingParams,
   extractQuestionAnswersFromIncomingParams,
+  extractQuestionOrderDictFromIncomingParams,
   extractVariablesToChangeFromIncomingParamsObject,
   extractVariablesToChangeFromIncomingParams,
 }; // Export the functions
