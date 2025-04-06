@@ -1,5 +1,6 @@
 const meetingApiController = require('../controllers/meetingApiController');
 const personApiController = require('../controllers/personApiController');
+const googleApiController = require('../controllers/googleApiController');
 const questionnaireApiController = require('../controllers/questionnaireApiController');
 const taskApiController = require('../controllers/taskApiController');
 const teamApiController = require('../controllers/teamApiController');
@@ -34,12 +35,14 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/team-delete', teamApiController.teamDelete);
   weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
 
+  weconnectServer.post('/apis/v1/create-google-user', googleApiController.googleCreateUserAccount);
+  weconnectServer.post('/apis/v1/delete-google-user', googleApiController.googleDeleteUserAccount);
   weconnectServer.post('/apis/v1/get-auth', personApiController.getAuth);
-  weconnectServer.post('/apis/v1/update-db-from-csv', updateDbFromCsv);
   weconnectServer.post('/apis/v1/login', personApiController.login);
   weconnectServer.post('/apis/v1/logout', personApiController.logout);
   weconnectServer.post('/apis/v1/save-password', personApiController.savePassword);
   weconnectServer.post('/apis/v1/send-email-code', personApiController.sendEmailCode);
   weconnectServer.post('/apis/v1/signup', personApiController.signup);
+  weconnectServer.post('/apis/v1/update-db-from-csv', updateDbFromCsv);
   weconnectServer.post('/apis/v1/verify-email-code', personApiController.verifyEmailCode);
 };

@@ -264,7 +264,8 @@ exports.personRetrieve = async (request, response) => {
 };
 
 // Replacing checkIsAdmin with /controllers/personController.js getAllAccessRightsForPerson and personCanSeeOrDo
-async function checkIsAdmin (req) {
+// Still using this for on-server access rights check
+exports.checkIsAdmin = async (req) => {
   const isAuthenticated = req.isAuthenticated();
   const personId = await getPersonIdBySessionId(req.sessionID || 0);
   const person = personId ? await findPersonById(personId || 0, true) : undefined;
@@ -274,8 +275,13 @@ async function checkIsAdmin (req) {
   }
   // superusers allow access to grant admin rights, in a blank DB, or after a misconfiguration.
   const superUsers = ['dale.mcgrew@wevote.us', 'steve.podell@wevote.us']; // Feel free to revise
-  return person.isAdmin || superUsers.includes(person.emailPersonal.trim());
-}
+
+  const ret = {
+    isAdmin: person.isAdmin || superUsers.includes(person.emailPersonal.trim()),
+    person,
+  };
+  return ret;
+};
 
 /**
  * GET /api/v1/person-save
@@ -304,7 +310,7 @@ exports.personSave = async (request, response) => {
   //   personChangeDict.password = await bcrypt.hash(personChangeDict.password, 10);
   // }
 
-  const userIsAdmin = await checkIsAdmin(request);
+  const { isAdmin: userIsAdmin } = await this.checkIsAdmin(request);
   const results = await getAllAccessRightsForPerson(request);
   const { accessRights, personIdsByTeam, teamAccessRights } = results;
   // console.log('personSave accessRights: ', accessRights);
@@ -674,7 +680,8 @@ exports.getAuth = async (req, res) => {
   // console.log('getAuth personId from sessionId', personId, req.sessionID);
   const person = personId > 0 ? await findPersonById(personId) : undefined;
   const emailVerified = person && personId > 0 && person.emailVerified;
-  const loggedInPersonIsAdmin = personId > 0 && await checkIsAdmin(req);
+  const { isAdmin } = await this.checkIsAdmin(req);
+  const loggedInPersonIsAdmin = personId > 0 && isAdmin;
   const accessRights = getAccessRightsForPerson(person);
   const teamAccessRights = await getTeamAccessRightsForPerson(person);
   // Feb 2025 See the evolving permissions plan: https://docs.google.com/spreadsheets/d/1xKRFzOb7MV8aM-O4s1_IBtu2NYgTM67vEPhoKxupkCc/edit?gid=257349954#gid=257349954
