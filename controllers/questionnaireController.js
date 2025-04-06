@@ -1,5 +1,5 @@
 // weconnect-server/controllers/questionnaireController.js
-const { PERSON_FIELDS_ACCEPTED, savePerson } = require('../models/personModel');
+const { PERSON_FIELDS_ACCEPTED_ADMIN, savePerson } = require('../models/personModel');
 const { findQuestionAnswerListByParams, findQuestionListByParams, findQuestionnaireListByIdList } = require('../models/questionnaireModel');
 const { arrayContains } = require('../utils/arrayContains');
 
@@ -120,10 +120,11 @@ exports.saveAnswerToMappedField = async (fieldMappingRule, answerValueTyped, per
   // Find the field
   if (success) {
     try {
-      if (arrayContains(fieldOfInterest, PERSON_FIELDS_ACCEPTED)) {
+      // For questionnaire answers, we let the person update fields that normally they can't edit in their profile.
+      if (fieldOfInterest in PERSON_FIELDS_ACCEPTED_ADMIN) {
         personChangeDict.id = personId;
         personChangeDict[fieldOfInterest] = answerValueTyped;
-        console.log('Updating person:', personChangeDict);
+        // console.log('Updating person:', personChangeDict);
         const person = await savePerson(personChangeDict);
         status += `PERSON_UPDATED FIELD: ${fieldOfInterest} VALUE: ${answerValueTyped} `;
       } else {

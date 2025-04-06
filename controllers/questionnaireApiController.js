@@ -5,7 +5,7 @@ const { createQuestion, createQuestionnaire, findQuestionListByIdList,
   QUESTION_FIELDS_ACCEPTED, QUESTIONNAIRE_FIELDS_ACCEPTED,
   removeProtectedFieldsFromQuestion, removeProtectedFieldsFromQuestionnaire,
   saveQuestion, saveQuestionnaire, updateOrCreateQuestionAnswer } = require('../models/questionnaireModel');
-const { extractQuestionAnswersFromIncomingParams, extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
+const { extractQuestionAnswersFromIncomingParams, extractQuestionOrderDictFromIncomingParams, extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { convertToInteger } = require('../utils/convertToInteger');
 const { getAnswerValueFromAnswerDict } = require('../utils/getAnswerValueFromAnswerDict');
 
@@ -169,6 +169,74 @@ exports.questionListRetrieve = async (request, response) => {
   response.json(jsonData);
 };
 
+
+/**
+ * GET /api/v1/question-list-save
+ * For now, we are only saving the questionOrder value
+ *
+ */
+exports.questionListSave = async (request, response) => {
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const queryParams = new URLSearchParams(parsedUrl.search);
+  const questionnaireId = convertToInteger(queryParams.get('questionnaireId'));
+
+  let status = '';
+  const success = true;
+  const requiredFieldsExist = true;
+
+  if (success && requiredFieldsExist) {
+    // key is questionId
+    const questionChangeDict = extractQuestionOrderDictFromIncomingParams(queryParams);
+    // console.log('questionChangeDict:', questionChangeDict);
+
+    // Create questionIdList so we can cycle through questions to save
+    const questionIdKeys = Object.keys(questionChangeDict);
+    // console.log('questionIdKeys:', questionIdKeys);
+    const savePromises = questionIdKeys.map(async (questionIdString) => {
+      const questionId = convertToInteger(questionIdString);
+      const questionOrderString = questionChangeDict[questionId];
+      const questionOrder = convertToInteger(questionOrderString);
+      // console.log('== questionOrder:', questionOrder);
+      // const {answerType, fieldMappingRule, questionId, questionVersion} = question;
+      if (questionId > 0) {
+        const updateDict = {
+          id: questionId,
+          questionOrder,
+        };
+        // console.log('=== updateDict:', updateDict);
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          await saveQuestion(updateDict);
+          return `question saved for questionId: ${questionId}`;
+        } catch (err) {
+          console.log('ERROR saving answer: ', err);
+          return `ERROR_SAVING_ANSWER_FOR_QUESTION_ID: ${questionId}: ${err}`;
+        }
+      }
+      return null;
+    });
+
+    const results = await Promise.all(savePromises);
+    status += results.filter(Boolean).join(' ');
+  }
+
+  // Set up the default JSON response.
+  const jsonData = {
+    questionnaireId: -1,
+    status,
+    success,
+  };
+  try {
+    jsonData.questionnaireId = questionnaireId;
+  } catch (err) {
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+
+  response.json(jsonData);
+};
+
+
 /**
  * GET /api/v1/questionnaire-list-retrieve
  * Retrieve a list of questionnaires.
@@ -219,6 +287,7 @@ exports.questionnaireResponsesListRetrieve = async (request, response) => {
   // console.log('questionnaireResponsesListRetrieve queryParams:', queryParams);
   const personIdListIncoming = queryParams.getAll('personIdList[]');
   const personIdList = personIdListIncoming.map(convertToInteger);
+  // console.log('=== questionnaireResponsesListRetrieve personIdList:', personIdList);
 
   const jsonData = {
     isSearching: false,
