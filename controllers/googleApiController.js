@@ -20,7 +20,7 @@ const getAuth = async () => {
       'https://www.googleapis.com/auth/cloud-platform',
     ],
     clientOptions: {
-      subject: 'api.superadminuser@wevoteeducation.org',
+      subject: process.env.GOOGLE_SUPER_ADMIN_EMAIL,
     },
   }).then(
     (authReturned) => {
@@ -166,6 +166,7 @@ exports.googleDeleteUserAccount = async (request, response) => {
   const adminClient = google.admin({ version: 'directory_v1', auth });
   const ret = await deleteUser(adminClient, primaryEmail);
   await listUsers(adminClient);
+
   return response.json(ret);
 };
 
