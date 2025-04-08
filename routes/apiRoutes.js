@@ -36,9 +36,13 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/team-delete', teamApiController.teamDelete);
   weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
 
-  weconnectServer.post('/apis/v1/create-google-user', googleApiController.googleCreateUserAccount);
-  weconnectServer.post('/apis/v1/delete-google-user', googleApiController.googleDeleteUserAccount);
   weconnectServer.post('/apis/v1/get-auth', personApiController.getAuth);
+  weconnectServer.post('/apis/v1/google-create-user', googleApiController.googleCreateUserAccount);
+  weconnectServer.post('/apis/v1/google-delete-user', googleApiController.googleDeleteUserAccount);
+  weconnectServer.post('/apis/v1/google-get-user-info', googleApiController.googleGetUserInfo);
+  weconnectServer.post('/apis/v1/google-get-user-list', googleApiController.googleGetUserList);
+  weconnectServer.post('/apis/v1/google-grant-drive-access', googleApiController.googleGrantDriveAccess);
+  weconnectServer.post('/apis/v1/google-reset-user-password', googleApiController.googleResetUserPassword);
   weconnectServer.post('/apis/v1/login', personApiController.login);
   weconnectServer.post('/apis/v1/logout', personApiController.logout);
   weconnectServer.post('/apis/v1/save-password', personApiController.savePassword);
