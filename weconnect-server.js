@@ -68,7 +68,7 @@ const corsConfig = {
 weconnectServer.use(cors(corsConfig));
 weconnectServer.use(logger('dev'));
 // weconnectServer.use(express.bodyParser({limit: '10mb'}));
-weconnectServer.use(bodyParser.json({limit: '10mb'}));
+weconnectServer.use(bodyParser.json({ limit: '10mb' }));
 weconnectServer.use(bodyParser.urlencoded({ extended: true }));
 weconnectServer.use(limiter);
 weconnectServer.use(cookieParser());
