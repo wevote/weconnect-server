@@ -2,7 +2,7 @@
  * GET /
  * Home page.
  */
-const  path    = require("path");
+const  path    = require('path');
 // Pug code ... broken as of 3/14/25
 // exports.index = (req, res) => {
 //   res.render('home', {
