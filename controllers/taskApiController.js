@@ -373,7 +373,7 @@ exports.taskSave = async (request, response) => {
   const taskDefinitionId = convertToInteger(queryParams.get('taskDefinitionId'));
   const taskGroupId = convertToInteger(queryParams.get('taskGroupId'));
   const taskChangeDict = extractVariablesToChangeFromIncomingParams(queryParams, TASK_FIELDS_ACCEPTED_DICT);
-  console.log('== AFTER extractVariablesToChangeFromIncomingParams taskChangeDict:', taskChangeDict);
+  // console.log('== AFTER extractVariablesToChangeFromIncomingParams taskChangeDict:', taskChangeDict);
   // Set up the default JSON response.
   const jsonData = {
     taskCreated: false,

@@ -66,6 +66,7 @@ const ACCESS_RIGHTS_OPTIONS = [ // Used by viewerAccessRights in weconnect-clien
   'canAddTeamMemberAnyTeam', 'canCreateOrgEmailAccount', 'canDoAnythingIsAdmin',
   'canEditPermissionsAnyone', 'canEditPersonAnyone',
   'canEditTeamAnyTeam',
+  'canMarkAnyVolunteerTaskCompleted', 'canMarkOnboardingTaskCompleted', 'canMarkOnboardingTasksInBulk',
   'canRemoveTeam', 'canRemoveTeamMemberAnyTeam',
   'canSendOfferLetter', 'canSendOfferQuestionnaire',
   'canViewSystemSettings', 'canViewTeamMembersAnyTeam',
@@ -92,6 +93,8 @@ const getAccessRightsForPerson = (person) => {
       accessRightsDict.canAddPersonDataAnyone = true;
       accessRightsDict.canAddTeamMemberAnyTeam = true;
       accessRightsDict.canEditPersonAnyone = true;
+      accessRightsDict.canMarkAnyVolunteerTaskCompleted = true;
+      accessRightsDict.canMarkOnboardingTaskCompleted = true;
       accessRightsDict.canRemoveTeamMemberAnyTeam = true;
       accessRightsDict.canSendOfferLetter = true;
       accessRightsDict.canViewSystemSettings = true;
@@ -102,6 +105,7 @@ const getAccessRightsForPerson = (person) => {
       accessRightsDict.canAddTeamMemberAnyTeam = true;
       accessRightsDict.canEditPersonAnyone = true;
       accessRightsDict.canEditTeamAnyTeam = true;
+      accessRightsDict.canMarkOnboardingTaskCompleted = true;
       // accessRightsDict.canRemoveTeamMemberAnyTeam = true;
       accessRightsDict.canViewSystemSettings = true;
       accessRightsDict.canViewTeamMembersAnyTeam = true;

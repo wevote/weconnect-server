@@ -11,6 +11,7 @@ const { google } = require('googleapis');
 
 const getAuth = async () => {
   let auth;
+  // console.log('Getting auth process.env.GOOGLE_SUPER_ADMIN_EMAIL:', process.env.GOOGLE_SUPER_ADMIN_EMAIL);
   await google.auth.getClient({
     keyFile: path.join(__dirname, '../jwt.keys.json'),
     scopes: [
