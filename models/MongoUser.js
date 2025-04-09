@@ -1,4 +1,5 @@
 // // Old Mongoose user object, feel free to delete in 2025
+// Test note added 3/9/25 to test my git problem
 // /* eslint-disable consistent-return */
 // const crypto = require('crypto');
 // const bcrypt = require('@node-rs/bcrypt');
