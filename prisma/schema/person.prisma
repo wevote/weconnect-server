@@ -4,6 +4,7 @@ model Person {
   birthdayMonthAndDay    String?
   emailOfficial          String? // This can't be set to unique, since it would make it non-optional ... eg: the field blank on two rows
   emailOfficialAlternate String?
+  emailOfficialVerified  Boolean? // Email has been created and verified
   emailPersonal          String   @unique
   emailPersonalOkToShare Boolean? // Volunteer approves sharing personal email with other WeVote volunteers
   emailPersonalAlternate String?
