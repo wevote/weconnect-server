@@ -2,7 +2,7 @@ const path = require('path');
 const { google } = require('googleapis');
 // const res = require('express/lib/response');
 
-// Key urls for admin user api
+// Key urls for admin, drive, datatransfer, & user apis
 // https://admin.google.com/u/6/ac/accountsettings
 // https://console.cloud.google.com/welcome?pli=1&invt=AbtsZg&project=weconnectserverapp
 // https://admin.google.com/ac/owl/domainwidedelegation
@@ -10,11 +10,13 @@ const { google } = require('googleapis');
 // https://developers.google.com/oauthplayground/?code=4/0AQSTgQHDpbfkg5jq3NbzIRhHzNcVQTJI3fbYtr38NoJyZhgJl15uWcq-aGKLCbBJPZa4Sw&scope=https://www.googleapis.com/auth/admin.directory.user%20https://www.googleapis.com/auth/cloud-platform
 // https://www.npmjs.com/package/googleapis
 // https://developers.google.com/workspace/drive/api/reference/rest/v3/files/list?apix_params=%7B%22includeTeamDriveItems%22%3Atrue%2C%22supportsTeamDrives%22%3Atrue%7D
+// https://developers.google.com/oauthplayground/   to generate a bearer token for curl tests of apis
 
 const getAuth = async () => {
   let auth;
   // console.log('Getting auth process.env.GOOGLE_SUPER_ADMIN_EMAIL:', process.env.GOOGLE_SUPER_ADMIN_EMAIL);
   // Note on scopes: Need to add new ones to https://admin.google.com/ac/owl/domainwidedelegation
+  // and (rarely needed) enable the API at https://console.cloud.google.com/apis/dashboard?invt=Abuqxg&project=weconnectserverapp
   await google.auth.getClient({
     keyFile: path.join(__dirname, '../jwt.keys.json'),
     scopes: [
@@ -300,23 +302,27 @@ async function transferDriveFilesAndFoldersOwnership (adminClient, transferClien
 
   // 4/11/25 posted: https://stackoverflow.com/questions/79569838/ownership-transfer-of-google-drive-files-using-the-node-api-fails-with-missing
   // https://www.google.com/search?q=Google+Docs+and+Google+Drive+Application+ID
+  // https://developers.google.com/workspace/explore?filter=&discoveryUrl=https%3A%2F%2Fadmin.googleapis.com%2F%24discovery%2Frest%3Fversion%3Ddatatransfer_v1&discoveryRef=resources.transfers.methods.insert&operationId=datatransfer.transfers.insert
 
   const requestBody = {
+    kind: 'admin#datatransfer#DataTransfer',
     oldOwnerUserId,
     newOwnerUserId,
     applicationDataTransfers: [{
-      // applicationId: '103626277937150531336', // jwt.keys.json ... '"You'll be provided with a Client ID and Client Secret. The Client ID is the application ID you need."
+      // In some dart code from github, /// [customerId] - Immutable ID of the Google Workspace account. (is passed into the insert request)
+      // applicationId: '103626277937150531336', // Service account, Unique ID:  jwt.keys.json ... '"You'll be provided with a Client ID and Client Secret. The Client ID is the application ID you need."
       // applicationId: '0B4Sb2OJjaaGOfk53TmxCV3F6bnpQaGVhNGdFdEZ5MU1FZ2o2bl9obEpIUlhMN2Y3cjlGTEk', // from the url
-      applicationId: '55656082996',  // Google Docs and Google Drive (Application ID: 55656082996), same for all api users The https://developers.google.com/workspace/admin/data-transfer/v1/parameters
-      // applicationId: 1008827788717,  // The Client ID from https://console.cloud.google.com/welcome?pli=1&invt=AbugjA&project=weconnectserverapp
+      // applicationId: '435070579839',  // https://developers.google.com/workspace/admin/data-transfer/v1/transfer-data
+      // applicationId: '55656082996',  // Google Docs and Google Drive (Application ID: 55656082996), same for all api users The https://developers.google.com/workspace/admin/data-transfer/v1/parameters
+      applicationId: 1008827788717,  // The Client ID from https://console.cloud.google.com/welcome?pli=1&invt=AbugjA&project=weconnectserverapp
       // applicationId: 103626277937150531336,  // The Client ID from https://admin.google.com/ac/owl/domainwidedelegation
       applicationTransferParams: [
-        {
-          key: 'RELEASE_RESOURCES',
-          value: [
-            'TRUE',
-          ],
-        },
+        // {
+        //   key: 'RELEASE_RESOURCES',
+        //   value: [
+        //     'TRUE',
+        //   ],
+        // },
         {
           key: 'PRIVACY_LEVEL',
           value: [
@@ -495,7 +501,6 @@ exports.googleRevokeDriveAccess = async (request, response) => {
   const transferClient = google.admin({ version: 'datatransfer_v1', auth });
   const ret = await transferDriveFilesAndFoldersOwnership(adminClient, transferClient, oldOwnersEmail, newOwnersEmail);
   console.log(ret);
-
 
   const driveClient = google.drive({ version: 'v3', auth });
   const driveFolderId = await driveIdForDirectory(driveClient, 'We Vote Education');  // This matches the 72 char id, in the url when I browse the Drive
