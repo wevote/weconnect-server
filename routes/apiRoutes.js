@@ -41,7 +41,8 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.post('/apis/v1/google-delete-user', googleApiController.googleDeleteUserAccount);
   weconnectServer.post('/apis/v1/google-get-user-info', googleApiController.googleGetUserInfo);
   weconnectServer.post('/apis/v1/google-get-user-list', googleApiController.googleGetUserList);
-  weconnectServer.post('/apis/v1/google-grant-drive-access', googleApiController.googleGrantDriveAccess);
+  weconnectServer.post('/apis/v1/google-share-drive-access', googleApiController.googleShareDriveAccess);
+  weconnectServer.post('/apis/v1/google-revoke-drive-access', googleApiController.googleRevokeDriveAccess);
   weconnectServer.post('/apis/v1/google-reset-user-password', googleApiController.googleResetUserPassword);
   weconnectServer.post('/apis/v1/login', personApiController.login);
   weconnectServer.post('/apis/v1/logout', personApiController.logout);

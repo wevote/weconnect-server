@@ -1,5 +1,6 @@
 const path = require('path');
 const { google } = require('googleapis');
+// const res = require('express/lib/response');
 
 // Key urls for admin user api
 // https://admin.google.com/u/6/ac/accountsettings
@@ -8,10 +9,12 @@ const { google } = require('googleapis');
 // https://developers.google.com/workspace/explore?filter=&discoveryUrl=https%3A%2F%2Fadmin.googleapis.com%2F%24discovery%2Frest%3Fversion%3Ddirectory_v1&discoveryRef=resources.users.methods.list&operationId=directory.users.list
 // https://developers.google.com/oauthplayground/?code=4/0AQSTgQHDpbfkg5jq3NbzIRhHzNcVQTJI3fbYtr38NoJyZhgJl15uWcq-aGKLCbBJPZa4Sw&scope=https://www.googleapis.com/auth/admin.directory.user%20https://www.googleapis.com/auth/cloud-platform
 // https://www.npmjs.com/package/googleapis
+// https://developers.google.com/workspace/drive/api/reference/rest/v3/files/list?apix_params=%7B%22includeTeamDriveItems%22%3Atrue%2C%22supportsTeamDrives%22%3Atrue%7D
 
 const getAuth = async () => {
   let auth;
   // console.log('Getting auth process.env.GOOGLE_SUPER_ADMIN_EMAIL:', process.env.GOOGLE_SUPER_ADMIN_EMAIL);
+  // Note on scopes: Need to add new ones to https://admin.google.com/ac/owl/domainwidedelegation
   await google.auth.getClient({
     keyFile: path.join(__dirname, '../jwt.keys.json'),
     scopes: [
@@ -21,6 +24,7 @@ const getAuth = async () => {
       'https://www.googleapis.com/auth/admin.directory.user.readonly',
       'https://www.googleapis.com/auth/cloud-platform',
       'https://www.googleapis.com/auth/drive',
+      'https://www.googleapis.com/auth/admin.datatransfer',
     ],
     clientOptions: {
       subject: process.env.GOOGLE_SUPER_ADMIN_EMAIL,
@@ -68,7 +72,7 @@ async function getOneUser (adminClient, primaryEmail) {
 async function listUsers (adminClient) {
   const res = await adminClient.users.list({
     customer: 'my_customer',
-    maxResults: 500,   // when we go over 500, will need to page with nextPageToken
+    maxResults: 500,   // when we exceed 500 active staff, will need to page with nextPageToken
     orderBy: 'email',
   });
 
@@ -176,6 +180,60 @@ async function deleteUser (adminClient, primaryEmail) {
 }
 
 /**
+ * List all the files shared with a user in Drive for wevoteeducation.org
+ * The drive MUST BE SHARED with the user in GOOGLE_SUPER_ADMIN_EMAIL for this API call to return anything
+ * @param driveClient
+ */
+async function listDriveFiles (driveClient) {
+  let res;
+  let filesToReturn = [];
+  try {
+    res = await driveClient.files.list({
+      includeTeamDriveItems: true,
+      supportsTeamDrives: true,
+      // queryTerm,
+      // pageSize: 10, // Set the desired number of files to retrieve
+      // fields: 'files(name, id)', // Specify the fields to include in the response
+    });
+    const { files } = res.data;
+    console.log(files);
+    filesToReturn = files;
+  } catch (err) {
+    console.log('ERROR listDriveFiles:', err);
+  }
+  return filesToReturn;
+}
+
+/**
+ * Get the id for a folder in Drive for wevoteeducation.org
+ * The drive MUST BE SHARED with the user in GOOGLE_SUPER_ADMIN_EMAIL for this API call to return anything
+ * @param driveClient
+ * @param directory, for example 'Engineering, WVE'
+ */
+async function driveIdForDirectory (driveClient, directory) {
+  let res;
+  let fileId = '';
+  const query = `(mimeType='application/vnd.google-apps.folder' and name='${directory.trim()}')`;
+  // const query = `name='${directory.trim()}'`;
+
+  try {
+    res = await driveClient.files.list({
+      includeTeamDriveItems: true,
+      supportsTeamDrives: true,
+      q: query,
+    });
+    const { files } = res.data;
+    if (files.length > 0) {
+      console.log(files);
+      fileId = files[0].id;
+    }
+  } catch (err) {
+    console.log('ERROR driveIdForDirectory:', err);
+  }
+  return fileId;
+}
+
+/**
  * Reset a user's password
  *
  * @param adminClient
@@ -218,6 +276,65 @@ async function resetUserPassword (adminClient, primaryEmail, newPassword) {
     console.error(err);
   }
   return ret;
+}
+
+/**
+ * Transfer a user's ownership of files and folders to a new user
+ * https://developers.google.com/workspace/admin/data-transfer/v1/transfer-data
+ *
+ * @param adminClient
+ * @param oldOwnerUserId
+ * @param newOwnerEmail
+ */
+async function transferDriveFilesAndFoldersOwnership (adminClient, transferClient, oldOwnersEmail, newOwnersEmail) {
+  let serverResponse = {};
+
+  const oldOwner = await getOneUser(adminClient, oldOwnersEmail);
+  const oldOwnerUserId = oldOwner.id;
+  const newOwner = await getOneUser(adminClient, newOwnersEmail);
+  const newOwnerUserId = newOwner.id;
+
+  console.log('transferDriveFilesAndFoldersOwnership: ', oldOwner, oldOwnerUserId, newOwner, newOwnerUserId);
+
+  // TODO error checking
+
+  // 4/11/25 posted: https://stackoverflow.com/questions/79569838/ownership-transfer-of-google-drive-files-using-the-node-api-fails-with-missing
+  // https://www.google.com/search?q=Google+Docs+and+Google+Drive+Application+ID
+
+  const requestBody = {
+    oldOwnerUserId,
+    newOwnerUserId,
+    applicationDataTransfers: [{
+      // applicationId: '103626277937150531336', // jwt.keys.json ... '"You'll be provided with a Client ID and Client Secret. The Client ID is the application ID you need."
+      // applicationId: '0B4Sb2OJjaaGOfk53TmxCV3F6bnpQaGVhNGdFdEZ5MU1FZ2o2bl9obEpIUlhMN2Y3cjlGTEk', // from the url
+      applicationId: '55656082996',  // Google Docs and Google Drive (Application ID: 55656082996), same for all api users The https://developers.google.com/workspace/admin/data-transfer/v1/parameters
+      // applicationId: 1008827788717,  // The Client ID from https://console.cloud.google.com/welcome?pli=1&invt=AbugjA&project=weconnectserverapp
+      // applicationId: 103626277937150531336,  // The Client ID from https://admin.google.com/ac/owl/domainwidedelegation
+      applicationTransferParams: [
+        {
+          key: 'RELEASE_RESOURCES',
+          value: [
+            'TRUE',
+          ],
+        },
+        {
+          key: 'PRIVACY_LEVEL',
+          value: [
+            'PRIVATE',
+            'SHARED',
+          ],
+        },
+      ],
+    }],
+  };
+
+  try {
+    serverResponse = await transferClient.transfers.insert(requestBody);
+  } catch (e) {
+    console.log('ERROR driveDriveFilesAndFoldersOwnership:', e);
+  }
+  console.log('transferDriveFilesAndFoldersOwnership:', serverResponse);
+  return serverResponse;
 }
 
 /**
@@ -298,7 +415,7 @@ exports.googleDeleteUserAccount = async (request, response) => {
 };
 
 /**
- * GET /apis/v1/google-reset-user-password
+ * POST /apis/v1/google-reset-user-password
  * Use the Google Admin SDK Directory API to reset a user's Google password
  */
 exports.googleResetUserPassword = async (request, response) => {
@@ -310,26 +427,112 @@ exports.googleResetUserPassword = async (request, response) => {
   return response.json(ret);
 };
 
-
-exports.googleGrantDriveAccess = async (request, response) => {
-  // const { primaryEmail, driveFolder, writeAccess } = request.body;
+/**
+ * POST /apis/v1/google-drive-list-files
+ * Use the Google Drive SDK Directory API to list the files in the drive
+ */
+exports.googleDriveListFiles = async (request, response) => {
   const auth = await getAuth();
   const driveClient = google.drive({ version: 'v3', auth });
-
-  let res;
-  try {
-    res = await driveClient.files.list({
-      pageSize: 10, // Set the desired number of files to retrieve
-      fields: 'files(name, id)', // Specify the fields to include in the response
-    });
-    const { files } = res.data;
-    console.log(files);
-    res.json(files);
-  } catch (err) {
-    console.log('googleGrantDriveAccess', err);
-  }
-  console.log(res?.data);
-  return response.json(res?.data);
+  const filesToReturn = await listDriveFiles(driveClient);
+  return response.json(filesToReturn);
 };
 
+/**
+ * POST /apis/v1/google-share-drive-access
+ * Use the Google Drive SDK Directory API to grant access (share) directories in the drive
+ */
+exports.googleShareDriveAccess = async (request, response) => {
+  const { primaryEmail, driveFolder, role } = request.body;
+  let success = false;
+  let error = '';
+  const auth = await getAuth();
+  const driveClient = google.drive({ version: 'v3', auth });
+  const driveFolderId = await driveIdForDirectory(driveClient, driveFolder);
+  if (driveFolderId.length === 0) {
+    success = false;
+    error = 'Unable to find drive folder';
+  } else {
+    try {
+      const res = await driveClient.permissions.create({
+        fileId: driveFolderId,
+        requestBody: {
+          type: 'user',         // Or 'group'
+          role,                 // 'reader', 'commenter', 'writer', or 'owner'
+          emailAddress: primaryEmail,
+        },
+        fields: 'id',
+      });
+      console.log(`File shared with ${primaryEmail} (Permission ID: ${res.data.id})`);
+      success = true;
+    } catch (err) {
+      error = `Error sharing file: ${err}`;
+      console.error(error);
+    }
+  }
+  return response.json({
+    success,
+    driveFolder,
+    driveFolderId,
+    error,
+  });
+};
+
+/**
+ * POST /apis/v1/google-revoke-drive-access
+ * Use the Google Drive SDK Directory API to grant access (share) directories in the drive
+ * https://stackoverflow.com/questions/65227750/how-to-execute-data-transfer-api
+ * Always transfer ownership when revoking
+ */
+exports.googleRevokeDriveAccess = async (request, response) => {
+  const { oldOwnersEmail, newOwnersEmail } = request.body;
+  let success = false;
+  let error = '';
+  const primaryEmail = oldOwnersEmail;
+  const auth = await getAuth();
+  // Waiting for response https://stackoverflow.com/questions/79569838/ownership-transfer-of-google-drive-files-using-the-node-api-fails-with-missing
+  const adminClient = google.admin({ version: 'directory_v1', auth });
+  const transferClient = google.admin({ version: 'datatransfer_v1', auth });
+  const ret = await transferDriveFilesAndFoldersOwnership(adminClient, transferClient, oldOwnersEmail, newOwnersEmail);
+  console.log(ret);
+
+
+  const driveClient = google.drive({ version: 'v3', auth });
+  const driveFolderId = await driveIdForDirectory(driveClient, 'We Vote Education');  // This matches the 72 char id, in the url when I browse the Drive
+  if (driveFolderId.length === 0) {
+    success = false;
+    error = 'Unable to find drive folder';
+  } else {
+    try {
+      const ttt = await driveClient.permissions.list({
+        fileId: driveFolderId,  // <---this is ID of a shared drive, not a file
+        useDomainAdminAccess: true,
+        pageSize: 100,
+      });
+      console.log(ttt);
+      const res = await driveClient.permissions.delete({
+        fileId: driveFolderId,
+        requestBody: {
+          type: 'user',         // Or 'group'
+          // role,                 // 'reader', 'commenter', 'writer', or 'owner'
+          emailAddress: primaryEmail,
+        },
+        fields: 'id',
+      });
+      console.error(res);
+      console.log(`File sharing removed for ${primaryEmail} (Permission ID: ${res.data.id})`);
+      success = true;
+    } catch (err) {
+      error = `Error sharing file: ${err}`;
+      console.error(error);
+    }
+  }
+
+  return response.json({
+    success,
+    res: '',
+    // driveFolderId,
+    error,
+  });
+};
 
