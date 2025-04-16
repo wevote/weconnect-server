@@ -6,10 +6,10 @@ const prisma = new PrismaClient();
 
 const TASK_DEFINITION_FIELDS_ACCEPTED = {
   emailTemplateId: 'INTEGER',
-  googleDriveFolderId: 'STRING',
+  googleDriveAssetId: 'STRING',
   isForVolunteer: 'BOOLEAN',
-  isGoogleDrivePermissionStep: 'BOOLEAN',
-  isQuestionnaireStep: 'BOOLEAN',
+  isGoogleDrivePermissionTask: 'BOOLEAN',
+  isQuestionnaireTask: 'BOOLEAN',
   order: 'INTEGER',
   questionnaireId: 'INTEGER',
   taskGroupId: 'INTEGER',

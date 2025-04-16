@@ -57,7 +57,7 @@ async function getOneUser (adminClient, primaryEmail) {
 
   const { users } = res.data;
   if (!users || users.length === 0) {
-    console.log('No users found.');
+    console.log('getOneUser: No users found.');
     return [];
   }
   const user = users[0];
@@ -80,7 +80,7 @@ async function listUsers (adminClient) {
 
   const { users } = res.data;
   if (!users || users.length === 0) {
-    console.log('No users found.');
+    console.log('listUsers: No users found.');
     return [];
   }
 
@@ -98,12 +98,13 @@ async function listUsers (adminClient) {
  *
  * @param {admin_directory_v1.Admin} adminClient
  * @param primaryEmail
+ * @param personalEmail
  * @param firstName
  * @param lastName
  * @param password
  * @param phoneNumber
  */
-async function createUser (adminClient, primaryEmail, firstName, lastName, password, phoneNumber) {
+async function createUser (adminClient, primaryEmail, personalEmail, firstName, lastName, password, phoneNumber) {
   const user = {
     kind: 'admin_directory#user',
     primaryEmail,
@@ -112,6 +113,16 @@ async function createUser (adminClient, primaryEmail, firstName, lastName, passw
       givenName: firstName,
       familyName: lastName,
     },
+    emails: [
+      {
+        address: primaryEmail,
+        type: 'work',
+      },
+      {
+        address: personalEmail,
+        type: 'home',
+      },
+    ],
     phones: [
       {
         value: phoneNumber,
@@ -367,11 +378,14 @@ exports.googleGetUserInfo = async (request, response) => {
   const auth = await getAuth();
   const adminClient = google.admin({ version: 'directory_v1', auth });
   const user = await getOneUser(adminClient, primaryEmail);
+  // console.log('primaryEmail:', primaryEmail, ', Google User:', user);
   let ret;
   if (user.length === 0) {
     ret = {
-      success: false,
-      error: 'User not found',
+      isMailboxSetup: false,
+      status: 'User not found',
+      success: true,
+      userFound: false,
     };
   } else {
     ret = {
@@ -384,6 +398,7 @@ exports.googleGetUserInfo = async (request, response) => {
       lastLoginTime: user.lastLoginTime,
       isMailboxSetup: user.isMailboxSetup,
       thumbnailPhotoUrl: user.thumbnailPhotoUrl,
+      userFound: true,
       // Less important
       creationTime: user.creationTime,
       changePasswordAtNextLogin: user.changePasswordAtNextLogin,
@@ -391,6 +406,7 @@ exports.googleGetUserInfo = async (request, response) => {
       archived: user.archived,
       googleUserId: user.id,
       isAdmin: user.isAdmin,
+      isArchived: user.archived,
       isDelegatedAdmin: user.isDelegatedAdmin,
       isSuspended: user.suspended,
     };
@@ -415,10 +431,10 @@ exports.googleGetUserList = async (request, response) => {
  * Use the Google Admin SDK Directory API to add a new user to the WeVote Google organization
  */
 exports.googleCreateUserAccount = async (request, response) => {
-  const { primaryEmail, firstName, lastName, password, phoneNumber } = request.body;
+  const { personalEmail, primaryEmail, firstName, lastName, password, phoneNumber } = request.body;
   const auth = await getAuth();
   const adminClient = google.admin({ version: 'directory_v1', auth });
-  const ret = await createUser(adminClient, primaryEmail, firstName, lastName, password, phoneNumber);
+  const ret = await createUser(adminClient, primaryEmail, personalEmail, firstName, lastName, password, phoneNumber);
 
   return response.json(ret);
 };
@@ -465,15 +481,23 @@ exports.googleDriveListFiles = async (request, response) => {
  * Use the Google Drive SDK Directory API to grant access (share) directories in the drive
  */
 exports.googleShareDriveAccess = async (request, response) => {
-  const { primaryEmail, driveFolder, role } = request.body;
+  const { primaryEmail, driveFolder, driveFolderId: driveFolderIdIncoming, role } = request.body;
+  let status = '';
   let success = false;
+  let driveFolderId = '';
   let error = '';
   const auth = await getAuth();
   const driveClient = google.drive({ version: 'v3', auth });
-  const driveFolderId = await driveIdForDirectory(driveClient, driveFolder);
-  if (driveFolderId.length === 0) {
+  status += `primaryEmail: ${primaryEmail}, driveFolderIdIncoming: ${driveFolderIdIncoming} `;
+  console.log(status);
+  if (driveFolderIdIncoming) {
+    driveFolderId = driveFolderIdIncoming;
+  } else if (driveFolder && driveFolder.length === 0) {
+    driveFolderId = await driveIdForDirectory(driveClient, driveFolder);
+  }
+  if (!driveFolderId) {
     success = false;
-    error = 'Unable to find drive folder';
+    error = `Unable to find drive folder: ${status} `;
   } else {
     try {
       const res = await driveClient.permissions.create({
@@ -488,7 +512,7 @@ exports.googleShareDriveAccess = async (request, response) => {
       console.log(`File shared with ${primaryEmail} (Permission ID: ${res.data.id})`);
       success = true;
     } catch (err) {
-      error = `Error sharing file: ${err}`;
+      error = `Error sharing file: ${err} ${status} `;
       console.error(error);
     }
   }
