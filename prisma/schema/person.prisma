@@ -21,6 +21,7 @@ model Person {
   lastName               String?
   /// location is City, State -- not full address
   location               String?
+  phoneNumber            String?
   /// c3 / c4
   staffKind              String?
   stateCode              String?

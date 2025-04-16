@@ -56,6 +56,7 @@ const PERSON_FIELDS_ACCEPTED_ADMIN = {
   isTeamLead: 'BOOLEAN',
   jazzHrUrl: 'STRING',
   jobTitle: 'STRING',
+  phoneNumber: 'STRING',
   statusActive: 'BOOLEAN',
   statusAvailableForSpecialProjects: 'BOOLEAN',
   statusOfferApproved: 'BOOLEAN',
