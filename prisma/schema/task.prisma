@@ -56,6 +56,8 @@ model TaskDefinition {
   order                       Int      @default(0)
   /// Questionnaire to refer to in the instructions
   questionnaireId             Int      @default(-1)
+  /// This is a TaskDefinition that is in use
+  statusActive                Boolean  @default(true)
   /// Id of the TaskGroup this task is a part of
   taskGroupId                 Int
   /// Where HR team goes to do this task. The link could be a Google drive folder.
@@ -77,13 +79,22 @@ model TaskDependency {
 
 /// A series of tasks (sometimes ordered) to accomplish an onboarding goal
 model TaskGroup {
-  id                   Int      @id @default(autoincrement())
-  taskGroupName        String
-  taskGroupDescription String?
-  /// To be completed based on team(s) the volunteer is in
-  taskGroupIsForTeam   Boolean?
+  id                            Int      @id @default(autoincrement())
+  /// Create tasks in this TaskGroup for a person if...
+  assignIfEmailCreated          Boolean?
+  assignIfOfferDecisionNeeded   Boolean?
+  assignIfOfferLetterCreated    Boolean?
+  assignIfOfferLetterSigned     Boolean?
+  assignIfQuestionnaireAnswered Boolean?
+  assignIfStatusOfferApproved   Boolean?
+  questionnaireId               Int      @default(-1)
   /// This is a series that is in use
-  statusActive         Boolean  @default(true)
+  statusActive                  Boolean  @default(true)
+  taskGroupName                 String
+  taskGroupDescription          String?
+  /// Only create tasks in this TaskGroup to a person if they are on a team using this TaskGroup
+  taskGroupIsForTeam            Boolean?
+  taskGroupTeamId               Int      @default(-1)
 }
 
 /// This team wants this TaskGroup completed for team members

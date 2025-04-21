@@ -355,20 +355,25 @@ async function comparePassword (person, candidatePassword, cb) {
 /**
  * Verify that emailOfficial or emailPreferred will be unique if inserted into the db,
  * emailPersonal is guaranteed unique by SQL constraints
- * @param {emailSubmitted, value}
+ * @param email
  * @returns {Promise<boolean>}
  */
 const manuallyConfirmEmailUniqueness = async (email) => {
+  if (!email) {
+    return true;
+  }
   const key = Object.keys(email)[0];
   const value = email[key];
-  if (value.length === 0) {
+  if (!value) {
+    return true;
+  } else if (value.length === 0) {
     return true;
   }
   // eslint-disable-next-line no-param-reassign
   email[key] = validator.normalizeEmail(value, { gmail_remove_dots: false });
   const personList = await findPersonListByParams(email, true);
   // console.log('manuallyConfirmEmailUniqueness found a match for ', email);
-  if (personList.length === 1) {
+  if (personList.length > 0) {
     if (personList.length > 1) {
       console.error(`manuallyConfirmEmailUniqueness found more than one matching '${email.key}' rows, this is a data corruption error`);
     }
