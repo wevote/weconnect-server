@@ -1,22 +1,87 @@
 // weconnect-server/controllers/taskController.js
-const { createTask, findTaskDefinitionListByParams, findTaskDependencyListByParams, findTaskGroupListByIdList,
-  findTaskListByParams, TASK_DEFINITION_FIELDS_ACCEPTED } = require('../models/taskModel');
+const { findQuestionAnswerListByParams } = require('../models/questionnaireModel');
+const {
+  createTask,
+  findTaskDefinitionListByParams, findTaskDependencyListByParams, findTaskGroupListByIdList,
+  findTaskGroupListByParams, findTaskListByParams,
+  // TASK_DEFINITION_FIELDS_ACCEPTED,
+} = require('../models/taskModel');
+const { findTeamMemberListByParams } = require('../models/teamModel');
 const { arrayContains } = require('../utils/arrayContains');
 const { findPersonListByParams } = require('../models/personModel');
 
+// personStatesThatIndicateThisIsNotNecessary is used to avoid creating tasks earlier in the onboarding process once we've already passed a later "gate"
+const TASK_GROUP_MATCH_REQUIRED = [
+  {
+    personField: 'statusEmailCreated',
+    personStatesThatIndicateThisIsNotNecessary: [''],
+    taskGroupField: 'assignIfEmailCreated',
+  },
+  {
+    personField: 'statusOfferDecisionNeeded',
+    personStatesThatIndicateThisIsNotNecessary: ['statusOfferLetterSigned', ''],
+    taskGroupField: 'assignIfOfferDecisionNeeded',
+  },
+  {
+    personField: 'statusOfferLetterCreated',
+    personStatesThatIndicateThisIsNotNecessary: [''],
+    taskGroupField: 'assignIfOfferLetterCreated',
+  },
+  {
+    personField: 'statusOfferLetterSigned',
+    personStatesThatIndicateThisIsNotNecessary: [''],
+    taskGroupField: 'assignIfOfferLetterSigned',
+  },
+  {
+    taskGroupField: 'assignIfQuestionnaireAnswered',
+  },
+  {
+    personField: 'statusOfferApproved',
+    personStatesThatIndicateThisIsNotNecessary: [''],
+    taskGroupField: 'assignIfStatusOfferApproved',
+  },
+];
+
 exports.generateTaskStatusListForAllPeople = async () => {
-  // Get all existing tasks
-  const paramsTaskList = {};
   let status = '';
   let success = true;
-  const taskList = await findTaskListByParams(paramsTaskList);
+  // console.log('generateTaskStatusListForAllPeople started');
+
+  // Find out which questionnaires have been answered by which people
+  const questionnaireAnsweredDict = {};
+  try {
+    const paramsQuestionAnswerList = {};
+    const questionAnswerList = await findQuestionAnswerListByParams(paramsQuestionAnswerList);
+    questionAnswerList.forEach((answer) => {
+      if (!questionnaireAnsweredDict[answer.personId]) {
+        questionnaireAnsweredDict[answer.personId] = {};
+      }
+      questionnaireAnsweredDict[answer.personId][answer.questionnaireId] = true;
+    });
+  } catch (err) {
+    status += `Error while fetching questionnaireAnswerList: ${err.message} `;
+    console.error(status);
+    success = false;
+  }
+  // console.log('questionnaireAnsweredDict:', questionnaireAnsweredDict);
+
+  // Get all existing tasks
   const taskListDictByPersonId = {};
-  for (let i = 0; i < taskList.length; i++) {
-    // If task is not found, we create it
-    if (!taskListDictByPersonId[taskList[i].personId]) {
-      taskListDictByPersonId[taskList[i].personId] = [];
+  try {
+    const paramsTaskList = {};
+    const taskList = await findTaskListByParams(paramsTaskList);
+    // console.log('generateTaskStatusListForAllPeople taskList.length:', taskList.length);
+    for (let i = 0; i < taskList.length; i++) {
+      // If task is not found, we create it
+      if (!taskListDictByPersonId[taskList[i].personId]) {
+        taskListDictByPersonId[taskList[i].personId] = [];
+      }
+      taskListDictByPersonId[taskList[i].personId].push(taskList[i]);
     }
-    taskListDictByPersonId[taskList[i].personId].push(taskList[i]);
+  } catch (err) {
+    status += `Error while fetching taskList: ${err.message} `;
+    console.error(status);
+    success = false;
   }
 
   // Get all task definitions
@@ -27,9 +92,64 @@ exports.generateTaskStatusListForAllPeople = async () => {
   const paramsTaskDependencyList = {};
   const taskDependencyList = await findTaskDependencyListByParams(paramsTaskDependencyList);
 
+  // Get all task groups
+  const paramsTaskGroupList = {};
+  const taskGroupList = await findTaskGroupListByParams(paramsTaskGroupList);
+  const taskGroupDict = taskGroupList.reduce((acc, taskGroup) => {
+    acc[taskGroup.id] = taskGroup;
+    return acc;
+  }, {});
+
+  // Assemble which teams are associated with each task group when taskGroupIsForTeam is true
+  const taskGroupTeamIdLists = {}; // key = taskGroupId, value = [teamId1, teamId2,...]
+  try {
+    // TODO: Create table that supports more than one team per task group
+    // const paramsTaskGroupTeam = {};
+    // const taskGroupTeamList = await findTaskGroupTeamListByParams(paramsTaskGroupTeam);
+    // for (let i = 0; i < taskGroupTeamList.length; i++) {
+    //   // If taskGroupId is not found in dict, we create it
+    //   if (!taskGroupTeamIdLists[taskGroupTeamList[i].taskGroupId]) {
+    //     taskGroupTeamIdLists[taskGroupTeamList[i].taskGroupId] = [];
+    //   }
+    //   taskGroupTeamIdLists[taskList[i].taskGroupId].push(taskGroupTeamList[i].taskGroupTeamId);
+    // }
+    // Temp
+    for (let i = 0; i < taskGroupList.length; i++) {
+      if (taskGroupList[i].taskGroupTeamId && taskGroupList[i].taskGroupTeamId > 0) {
+        // If task is not found in dict, we create it
+        if (!taskGroupTeamIdLists[taskGroupList[i].id]) {
+          taskGroupTeamIdLists[taskGroupList[i].id] = [];
+        }
+        taskGroupTeamIdLists[taskGroupList[i].id].push(taskGroupList[i].taskGroupTeamId);
+      }
+    }
+    // console.log('generateTaskStatusListForAllPeople taskGroupDict:', taskGroupDict);
+    // console.log('generateTaskStatusListForAllPeople taskGroupTeamIdLists:', taskGroupTeamIdLists);
+  } catch (err) {
+    status += `Error while fetching taskGroupIsForTeam: ${err.message} `;
+    console.error(status);
+    success = false;
+  }
+
+  // Get all team members so for each person, we can tell which team(s) they are in
+  const paramsTeamMemberList = {};
+  const TeamMemberList = await findTeamMemberListByParams(paramsTeamMemberList);
+  const teamMemberDict = {};
+  TeamMemberList.forEach((answer) => {
+    if (!teamMemberDict[answer.personId]) {
+      teamMemberDict[answer.personId] = {};
+    }
+    teamMemberDict[answer.personId][answer.teamId] = true;
+  });
+
   // Add params that look for values in person records that imply tasks needs to be generated?
-  const params = {};
-  const personList = await findPersonListByParams(params);
+  const paramsPersonList = { statusActive: true };
+  const personList = await findPersonListByParams(paramsPersonList);
+  const personDict = personList.reduce((acc, person) => {
+    acc[person.id] = person;
+    return acc;
+  }, {});
+  // console.log('personDict[1]:', personDict[1]);
   let taskListForPerson = [];
   for (let i = 0; i < personList.length; i++) {
     // console.log('personList[i]:', personList[i]);
@@ -38,10 +158,17 @@ exports.generateTaskStatusListForAllPeople = async () => {
     } catch (err) {
       taskListForPerson = [];
     }
+    const questionnairesAnsweredByThisPerson = questionnaireAnsweredDict[personList[i].id] || {};
+    const teamsForThisPerson = teamMemberDict[personList[i].id] || {};
+    // console.log('questionnairesAnsweredByThisPerson:', questionnairesAnsweredByThisPerson);
     const generateResults = exports.generateTasksForPerson(
       personList[i],
+      questionnairesAnsweredByThisPerson,
       taskListForPerson,
       taskDefinitionList,
+      taskGroupDict,
+      teamsForThisPerson,
+      taskGroupTeamIdLists,
     );
     status += generateResults.status;
     if (generateResults.success === false) {
@@ -49,10 +176,11 @@ exports.generateTaskStatusListForAllPeople = async () => {
     }
     if (generateResults.newTasksCreated) {
       ({ taskListForPerson } = generateResults);
-      console.log('taskListModified:', taskListForPerson);
+      // console.log('taskListModified:', taskListForPerson);
     }
 
-    const taskListUpdated = exports.updateTaskStatusesForPerson(
+    // const taskListUpdated =
+    exports.updateTaskStatusesForPerson(
       personList[i],
       taskListForPerson,
       taskDefinitionList,
@@ -68,50 +196,121 @@ exports.generateTaskStatusListForAllPeople = async () => {
 
 exports.generateTasksForPerson = async (
   person,
+  questionnairesAnsweredByThisPerson,
   taskListForPerson,
   taskDefinitionList,
+  taskGroupDict,
+  teamsForThisPerson,
+  taskGroupTeamIdLists,
 ) => {
   let newTasksCreated = false;
   let status = '';
   let success = true;
-  // Organize tasks into a dict based on taskDefinitionId
-  const taskDictByDefinitionId = {};
-  for (let i = 0; i < taskListForPerson.length; i++) {
-    if (!taskDictByDefinitionId[taskListForPerson[i].taskDefinitionId]) {
-      taskDictByDefinitionId[taskListForPerson[i].taskDefinitionId] = taskListForPerson[i];
+  // Organize TaskDefinitions into a dict based on id
+  const taskDefinitionDictByDefinitionId = {};
+  for (let i = 0; i < taskDefinitionList.length; i++) {
+    if (!taskDefinitionDictByDefinitionId[taskDefinitionList[i].id]) {
+      taskDefinitionDictByDefinitionId[taskDefinitionList[i].id] = taskDefinitionList[i];
     }
   }
-  // console.log('taskDictByDefinitionId:', taskDictByDefinitionId);
-  // Loop through all TaskDefinitions and if a task doesn't already exist, create it
-  // Create an array of promises for new tasks
-  const newTaskPromises = taskDefinitionList.map((taskDefinition) => {
-    if (!taskDictByDefinitionId[taskDefinition.id]) {
-      console.log('Creating new task for person:', person.firstName);
-      const taskChangeDict = {
-        personId: person.id,
-        taskDefinitionId: taskDefinition.id,
-        taskGroupId: taskDefinition.taskGroupId,
-      };
-      // Set a flag to indicate that a new task has been created, so we don't try to create again
-      taskDictByDefinitionId[taskDefinition.id] = true;
-      return createTask(taskChangeDict);
+  // Organize tasks for the person into a dict based on taskDefinitionId
+  const taskDictByDefinitionIdForThisPerson = {};
+  for (let i = 0; i < taskListForPerson.length; i++) {
+    if (!taskDictByDefinitionIdForThisPerson[taskListForPerson[i].taskDefinitionId]) {
+      taskDictByDefinitionIdForThisPerson[taskListForPerson[i].taskDefinitionId] = taskListForPerson[i];
     }
-    return null;
+  }
+  // console.log('taskDefinitionDictByDefinitionId:', taskDefinitionDictByDefinitionId);
+  // Create an array of promises for creating new tasks
+  // Loop through all TaskDefinitions and if a task doesn't already exist for the person, and it should exist, create it
+  const newTaskPromises = taskDefinitionList.map((taskDefinition) => {
+    try {
+      if (taskDictByDefinitionIdForThisPerson[taskDefinition.id]) {
+        // Already exists, so we don't need to create a new one
+        // console.log('Task already exists taskDefinition.id:', taskDefinition.id);
+        return null;
+      }
+      // console.log('=== Task does NOT exist taskDefinition.id:', taskDefinition.id);
+      // Check here if the task should be created for this person
+      if (taskDefinition.taskGroupId) {
+        // Currently we require all tasks to be organized within a task group
+        const taskGroup = taskGroupDict[taskDefinition.taskGroupId];
+        if (taskGroup.statusActive === true && taskGroup.taskGroupIsForTeam === true) {
+          // console.log(`== generateTasksForPerson person, taskGroupIsForTeam, taskGroupId: ${taskDefinition.taskGroupId} ${person.firstName} ${person.lastName}`);
+          // If this taskGroup is for a team, it will only apply if the person is in that team.
+          const teamIdListForThisTaskGroup = taskGroupTeamIdLists[taskGroup.id] || [];
+          // console.log('==== teamIdListForThisTaskGroup:', teamIdListForThisTaskGroup);
+          // console.log('==== teamsForThisPerson:', teamsForThisPerson);
+          if (teamIdListForThisTaskGroup.length === 0) {
+            // If teamIdListForThisTaskGroup is empty, always return null when taskGroupIsForTeam === true
+            return null;
+          }
+          const personIsInTaskGroupTeam = teamIdListForThisTaskGroup.some((teamId) => teamsForThisPerson[teamId]);
+          // console.log('==== personIsInTaskGroupTeam:', personIsInTaskGroupTeam);
+
+          if (!personIsInTaskGroupTeam) {
+            // If the person is not in any of the teams for this task group, skip this task
+            return null;
+          }
+        }
+        if (taskGroup.statusActive === true) {
+          // console.log('Task group is active:', taskGroup);
+          for (let i = 0; i < TASK_GROUP_MATCH_REQUIRED.length; i++) {
+            let createThisTaskForThisPerson = false;
+            const taskGroupMatchField = TASK_GROUP_MATCH_REQUIRED[i].taskGroupField;
+            const personMatchField = (TASK_GROUP_MATCH_REQUIRED[i]) ? TASK_GROUP_MATCH_REQUIRED[i].personField : '';
+            // console.log('==== taskGroupMatchField:', taskGroupMatchField);
+            if (taskGroupMatchField === 'assignIfQuestionnaireAnswered' && taskGroup.assignIfQuestionnaireAnswered === true) {
+              // Do we have a questionnaire response for this person?
+              // console.log(`== generateTasksForPerson person: ${person.firstName} ${person.lastName}`);
+              // console.log('==== questionnairesAnsweredByThisPerson:', questionnairesAnsweredByThisPerson);
+              // console.log('==== Checking questionnaire:', taskGroup.questionnaireId, 'taskGroup:', taskGroup);
+              if (questionnairesAnsweredByThisPerson && questionnairesAnsweredByThisPerson[`${taskGroup.questionnaireId}`]) {
+                createThisTaskForThisPerson = true;
+                // console.log('===== questionnaire answered:', taskGroup.questionnaireId);
+              }
+            } else if (taskGroup[taskGroupMatchField] === true && person[personMatchField] === true) {
+              createThisTaskForThisPerson = true;
+              // console.log(`== generateTasksForPerson person (loop 2): ${person.firstName} ${person.lastName}`);
+              // console.log('==== Task should be created:', taskGroupMatchField, personMatchField);
+            }
+            if (createThisTaskForThisPerson) {
+              const taskChangeDict = {
+                personId: person.id,
+                taskDefinitionId: taskDefinition.id,
+                taskGroupId: taskDefinition.taskGroupId,
+              };
+              // console.log('==== Creating new task for person:', person.firstName, person.lastName, ':', taskChangeDict);
+              // Set a flag to indicate that a new task has been created, so we don't try to create again
+              taskDictByDefinitionIdForThisPerson[taskDefinition.id] = true;
+              return createTask(taskChangeDict);
+            }
+          }
+        } else return null;
+        return null;
+      } else return null;
+    } catch (err) {
+      console.error('Error creating task:', err);
+      status += `Error creating task: ${err.message}\n`;
+      success = false;
+      return null;
+    }
   }).filter(Boolean);
 
   // Wait for all new tasks to be created
   const newTasks = await Promise.all(newTaskPromises);
   newTasksCreated = newTasks.length > 0;
 
-  // Add new tasks to taskListForPerson and taskDictByDefinitionId
+  // Add new tasks to taskListForPerson and taskDictByDefinitionIdForThisPerson
   newTasks.forEach((task) => {
     taskListForPerson.push(task);
-    taskDictByDefinitionId[task.taskDefinitionId] = task;
+    taskDictByDefinitionIdForThisPerson[task.taskDefinitionId] = task;
   });
 
   // console.log('generateTasksForPerson taskListForPerson:', taskListForPerson);
 
   // Check dependencies and update task status
+  // TODO especially for assignIfQuestionnaireAnswered
 
   // console.log('person.firstName:', person.firstName);
   return {
@@ -230,8 +429,8 @@ exports.retrieveTaskStatusListByPersonIdList = async (personIdList) => {
 exports.updateTaskStatusesForPerson = async (
   person,
   taskListForPerson,
-  taskDefinitionList,
-  taskDependencyList,
+  // taskDefinitionList,
+  // taskDependencyList,
 ) => {
   // console.log('updateTaskStatusesForPerson person.firstName:', person.firstName);
   // Organize tasks into a dict based on taskDefinitionId
@@ -246,5 +445,4 @@ exports.updateTaskStatusesForPerson = async (
   // console.log('updateTaskStatusesForPerson taskListForPerson:', taskListForPerson);
 
   // Check dependencies and update task status
-
 };

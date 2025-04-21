@@ -12,6 +12,7 @@ const TASK_DEFINITION_FIELDS_ACCEPTED = {
   isQuestionnaireTask: 'BOOLEAN',
   order: 'INTEGER',
   questionnaireId: 'INTEGER',
+  statusActive: 'BOOLEAN',
   taskGroupId: 'INTEGER',
   taskActionUrl: 'STRING',
   taskName: 'STRING',
@@ -44,11 +45,20 @@ const TASK_FIELDS_ACCEPTED_DICT = {
   taskGroupId: 'INTEGER',
 };
 
-const TASK_GROUP_FIELDS_ACCEPTED = [
-  'taskGroupName',
-  'taskGroupDescription',
-  'taskGroupIsForTeam',
-];
+const TASK_GROUP_FIELDS_ACCEPTED = {
+  assignIfEmailCreated: 'BOOLEAN',
+  assignIfOfferDecisionNeeded: 'BOOLEAN',
+  assignIfOfferLetterCreated: 'BOOLEAN',
+  assignIfOfferLetterSigned: 'BOOLEAN',
+  assignIfQuestionnaireAnswered: 'BOOLEAN',
+  assignIfStatusOfferApproved: 'BOOLEAN',
+  questionnaireId: 'INTEGER',
+  statusActive: 'BOOLEAN',
+  taskGroupName: 'STRING',
+  taskGroupDescription: 'STRING',
+  taskGroupIsForTeam: 'BOOLEAN',
+  taskGroupTeamId: 'INTEGER',
+};
 
 function removeProtectedFieldsFromTask (task) {
   const modifiedTask = { ...task };

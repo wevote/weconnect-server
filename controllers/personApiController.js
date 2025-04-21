@@ -373,14 +373,29 @@ exports.personSave = async (request, response) => {
 
     if (shouldCreatePerson) {
       if (canAddPerson) {
-        const canInsertEmailOfficial = await manuallyConfirmEmailUniqueness({ emailOfficial: personChangeDict?.emailOfficial });
-        const canInsertEmailPreferred = await manuallyConfirmEmailUniqueness({ emailPreferred: personChangeDict?.emailPreferred });
-        if (!canInsertEmailOfficial || !canInsertEmailPreferred) {
+        const emailOfficialExists = !!(personChangeDict?.emailOfficial);
+        const emailPreferredExists = !!(personChangeDict?.emailPreferred);
+        let emailOfficialIsUnique;
+        if (emailOfficialExists) {
+          emailOfficialIsUnique = await manuallyConfirmEmailUniqueness({ emailOfficial: personChangeDict?.emailOfficial });
+        }
+        let emailPreferredIsUnique;
+        if (emailPreferredExists) {
+          emailPreferredIsUnique = await manuallyConfirmEmailUniqueness({ emailPreferred: personChangeDict?.emailPreferred });
+        }
+        const cannotInsertEmailOfficial = emailOfficialExists && !emailOfficialIsUnique;
+        const cannotInsertEmailPreferred = emailPreferredExists && !emailPreferredIsUnique;
+        if (cannotInsertEmailOfficial || cannotInsertEmailPreferred) {
           jsonData.displayErrorMessage = true;
           jsonData.personCreated = false;
           jsonData.status += 'canAddPerson-NON_UNIQUE_EMAIL ';
           jsonData.success = false;
-          jsonData.updateErrors.push('Email is not unique: ', !canInsertEmailOfficial ? 'emailOfficial' : 'emailPreferred');
+          if (cannotInsertEmailOfficial) {
+            jsonData.updateErrors.push('Email is not unique, emailOfficial:', personChangeDict?.emailOfficial);
+          }
+          if (cannotInsertEmailPreferred) {
+            jsonData.updateErrors.push('Email is not unique, emailPreferred:', personChangeDict?.emailPreferred);
+          }
         } else {
           const tempPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
           personChangeDict.password = await bcrypt.hash(tempPassword, 10);
