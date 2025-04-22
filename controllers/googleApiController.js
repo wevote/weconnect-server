@@ -1,6 +1,5 @@
 const path = require('path');
 const { google } = require('googleapis');
-// const res = require('express/lib/response');
 
 // Key urls for admin, drive, datatransfer, & user apis
 // https://admin.google.com/u/6/ac/accountsettings
@@ -27,6 +26,7 @@ const getAuth = async () => {
       'https://www.googleapis.com/auth/cloud-platform',
       'https://www.googleapis.com/auth/drive',
       'https://www.googleapis.com/auth/admin.datatransfer',
+      'https://www.googleapis.com/auth/drive.metadata.readonly',
     ],
     clientOptions: {
       subject: process.env.GOOGLE_SUPER_ADMIN_EMAIL,
@@ -34,7 +34,7 @@ const getAuth = async () => {
   }).then(
     (authReturned) => {
       auth = authReturned;
-      // console.log('Sign-in successful');
+      // console.log('oAuth2 successful');
     },
     (err) => { console.error('Error signing in', err); },
   );
@@ -217,16 +217,101 @@ async function listDriveFiles (driveClient) {
   return filesToReturn;
 }
 
+// This works fine in the API Explorer at
+// https://developers.google.com/workspace/drive/api/reference/rest/v3/files/list?apix_params=%7B%22corpora%22%3A%22user%22%2C%22includeItemsFromAllDrives%22%3Atrue%2C%22q%22%3A%22%27steve.podell%40wevoteeducation.org%27%20in%20owners%22%2C%22supportsAllDrives%22%3Atrue%7D
+// But none of the queries work here, except for a query using a super user email account which retrieves all
+// eslint-disable-next-line no-unused-vars
+async function listDriveFilesLimitedByEmail (driveClient) {
+  let res;
+  let filesToReturn = [];
+  try {
+    // const q = "(mimeType = 'application/vnd.google-apps.folder')";   // ******* works!  returned 92 folders
+    // const q = "('steve.podell@wevoteeducation.org' in writers)";     // ******* works!  returned 100 mixture of folder.spreadsheet text/csv shortcut text/plain
+    // const q = "('me' in writers)";   // returned 346 (all of them), me is probably then added another and shared it with weconnectserverappserviceaccou and it wennt to 347
+    // const q = "'abie.test' in writers";   // This works in the try me, 0 here
+    // const q = "'steve.podell@wevoteeducation.org' in owners";   // 0 here, 3 in try me API Explorer
+    // const q = '\'act.test@wevoteeducation.org\' in writers';   // 0
+    const q = '';
+
+    // runSample(q);
+
+    res = await driveClient.files.list({
+      corpora: 'user',
+      includeItemsFromAllDrives: true,
+      q,
+      supportsAllDrives: true,
+      fields: '*',
+      // pageSize: 500, // Set the desired number of files to retrieve
+      // fields: 'nextPageToken, files(id, name, modifiedTime)',
+      // fields: 'files(name, id)', // Specify the fields to include in the response
+    });
+    const { files } = res.data;
+    console.log('listDriveFilesLimitedByEmail', files);
+    filesToReturn = files;
+  } catch (err) {
+    console.log('ERROR listDriveFilesLimitedByEmail:', err);
+  }
+  return filesToReturn;
+}
+
+// 4/19/25 -- this (bad workaround) "works" but only finds files owned by Dale, and a couple of others, none of mine, and none of my test accounts
+async function getPermissionsToTransfer (driveClient, primaryEmail) {
+  let res;
+  const filesToReturn = [];
+  let pageToken = '';       // nextPageToken in docs!
+  let firstPass = true;
+  let cnt = 0;
+  try {
+    while (firstPass || pageToken) {
+      firstPass = false;
+      // eslint-disable-next-line no-await-in-loop
+      res = await driveClient.files.list({
+        corpora: 'user',
+        includeItemsFromAllDrives: true,
+        supportsAllDrives: true,
+        fields: '*',
+        pageToken,
+      });
+      const { nextPageToken, files } = res.data;
+      pageToken = nextPageToken;
+      // eslint-disable-next-line no-loop-func
+      files.forEach((file) => {
+        cnt++;
+        file.owners.forEach((owner) => {
+          console.log(cnt, owner.emailAddress, file.name, file.kind);
+        });
+        const matchingOwner = file.owners.find((owner) => owner.emailAddress === primaryEmail);
+        if (matchingOwner) {
+          filesToReturn.push({
+            kind: file.kind,
+            ownerEmailAddress: matchingOwner.emailAddress,
+            permissionId: matchingOwner.permissionId,
+            fileId: file.id,
+            fileName: file.name,
+          });
+          console.log('getPermissionsToTransfer: ', filesToReturn.length, file.name);
+        }
+      });
+    }
+  } catch (err) {
+    console.log('ERROR listDriveFilesLimitedByEmail:', err);
+  }
+  return filesToReturn;
+}
+
+
+
+
 /**
  * Get the id for a folder in Drive for wevoteeducation.org
  * The drive MUST BE SHARED with the user in GOOGLE_SUPER_ADMIN_EMAIL for this API call to return anything
  * @param driveClient
  * @param directory, for example 'Engineering, WVE'
  */
-async function driveIdForDirectory (driveClient, directory) {
+async function driveIdForDirectory (driveClient) {   // , directory -- currently only returns root dir
   let res;
   let fileId = '';
-  const query = ''; //`(mimeType='application/vnd.google-apps.folder' and name='${directory.trim()}')`;
+  const query = '';    // `(mimeType='application/vnd.google-apps.folder' and name='${directory.trim()}')`;
   // const query = `name='${directory.trim()}'`;
 
   try {
@@ -237,12 +322,13 @@ async function driveIdForDirectory (driveClient, directory) {
     });
     const { files } = res.data;
     if (files.length > 0) {
-      console.log(files);
+      // console.log(files);
       fileId = files[0].id;
     }
   } catch (err) {
     console.log('ERROR driveIdForDirectory:', err);
   }
+  console.log('driveIdForDirectory: ', fileId);
   return fileId;
 }
 
@@ -310,6 +396,7 @@ async function getDataTransferApplicationResourceId (transferClient) {
  * @param oldOwnerUserId
  * @param newOwnerEmail
  */
+// eslint-disable-next-line no-unused-vars
 async function transferDriveFilesAndFoldersOwnership (adminClient, transferClient, oldOwnersEmail, newOwnersEmail) {
   let serverResponse = {};
 
@@ -530,17 +617,24 @@ exports.googleShareDriveAccess = async (request, response) => {
  * https://stackoverflow.com/questions/65227750/how-to-execute-data-transfer-api
  * Always transfer ownership when revoking
  */
+
+/* Failure to implement (for now!)
+   I can get driveClient.permissions.list, and it returns the ~150 users who have been granted drive permission
+   But driveClient.files.list() returns no data when called from this file, unless queried without a 'q' query, in which case you get all files, and with fields: '*', you get permssions and owners (scratch_28.json)
+   so I tried a workaround of searching ALL files for the owner whose email matches, and it is super slow, and doesn't return any newer files
+ */
 exports.googleRevokeDriveAccess = async (request, response) => {
+  // eslint-disable-next-line no-unused-vars
   const { oldOwnersEmail, newOwnersEmail } = request.body;
   let success = false;
   let error = '';
   const primaryEmail = oldOwnersEmail;
   const auth = await getAuth();
   // Waiting for response https://stackoverflow.com/questions/79569838/ownership-transfer-of-google-drive-files-using-the-node-api-fails-with-missing
-  const adminClient = google.admin({ version: 'directory_v1', auth });
-  const transferClient = google.admin({ version: 'datatransfer_v1', auth });
-  const ret = await transferDriveFilesAndFoldersOwnership(adminClient, transferClient, oldOwnersEmail, newOwnersEmail);
-  console.log(ret);
+  // const adminClient = google.admin({ version: 'directory_v1', auth });
+  // const transferClient = google.admin({ version: 'datatransfer_v1', auth });
+  // const ret = await transferDriveFilesAndFoldersOwnership(adminClient, transferClient, oldOwnersEmail, newOwnersEmail);
+  // console.log(ret);
 
   const driveClient = google.drive({ version: 'v3', auth });
   const driveFolderId = await driveIdForDirectory(driveClient, 'We Vote Education');  // This matches the 72 char id, in the url when I browse the Drive
@@ -549,20 +643,26 @@ exports.googleRevokeDriveAccess = async (request, response) => {
     error = 'Unable to find drive folder';
   } else {
     try {
-      const pList = await driveClient.permissions.list({
-        fileId: driveFolderId,  // <---this is ID of a shared drive, not a file
-      });
-      console.log(pList);
-      const { data: { permissions } } = pList;
-      permissions.forEach(async (permission) => {
-        // const res = await driveClient.permissions.delete({
-        //   fileId: driveFolderId,
-        //   permissionId: permission.id,
-        // });
-        console.log('permission deleted: ', permission);
-        // console.log('permission deleted: ', res);
-      });
+      // eslint-disable-next-line no-unused-vars
+      const permissions = await getPermissionsToTransfer(driveClient, primaryEmail);  // TODO: maybe we can enhance to revoke all permission, but lets start with transfers
 
+      // const pList = await driveClient.permissions.list({
+      //   fileId: driveFolderId,  // <---this is ID of a shared drive, not a file
+      //   emailAddress: oldOwnersEmail,
+      //   supportsAllDrives: true,
+      //   fields: '*',
+      //   // fields: 'permissions/permissionDetails',
+      // });
+      // console.log('permissions.list: ',pList);
+      // const { data: { permissions } } = pList;
+      // permissions.forEach(async (permission) => {
+      //   // const res = await driveClient.permissions.delete({
+      //   //   fileId: driveFolderId,
+      //   //   permissionId: permission.id,
+      //   // });
+      //   console.log('permission deleted: ', permission);
+      //   // console.log('permission deleted: ', res);
+      // });
 
       // console.log(`File sharing removed for ${primaryEmail} (Permission ID: ${res.data.id})`);
       success = true;
