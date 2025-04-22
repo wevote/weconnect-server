@@ -3,7 +3,7 @@ const path = require('path');
 
 exports.getGoogleAuth = async () => {
   let auth;
-  // console.log('Getting auth process.env.GOOGLE_SUPER_ADMIN_EMAIL:', process.env.GOOGLE_SUPER_ADMIN_EMAIL);
+  // console.log('Getting auth  process.env.GOOGLE_SUPER_ADMIN_EMAIL:', process.env.GOOGLE_SUPER_ADMIN_EMAIL);
   // Note on scopes: Need to add new ones to https://admin.google.com/ac/owl/domainwidedelegation
   // and (rarely needed) enable the API at https://console.cloud.google.com/apis/dashboard?invt=Abuqxg&project=weconnectserverapp
   await google.auth.getClient({

@@ -34,7 +34,7 @@ const getAuth = async () => {
   }).then(
     (authReturned) => {
       auth = authReturned;
-      // console.log('oAuth2 successful');
+      // console.log('oAuth2 successful ');
     },
     (err) => { console.error('Error signing in', err); },
   );

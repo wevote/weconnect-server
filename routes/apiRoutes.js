@@ -4,8 +4,8 @@ const googleApiController = require('../controllers/googleApiController');
 const questionnaireApiController = require('../controllers/questionnaireApiController');
 const taskApiController = require('../controllers/taskApiController');
 const teamApiController = require('../controllers/teamApiController');
-const { updateDbFromCsv } = require('../controllers/updateSqlFromCsvController');
 const { slackChannelInvite, slackGetPresence, slackSendMessage, slackListUsers, slackChannelMembers } = require('../controllers/slackApiController');
+const { updateDbFromCsv } = require('../controllers/updateSqlFromCsvController');
 
 /**
  * WeConnect API routes.

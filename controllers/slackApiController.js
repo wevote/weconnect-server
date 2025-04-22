@@ -13,7 +13,7 @@ exports.slackChannelInvite = async (request, response) => {
   const { channel: channelID, user_ids: userIDs } = request.body;
   let result;
   try {
-    // This will rarely be needed, but it is needed the first time the bot tries to invite someone
+    // This will rarely be needed, but it's needed the first time the bot tries to invite someone
     result = await webClient.conversations.join({
       token: process.env.SLACK_BOT_BEARER_TOKEN,
       channel: channelID,
