@@ -1,7 +1,7 @@
 {
   "name": "weconnect-server",
   "version": "1.0.1",
-  "description": "Server for WeConnect, a platform for organizing volunteers.",
+  "description": "Server for WeConnect, a platform for organizing volunteers. ",
   "repository": {
     "type": "git",
     "url": "https://github.com/wevote/weconnect-server.git"
@@ -25,6 +25,7 @@
   },
   "pre-commit": "lint-staged",
   "dependencies": {
+    "@google-cloud/local-auth": "^3.0.1",
     "@googleapis/drive": "^11.0.0",
     "@googleapis/sheets": "^9.6.0",
     "@lob/lob-typescript-sdk": "^1.3.2",
@@ -33,6 +34,7 @@
     "@passport-js/passport-twitter": "^1.0.8",
     "@prisma/client": "^6.5.0",
     "@sendgrid/mail": "^8.1.4",
+    "@slack/web-api": "^7.9.1",
     "axios": "^1.8.2",
     "body-parser": "^1.20.3",
     "cheerio": "^1.0.0-rc.10",

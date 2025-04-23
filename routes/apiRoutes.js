@@ -4,6 +4,7 @@ const googleApiController = require('../controllers/googleApiController');
 const questionnaireApiController = require('../controllers/questionnaireApiController');
 const taskApiController = require('../controllers/taskApiController');
 const teamApiController = require('../controllers/teamApiController');
+const { slackChannelInvite, slackGetPresence, slackSendMessage, slackListUsers, slackChannelMembers } = require('../controllers/slackApiController');
 const { updateDbFromCsv } = require('../controllers/updateSqlFromCsvController');
 
 /**
@@ -49,6 +50,11 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.post('/apis/v1/save-password', personApiController.savePassword);
   weconnectServer.post('/apis/v1/send-email-code', personApiController.sendEmailCode);
   weconnectServer.post('/apis/v1/signup', personApiController.signup);
+  weconnectServer.post('/apis/v1/slack-channel-invite', slackChannelInvite);
+  weconnectServer.post('/apis/v1/slack-channel-members', slackChannelMembers);
+  weconnectServer.post('/apis/v1/slack-get-presence', slackGetPresence);
+  weconnectServer.post('/apis/v1/slack-list-users', slackListUsers);
+  weconnectServer.post('/apis/v1/slack-send-message', slackSendMessage);
   weconnectServer.post('/apis/v1/update-db-from-csv', updateDbFromCsv);
   weconnectServer.post('/apis/v1/verify-email-code', personApiController.verifyEmailCode);
 };
