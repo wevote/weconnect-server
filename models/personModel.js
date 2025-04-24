@@ -59,6 +59,7 @@ const PERSON_FIELDS_ACCEPTED_ADMIN = {
   phoneNumber: 'STRING',
   statusActive: 'BOOLEAN',
   statusAvailableForSpecialProjects: 'BOOLEAN',
+  statusEmailCreated: 'BOOLEAN',
   statusOfferApproved: 'BOOLEAN',
   statusOfferDecisionNeeded: 'BOOLEAN',
   statusOfferLetterSigned: 'BOOLEAN',

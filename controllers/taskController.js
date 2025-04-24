@@ -2,7 +2,7 @@
 const { findQuestionAnswerListByParams } = require('../models/questionnaireModel');
 const {
   createTask,
-  findTaskDefinitionListByParams, findTaskDependencyListByParams, findTaskGroupListByIdList,
+  findTaskDefinitionListByParams, findTaskDependencyListByParams, findTaskGroupTeamLinkListByParams, findTaskGroupListByIdList,
   findTaskGroupListByParams, findTaskListByParams,
   // TASK_DEFINITION_FIELDS_ACCEPTED,
 } = require('../models/taskModel');
@@ -103,27 +103,16 @@ exports.generateTaskStatusListForAllPeople = async () => {
   // Assemble which teams are associated with each task group when taskGroupIsForTeam is true
   const taskGroupTeamIdLists = {}; // key = taskGroupId, value = [teamId1, teamId2,...]
   try {
-    // TODO: Create table that supports more than one team per task group
-    // const paramsTaskGroupTeam = {};
-    // const taskGroupTeamList = await findTaskGroupTeamListByParams(paramsTaskGroupTeam);
-    // for (let i = 0; i < taskGroupTeamList.length; i++) {
-    //   // If taskGroupId is not found in dict, we create it
-    //   if (!taskGroupTeamIdLists[taskGroupTeamList[i].taskGroupId]) {
-    //     taskGroupTeamIdLists[taskGroupTeamList[i].taskGroupId] = [];
-    //   }
-    //   taskGroupTeamIdLists[taskList[i].taskGroupId].push(taskGroupTeamList[i].taskGroupTeamId);
-    // }
-    // Temp
-    for (let i = 0; i < taskGroupList.length; i++) {
-      if (taskGroupList[i].taskGroupTeamId && taskGroupList[i].taskGroupTeamId > 0) {
-        // If task is not found in dict, we create it
-        if (!taskGroupTeamIdLists[taskGroupList[i].id]) {
-          taskGroupTeamIdLists[taskGroupList[i].id] = [];
-        }
-        taskGroupTeamIdLists[taskGroupList[i].id].push(taskGroupList[i].taskGroupTeamId);
+    const paramsTaskGroupTeamLink = {};
+    const taskGroupTeamLinkList = await findTaskGroupTeamLinkListByParams(paramsTaskGroupTeamLink);
+    // console.log('generateTaskStatusListForAllPeople taskGroupTeamLinkList:', taskGroupTeamLinkList);
+    for (let i = 0; i < taskGroupTeamLinkList.length; i++) {
+      // If taskGroupId is not found in dict, we create it
+      if (!taskGroupTeamIdLists[taskGroupTeamLinkList[i].taskGroupId]) {
+        taskGroupTeamIdLists[taskGroupTeamLinkList[i].taskGroupId] = [];
       }
+      taskGroupTeamIdLists[taskGroupTeamLinkList[i].taskGroupId].push(taskGroupTeamLinkList[i].teamId);
     }
-    // console.log('generateTaskStatusListForAllPeople taskGroupDict:', taskGroupDict);
     // console.log('generateTaskStatusListForAllPeople taskGroupTeamIdLists:', taskGroupTeamIdLists);
   } catch (err) {
     status += `Error while fetching taskGroupIsForTeam: ${err.message} `;
@@ -145,10 +134,10 @@ exports.generateTaskStatusListForAllPeople = async () => {
   // Add params that look for values in person records that imply tasks needs to be generated?
   const paramsPersonList = { statusActive: true };
   const personList = await findPersonListByParams(paramsPersonList);
-  const personDict = personList.reduce((acc, person) => {
-    acc[person.id] = person;
-    return acc;
-  }, {});
+  // const personDict = personList.reduce((acc, person) => {
+  //   acc[person.id] = person;
+  //   return acc;
+  // }, {});
   // console.log('personDict[1]:', personDict[1]);
   let taskListForPerson = [];
   for (let i = 0; i < personList.length; i++) {

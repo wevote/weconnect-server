@@ -59,8 +59,11 @@ const createPersonUpdateDict = (row) => {
     dict.lastName = nameParts[1] + (nameParts.length === 3 ? (` ${nameParts[2].trim()}`) : '');   // Jill Depti Bargam
     dict.importNote = dashedParts[1] || '';
 
+    dict.statusEmailCreated = row['*We Vote Email Created\n(link)'].trim() === 'Done';
+    dict.statusOfferApproved = row['Team meeting OR 2nd interview'].trim() === 'Done';
+    dict.statusOfferDecisionNeeded = false; // We are setting this to false for all imported people
+    dict.statusOfferLetterCreated = row['Create Offer Letter'].trim() === 'Done';
     dict.statusOfferLetterSigned = row['Offer Letter Status (before purple line)'].trim() === 'Signed';
-    dict.statusOfferApproved = dict.statusOfferLetterSigned;
     // dict.???  = row['Team On- boarding Status'].trim() === 'Complete';
     dict.jazzHrUrl = row['Jazz Link'];
     dict.location = row.Location;
@@ -95,8 +98,8 @@ const createPersonUpdateDict = (row) => {
     Not in db
       "Attended Intro to We Vote":  "IDE installed? (DM)":  "Eng Pair Scheduled (DM)":
       "Team meeting OR 2nd interview": "Confirmation questions sent?": "Invite to Slack":
-      "Answers received": "*We Vote Email Created\n(link)": "Email Credentials sent via Slack":
-      "JazzHR New WeVote Email Message": "*Offer Letter Created": "Create Offer Letter":
+      "Answers received": "Email Credentials sent via Slack":
+      "JazzHR New WeVote Email Message": "*Offer Letter Created":
       "Offer Letter Signed by Dale": "Offer Letter Signed by Volunteer": "Welcome to the team!":
       "Access to Google Drive": "Update status in JazzHR": "Slack Profile\nReminder":
       "Small Team Slack": "Large Team Slack": "Calendar Event (Sephra / Dale)":
@@ -139,8 +142,10 @@ const args = process.argv.slice(2);
 const headerStr = 'Team,' +
   'Who,D1,D2,D3,D4,D5,Offer Letter Status (before purple line),Team On- boarding Status,Jazz Link,Location,State,*Title / Volunteering Love,c3/ c4,Primary Email,2nd Email,Start date,' +
   'Known End date,Active,Available for Special Projects,' +
-  'Third email,Birthday Month / Day,LinkedIn,Hours per week,Hours spent (Active),How long at We Vote?,,End Date in Past,Is Active,For Active Sum,,Attended Intro to We Vote,IDE installed? (DM),Eng Pair Scheduled (DM),Team meeting OR 2nd interview,Confirmation questions sent?,Invite to Slack,Answers received,"*We Vote Email Created\n' +
-  '(link)",Email Credentials sent via Slack,"JazzHR ""New WeVote Email"" Message",*Offer Letter Created,Create Offer Letter,Offer Letter Signed by Dale,Offer Letter Signed by Volunteer,"""Welcome to the team!""",Access to Google Drive,Update status in JazzHR,"Slack Profile\n' +
+  'Third email,Birthday Month / Day,LinkedIn,Hours per week,Hours spent (Active),How long at We Vote?,,End Date in Past,Is Active,For Active Sum,,Attended Intro to We Vote,IDE installed? (DM),Eng Pair Scheduled (DM),Team meeting OR 2nd interview,Confirmation questions sent?,Invite to Slack,Answers received,' +
+  '"*We Vote Email Created\n(link)",' +
+  'Email Credentials sent via Slack,"JazzHR ""New WeVote Email"" Message",*Offer Letter Created,' +
+  'Create Offer Letter,Offer Letter Signed by Dale,Offer Letter Signed by Volunteer,"""Welcome to the team!""",Access to Google Drive,Update status in JazzHR,"Slack Profile\n' +
   'Reminder",,Small Team Slack,Large Team Slack,Calendar Event (Sephra / Dale),Listserv (wevote email) (Meli),,Signed PDF in folder? (Meli),We Vote email signature,Public Intranet Edit Access,Private Intranet Edit Access,Add to Staff History,"Com- munica- tion\n' +
   'Part 1",Part 2,Part 3,Part 4,Part 5,* Added to We Vote LinkedIn?,Birthday fundraiser reminders (NA),,"JazzHR ""Getting Started w/ Community Outreach""",Community Outreach Google Drive,Marketing Google Drive,Design Google Drive,Figma Read Only (Dale),Access to Canva (Sephra),Access to Hubspot,,"JazzHR ""Getting Started with Product Design""",Marketing Google Drive,Design Google Drive,"Figma\n' +
   '(Dale)",Access to Canva (Sephra),Access to Jira,Pageflows,Access to OpenReplay,,"JazzHR ""Getting Started w/ Marketing""",Marketing Google Drive,Strategy Google Drive link,Design Google Drive,Videos & Photos,Access to Jira,Access to Canva (Sephra),Mailchimp (news- letter team),,Hootsuite Password Google Doc,X.com,TikTok Pass Google Doc,Facebook/Insta,BlueSky,LinkedIn Access,,"JazzHR ""Getting Started w/ Marketing Analytics""",Marketing Google Drive,Access to Jira,,Access to API Server (Optional),Access to OpenReplay,Google Analytics,Google Tag Manager,Google Ads (c3 &c4),Google Search Console,New Relic,,"JazzHR ""Getting Started w/ Engineering""",Github Team,"Access to Jira\n' +

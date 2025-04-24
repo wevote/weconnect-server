@@ -97,5 +97,10 @@ model TaskGroup {
   taskGroupTeamId               Int      @default(-1)
 }
 
-/// This team wants this TaskGroup completed for team members
-// TaskGroupLinkToTeam
+/// Assign this TaskGroup to people who are members of this team
+model TaskGroupTeamLink {
+  taskGroupId Int
+  teamId      Int @default(-1)
+
+  @@id(name: "taskGroupIdTeamId", [taskGroupId, teamId])
+}
