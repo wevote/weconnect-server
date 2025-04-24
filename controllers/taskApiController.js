@@ -1,10 +1,10 @@
 // weconnect-server/controllers/taskApiController.js
 const { retrieveTaskStatusListByPersonIdList } =  require('./taskController');
-const { createTaskDefinition, createTaskGroup,
-  findTaskDefinitionListByParams, findTaskGroupById, findTaskGroupListByParams,
+const { createTaskDefinition, createTaskGroup, deleteOneTaskGroupTeamLink,
+  findTaskDefinitionListByParams, findTaskGroupById, findTaskGroupTeamLinkListByParams, findTaskGroupListByParams,
   TASK_DEFINITION_FIELDS_ACCEPTED, TASK_FIELDS_ACCEPTED_DICT, TASK_GROUP_FIELDS_ACCEPTED,
   removeProtectedFieldsFromTask, removeProtectedFieldsFromTaskDefinition, removeProtectedFieldsFromTaskGroup,
-  saveTaskDefinition, saveTaskGroup, updateOrCreateTask } = require('../models/taskModel');
+  saveTaskDefinition, saveTaskGroup, updateOrCreateTask, updateOrCreateTaskGroupTeamLink } = require('../models/taskModel');
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { convertToInteger } = require('../utils/convertToInteger');
 
@@ -43,6 +43,34 @@ exports.taskDefinitionListRetrieve = async (request, response) => {
       jsonData.status += 'TASK_DEFINITION_LIST_FOUND ';
     } else {
       jsonData.status += 'TASK_DEFINITION_LIST_NOT_FOUND ';
+    }
+  } catch (err) {
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+  response.json(jsonData);
+};
+
+/**
+ * GET /api/v1/task-group-team-link-list-retrieve
+ * Retrieve a list of taskGroupTeamLink entries.
+ */
+exports.taskGroupTeamLinkListRetrieve = async (request, response) => {
+  const jsonData = {
+    taskGroupTeamLinkList: [],
+    status: '',
+    success: true,
+  };
+  try {
+    const params = {};
+    const taskGroupTeamLinkList = await findTaskGroupTeamLinkListByParams(params);
+    jsonData.success = true;
+    // console.log('== AFTER findTaskGroupTeamLinkListByParams taskGroupTeamLinkList:', taskGroupTeamLinkList);
+    if (taskGroupTeamLinkList) {
+      jsonData.taskGroupTeamLinkList = taskGroupTeamLinkList;
+      jsonData.status += 'TASK_GROUP_TEAM_LINK_LIST_FOUND ';
+    } else {
+      jsonData.status += 'TASK_GROUP_TEAM_LINK_LIST_NOT_FOUND ';
     }
   } catch (err) {
     jsonData.status += err.message;
@@ -355,6 +383,101 @@ exports.taskDefinitionSave = async (request, response) => {
     }
   } catch (err) {
     console.error('Error while saving taskDefinition:', err);
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+
+  response.json(jsonData);
+};
+
+/**
+ * GET /api/v1/task-group-team-link-delete
+ */
+exports.taskGroupTeamLinkDelete = async (request, response) => {
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const queryParams = new URLSearchParams(parsedUrl.search);
+  const taskGroupId = convertToInteger(queryParams.get('taskGroupId'));
+  const teamId = convertToInteger(queryParams.get('teamId'));
+
+  // Set up the default JSON response.
+  const jsonData = {
+    taskGroupId,
+    taskGroupTeamLinkDeleted: false,
+    teamId,
+    status: '',
+    success: true,
+    updateErrors: [],
+  };
+
+  try {
+    if (parseInt(teamId) >= 0) {
+      jsonData.status += 'TASK_GROUP_TEAM_LINK_TO_BE_DELETED ';
+      await deleteOneTaskGroupTeamLink(taskGroupId, teamId);
+      // console.log('Deleted TaskGroupTeamLink taskGroupId:', taskGroupId, ', teamId:', teamId);
+      jsonData.taskGroupTeamLinkDeleted = true;
+      jsonData.status += 'TASK_GROUP_TEAM_LINK_DELETED ';
+    }
+  } catch (err) {
+    console.error('Error while deleting TaskGroupTeamLink:', err);
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+
+  response.json(jsonData);
+};
+
+/**
+ * GET /api/v1/task-group-team-link-save
+ *
+ */
+exports.taskGroupTeamLinkSave = async (request, response) => {
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const queryParams = new URLSearchParams(parsedUrl.search);
+  const taskGroupId = convertToInteger(queryParams.get('taskGroupId'));
+  const teamId = convertToInteger(queryParams.get('teamId'));
+  // Set up the default JSON response.
+  const jsonData = {
+    taskCreated: false,
+    teamId: -1,
+    taskGroupId: -1,
+    taskUpdated: false,
+    status: '',
+    success: true,
+    updateErrors: [],
+  };
+  try {
+    jsonData.taskGroupId = taskGroupId;
+    jsonData.teamId = teamId;
+    jsonData.success = true;
+  } catch (err) {
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+
+  try {
+    let requiredFieldsExist = true;
+    if (teamId < 0) {
+      jsonData.status += 'teamId_MISSING ';
+      requiredFieldsExist = false;
+    }
+    if (taskGroupId < 0) {
+      jsonData.status += 'WARNING_taskGroupId_MISSING ';
+    }
+
+    if (requiredFieldsExist) {
+      const taskGroupTeamLink = await updateOrCreateTaskGroupTeamLink(taskGroupId, teamId);
+      jsonData.taskCreated = true;
+      jsonData.taskGroupId = taskGroupTeamLink.taskGroupId;
+      jsonData.teamId = taskGroupTeamLink.teamId;
+      jsonData.status += 'TASK_GROUP_TEAM_LINK_UPDATED_OR_CREATED ';
+      const taskKeys = Object.keys(taskGroupTeamLink);
+      const taskValues = Object.values(taskGroupTeamLink);
+      for (let i = 0; i < taskKeys.length; i++) {
+        jsonData[taskKeys[i]] = taskValues[i];
+      }
+    }
+  } catch (err) {
+    console.error('Error while saving taskGroupTeamLink:', err);
     jsonData.status += err.message;
     jsonData.success = false;
   }

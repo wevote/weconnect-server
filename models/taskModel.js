@@ -57,7 +57,6 @@ const TASK_GROUP_FIELDS_ACCEPTED = {
   taskGroupName: 'STRING',
   taskGroupDescription: 'STRING',
   taskGroupIsForTeam: 'BOOLEAN',
-  taskGroupTeamId: 'INTEGER',
 };
 
 function removeProtectedFieldsFromTask (task) {
@@ -214,6 +213,13 @@ async function findTaskGroupListByIdList (idList, includeAllData = false) {
   return modifiedTaskGroupList;
 }
 
+async function findTaskGroupTeamLinkListByParams (params = {}) {
+  const taskGroupTeamLinkList = await prisma.taskGroupTeamLink.findMany({
+    where: params,
+  });
+  return taskGroupTeamLinkList;
+}
+
 async function findTaskGroupListByParams (params = {}, includeAllData = false) {
   const taskGroupList = await prisma.taskGroup.findMany({
     where: params,
@@ -254,6 +260,17 @@ async function deleteOneTaskGroup (id) {
   await prisma.taskGroup.delete({
     where: {
       id,
+    },
+  });
+}
+
+async function deleteOneTaskGroupTeamLink (taskGroupId, teamId) {
+  await prisma.taskGroupTeamLink.delete({
+    where: {
+      taskGroupIdTeamId: {
+        taskGroupId,
+        teamId,
+      },
     },
   });
 }
@@ -306,6 +323,21 @@ async function saveTaskGroup (taskGroup) {
   return updateTaskGroup;
 }
 
+async function saveTaskGroupTeamLink (taskGroupTeamLink) {
+  // console.log('saveTaskGroupTeamLink taskGroupTeamLink:', taskGroupTeamLink);
+  const updateTaskGroupTeamLink = await prisma.taskGroupTeamLink.update({
+    where: {
+      taskGroupIdTeamId: {
+        taskGroupId: taskGroupTeamLink.taskGroupId,
+        teamId: taskGroupTeamLink.teamId,
+      },
+    },
+    data: taskGroupTeamLink,
+  });
+  // console.log(updateTaskGroupTeamLink);
+  return updateTaskGroupTeamLink;
+}
+
 async function createTask (updateDict) {
   const task = await prisma.task.create({ data: updateDict });
   return task;
@@ -329,6 +361,12 @@ async function createTaskGroup (updateDict) {
   return taskGroup;
 }
 
+async function createTaskGroupTeamLink (updateDict) {
+  // eslint-disable-next-line prefer-object-spread
+  const taskGroupTeamLink = await prisma.taskGroupTeamLink.create({ data: updateDict });
+  return taskGroupTeamLink;
+}
+
 function updateOrCreateTask (personId, taskDefinitionId, taskGroupId, updateDict) {
   // eslint-disable-next-line prefer-object-spread
   const createDict = Object.assign({}, { personId, taskDefinitionId, taskGroupId }, updateDict);
@@ -350,25 +388,45 @@ function updateOrCreateTask (personId, taskDefinitionId, taskGroupId, updateDict
   }
 }
 
+function updateOrCreateTaskGroupTeamLink (taskGroupId, teamId) {
+  // eslint-disable-next-line prefer-object-spread
+  const createDict = Object.assign({}, { taskGroupId, teamId });
+  try {
+    const upResult =  prisma.taskGroupTeamLink.upsert({
+      where: {
+        taskGroupIdTeamId: {
+          taskGroupId,
+          teamId,
+        },
+      },
+      update: { ...createDict },
+      create: { ...createDict },
+    });
+    return upResult;
+  } catch (err) {
+    console.log('updateOrCreateTaskGroupTeamLink: ERROR ', err);
+    return null;
+  }
+}
+
 module.exports = {
   createTask,
   createTaskDefinition,
   createTaskDependency,
   createTaskGroup,
+  createTaskGroupTeamLink,
   deleteOneTaskGroup,
+  deleteOneTaskGroupTeamLink,
   extractTaskGroupVariablesToChange,
   findTaskDefinitionListByParams,
   findTaskDependencyListByParams,
   findTaskListByIdList,
   findTaskListByParams,
   findTaskGroupById,
+  findTaskGroupTeamLinkListByParams,
   findTaskGroupListByIdList,
   findTaskGroupListByParams,
   findOneTaskGroup,
-  TASK_DEFINITION_FIELDS_ACCEPTED,
-  TASK_FIELDS_ACCEPTED,
-  TASK_FIELDS_ACCEPTED_DICT,
-  TASK_GROUP_FIELDS_ACCEPTED,
   removeProtectedFieldsFromTask,
   removeProtectedFieldsFromTaskDefinition,
   removeProtectedFieldsFromTaskDependency,
@@ -377,5 +435,11 @@ module.exports = {
   saveTaskDefinition,
   saveTaskDependency,
   saveTaskGroup,
+  saveTaskGroupTeamLink,
+  TASK_DEFINITION_FIELDS_ACCEPTED,
+  TASK_FIELDS_ACCEPTED,
+  TASK_FIELDS_ACCEPTED_DICT,
+  TASK_GROUP_FIELDS_ACCEPTED,
   updateOrCreateTask,
+  updateOrCreateTaskGroupTeamLink,
 }; // Export the functions
