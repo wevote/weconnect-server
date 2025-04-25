@@ -79,22 +79,25 @@ model TaskDependency {
 
 /// A series of tasks (sometimes ordered) to accomplish an onboarding goal
 model TaskGroup {
-  id                            Int      @id @default(autoincrement())
+  id                                 Int      @id @default(autoincrement())
   /// Create tasks in this TaskGroup for a person if...
-  assignIfEmailCreated          Boolean?
-  assignIfOfferDecisionNeeded   Boolean?
-  assignIfOfferLetterCreated    Boolean?
-  assignIfOfferLetterSigned     Boolean?
-  assignIfQuestionnaireAnswered Boolean?
-  assignIfStatusOfferApproved   Boolean?
-  questionnaireId               Int      @default(-1)
+  assignIfEmailCreated               Boolean?
+  assignIfOfferDecisionNeeded        Boolean?
+  assignIfOfferLetterCreated         Boolean?
+  assignIfOfferLetterSigned          Boolean?
+  /// There are times when we want to just record that we have the answers we need, even if person doesn't fill out offer questionnaire
+  assignIfOfferQuestionnaireAnswered Boolean?
+  assignIfOfferQuestionnaireSent     Boolean?
+  assignIfQuestionnaireAnswered      Boolean?
+  assignIfStatusOfferApproved        Boolean?
+  questionnaireId                    Int      @default(-1)
   /// This is a series that is in use
-  statusActive                  Boolean  @default(true)
-  taskGroupName                 String
-  taskGroupDescription          String?
+  statusActive                       Boolean  @default(true)
+  taskGroupName                      String
+  taskGroupDescription               String?
   /// Only create tasks in this TaskGroup to a person if they are on a team using this TaskGroup
-  taskGroupIsForTeam            Boolean?
-  taskGroupTeamId               Int      @default(-1)
+  taskGroupIsForTeam                 Boolean?
+  taskGroupTeamId                    Int      @default(-1)
 }
 
 /// Assign this TaskGroup to people who are members of this team
