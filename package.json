@@ -11,7 +11,7 @@
   "scripts": {
     "postinstall": "patch-package",
     "start": "nodemon weconnect-server.js",
-    "prod": "node weconnect-server.js",
+    "prod": "node utils/prodEnvSetup.js && node weconnect-server.js",
     "test": "nyc mocha --timeout=60000 --exit",
     "lint": "eslint \"**/*.js\"",
     "prepare": "if [ \"$NODE_ENV\" != \"production\" ]; then husky install; fi",
@@ -25,6 +25,7 @@
   },
   "pre-commit": "lint-staged",
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.797.0",
     "@google-cloud/local-auth": "^3.0.1",
     "@googleapis/drive": "^11.0.0",
     "@googleapis/sheets": "^9.6.0",
