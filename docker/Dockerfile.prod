@@ -2,9 +2,12 @@ FROM public.ecr.aws/docker/library/node:22
 ENV NODE_ENV=production
 WORKDIR /app
 COPY . .
+COPY docker/scripts/entrypoint.js /app/entrypoint.js
+RUN chmod +x /app/entrypoint.js
 RUN npm install
 USER node
 ENV PORT=8000
 EXPOSE 8000
+ENTRYPOINT ["/app/entrypoint.js"]
 CMD ["npm", "run", "prod"]
 
