@@ -64,7 +64,7 @@ const createPersonUpdateDict = (row, i) => {
     // Team meeting times at the top of the spreadsheet (this non-parseable data was not in the supplied sample data sheet!)
     if (who.includes('Eng: Team') ||
       ['Who', 'Engineering Mgmnt', 'TOTAL ACTIVE VOLUNTEERS'].includes(who)) {
-      console.log(`ROW SKIPPED: column B name '${who}' in line #${i}`);
+      console.log(`ROW SKIPPED: column B name '${who}' in row #${i}`);
       isFlaggedInCsvAsAuthoritative = false; // no op
       skipped = true;
       return { isFlaggedInCsvAsAuthoritative, dict, who, skipped };
