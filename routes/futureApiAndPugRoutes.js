@@ -9,7 +9,7 @@ const prismaUserController = require('../controllers/userController');
 const apiController = require('../controllers/futureOptionsApiController');
 const contactController = require('../controllers/contact');
 
-const upload = multer({ dest: path.join(__dirname, 'uploads') });
+const upload = multer({ dest: path.join(process.env.PATH_FOR_TEMP_FILES, 'uploads') });
 
 
 // const upload = multer({ dest: path.join(__dirname, 'uploads') });
