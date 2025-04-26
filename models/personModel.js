@@ -247,7 +247,31 @@ async function deleteOne (id) {
   });
 }
 
+const setStatusFieldsIfNotInitialized = (person) => {
+  /* eslint-disable no-param-reassign */
+  if (person.isAdmin === null) person.isAdmin = false;
+  if (person.isHiringManager === null) person.isHiringManager = false;
+  if (person.isIntern === null) person.isIntern = false;
+  if (person.isTeamLead === null) person.isTeamLead = false;
+  if (person.statusEmailCreated === null) person.statusEmailCreated = false;
+  if (person.statusActive === null) person.statusActive = false;
+  if (person.statusOfferLetterCreated === null) person.statusOfferLetterCreated = false;
+  if (person.statusOfferLetterSigned === null) person.statusOfferLetterSigned = false;
+  if (person.statusOnLeave === null) person.statusOnLeave = false;
+  if (person.statusResigned === null) person.statusResigned = false;
+  if (person.statusNonresponsive === null) person.statusNonresponsive = false;
+  if (person.statusOfferApproved === null) person.statusOfferApproved = false;
+  if (person.statusOfferWillNotBeMade === null) person.statusOfferWillNotBeMade = false;
+  if (person.isHRAdmin === null) person.isHRAdmin = false;
+  if (person.isHRGeneralist1 === null) person.isHRGeneralist1 = false;
+  if (person.isHRGeneralist2 === null) person.isHRGeneralist2 = false;
+  if (person.isHROfferAdmin === null) person.isHROfferAdmin = false;
+  if (person.statusAvailableForSpecialProjects === null) person.statusAvailableForSpecialProjects = false;
+  /* eslint-enable no-param-reassign */
+};
+
 async function savePerson (person) {
+  setStatusFieldsIfNotInitialized(person);
   // console.log('savePerson person:', person?.id, person);
   const updatePerson = await prisma.person.update({
     where: {

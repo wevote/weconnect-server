@@ -29,16 +29,45 @@ const usaDateToIso = (dateString) => {
   return date.toISOString();
 };
 
-const createPersonUpdateDict = (row) => {
-  const dict = {};
+const createPersonUpdateDict = (row, i) => {
+  const dict = {
+    isAdmin: false,
+    isHiringManager: false,
+    isIntern: false,
+    isTeamLead: false,
+    statusActive: false,
+    statusEmailCreated: false,
+    statusOfferLetterCreated: false,
+    statusOfferLetterSigned: false,
+    statusOnLeave: false,
+    statusResigned: false,
+    statusNonresponsive: false,
+    statusOfferApproved: false,
+    statusOfferWillNotBeMade: false,
+    isHRAdmin: false,
+    isHRGeneralist1: false,
+    isHRGeneralist2: false,
+    isHROfferAdmin: false,
+    statusAvailableForSpecialProjects: false,
+  };
   let isFlaggedInCsvAsAuthoritative = true;
   let who = row.Who;
+  let skipped = false;
   try {
     // Name
     who = who.replace('\n', '');
     if (who.startsWith('*')) {
       isFlaggedInCsvAsAuthoritative = false;
       who = who.replace('* ', '');
+    }
+
+    // Team meeting times at the top of the spreadsheet (this non-parseable data was not in the supplied sample data sheet!)
+    if (who.includes('Eng: Team') ||
+      ['Who', 'Engineering Mgmnt', 'TOTAL ACTIVE VOLUNTEERS'].includes(who)) {
+      console.log(`ROW SKIPPED: column B name '${who}' in line #${i}`);
+      isFlaggedInCsvAsAuthoritative = false; // no op
+      skipped = true;
+      return { isFlaggedInCsvAsAuthoritative, dict, who, skipped };
     }
     const dashedParts = who.split(' - ');
     const leave = (dashedParts[1] && (dashedParts[1].toLowerCase().includes('break') || dashedParts[1].toLowerCase().includes('leave'))) || false;
@@ -128,7 +157,7 @@ const createPersonUpdateDict = (row) => {
   } catch (e) {
     console.log('Exception in createPersonUpdateDict: ', e);
   }
-  return { isFlaggedInCsvAsAuthoritative, dict, who };
+  return { isFlaggedInCsvAsAuthoritative, dict, who, skipped };
 };
 
 
@@ -188,7 +217,11 @@ const processCsv = async (file) => {
           }
         } else {
           // Person save or update (or don't save person if person exists and this row is non-authoritative)
-          const { isFlaggedInCsvAsAuthoritative, dict: personUpdateDict, who } = createPersonUpdateDict(row);
+          const { isFlaggedInCsvAsAuthoritative, dict: personUpdateDict, who, skipped } = createPersonUpdateDict(row, i);
+          if (skipped) {
+            // eslint-disable-next-line no-continue
+            continue;
+          }
           let person = await findPersonListByParams({ emailPersonal: personUpdateDict.emailPersonal }, true);
           person = (person.length > 0) ? person[0] : undefined;
           const isNonAuthoritativeInSQL = person?.nonAuthoritativeImport || false;
