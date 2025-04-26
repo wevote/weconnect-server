@@ -1,0 +1,23 @@
+version: 0.2
+
+env:
+  shell: bash
+phases:
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - ECR_LOGIN_HOST=$(echo $REPO_URI | sed 's#/.*##')
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_LOGIN_HOST
+  build:
+    on-failure: ABORT
+    commands:
+      - echo Getting migration role credentials
+      - export TEMP_ROLE=`aws sts assume-role --role-arn $MIGRATE_ASSUME_ROLE --role-session-name dbMigrate`
+      - export AWS_ACCESS_KEY_ID=$(echo "${TEMP_ROLE}" | jq -r ".Credentials.AccessKeyId")
+      - export AWS_SECRET_ACCESS_KEY=$(echo "${TEMP_ROLE}" | jq -r ".Credentials.SecretAccessKey")
+      - export AWS_SESSION_TOKEN=$(echo "${TEMP_ROLE}" | jq -r ".Credentials.SessionToken")
+      - IMAGE_URI=$(jq -r ".[0].imageUri" imagedefinitions.json)
+      - echo Pulling docker image $IMAGE_URI
+      - docker pull $IMAGE_URI
+      - echo Running database migration
+      - docker run --rm -e AWS_DEFAULT_REGION -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_SESSION_TOKEN -e CONFIG_SECRET_ARN $IMAGE_URI npx prisma migrate deploy
