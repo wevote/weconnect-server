@@ -24,7 +24,6 @@ exports.slackChannelInvite = async (request, response) => {
     console.error(errorJoin);
   }
 
-
   try {
     // https://api.slack.com/methods/conversations.invite
     result = await webClient.conversations.invite({
@@ -87,6 +86,7 @@ exports.slackGetPresence = async (request, response) => {
 
   return response.json(result);
 };
+
 
 exports.slackListUsers = async (request, response) => {
   const { daysRange } = request.body;
@@ -164,6 +164,7 @@ const openConversation = async (channel) => {
 
   return result?.channel.id;
 };
+
 
 const MAX_PAGE_COUNT = 50;  // ~ 656,870 total
 /**
@@ -249,4 +250,3 @@ exports.slackSendMessage = async (request, response) => {
 
   return response.json({ success, message: responseMessage });
 };
-
