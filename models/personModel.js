@@ -429,9 +429,6 @@ const getUniqueKeyEmail = async (emailSubmitted) => {
 };
 
 module.exports = {
-  PERSON_AWAY_FIELDS_ACCEPTED,
-  PERSON_FIELDS_ACCEPTED,
-  PERSON_FIELDS_ACCEPTED_ADMIN,
   comparePassword,
   createPerson,
   createPersonAway,
@@ -445,9 +442,13 @@ module.exports = {
   getUniqueKeyEmail,
   isoFutureDateDays,
   manuallyConfirmEmailUniqueness,
+  PERSON_AWAY_FIELDS_ACCEPTED,
+  PERSON_FIELDS_ACCEPTED,
+  PERSON_FIELDS_ACCEPTED_ADMIN,
   removeProtectedFieldsFromPerson,
   removeProtectedFieldsFromPersonAway,
   savePerson,
   savePersonAway,
+  SITE_SUPER_USERS,
   updatePersonByPersonId,
 }; // Export the functions
