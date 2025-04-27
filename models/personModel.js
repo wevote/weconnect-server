@@ -80,6 +80,9 @@ const ACCESS_RIGHTS_OPTIONS = [ // Used by viewerAccessRights in weconnect-clien
   'canViewSystemSettings', 'canViewTeamMembersAnyTeam',
 ];
 
+// superusers allow access to grant admin rights, in a blank DB, or after a misconfiguration.
+const SITE_SUPER_USERS = ['dale.mcgrew@wevote.us', 'steve.podell@wevote.us']; // Meant for jump-starting site.
+
 const getAccessRightsForPerson = (person) => {
   const accessRightsDict = {};
   if (!person || !person.id) {

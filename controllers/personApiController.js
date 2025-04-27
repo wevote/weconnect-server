@@ -8,7 +8,7 @@ const {
   PERSON_FIELDS_ACCEPTED, PERSON_FIELDS_ACCEPTED_ADMIN,
   removeProtectedFieldsFromPerson, removeProtectedFieldsFromPersonAway,
   findOnePerson, findPersonById, savePerson, savePersonAway,
-  getUniqueKeyEmail,
+  SITE_SUPER_USERS, getUniqueKeyEmail,
   manuallyConfirmEmailUniqueness,
 } = require('../models/personModel');
 
@@ -275,11 +275,9 @@ exports.checkIsAdmin = async (req) => {
     console.error('Undefined person in checkIsAdmin isAuthenticated: ', isAuthenticated);
     return false;
   }
-  // superusers allow access to grant admin rights, in a blank DB, or after a misconfiguration.
-  const superUsers = ['dale.mcgrew@wevote.us', 'steve.podell@wevote.us']; // Feel free to revise
 
   const ret = {
-    isAdmin: person.isAdmin || superUsers.includes(person.emailPersonal.trim()),
+    isAdmin: person.isAdmin || SITE_SUPER_USERS.includes(person.emailPersonal.trim()),
     person,
   };
   return ret;
@@ -720,7 +718,7 @@ exports.getAuth = async (req, res) => {
   // console.log('getAuth personId from sessionId', personId, req.sessionID);
   const person = personId > 0 ? await findPersonById(personId) : undefined;
   const emailVerified = person && personId > 0 && person.emailVerified;
-  if (person && person.emailOfficial === 'dale.mcgrew@wevote.us') {
+  if (person && SITE_SUPER_USERS && SITE_SUPER_USERS.includes(person.emailOfficial)) {
     // Temporary until we get database admin tool set up
     person.isAdmin = true;
   }
