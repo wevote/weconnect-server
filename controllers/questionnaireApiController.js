@@ -1,4 +1,5 @@
 // weconnect-server/controllers/questionnaireApiController.js
+const { savePerson } = require('../models/personModel');
 const { retrieveQuestionnaireResponseListByPersonIdList, saveAnswerToMappedField } =  require('./questionnaireController');
 const { createQuestion, createQuestionnaire, findQuestionListByIdList,
   findQuestionListByParams, findQuestionnaireById, findQuestionnaireListByParams,
@@ -100,9 +101,23 @@ exports.answerListSave = async (request, response) => {
 
       const results = await Promise.all(savePromises);
       answerListSaved = results.some((result) => result);
+      status += `QUESTIONS_ANSWERED: ${answerListSaved ? 'YES' : 'NO'} `;
     } else {
       status += 'NO_QUESTIONS_FOUND ';
     }
+  }
+
+  // If QuestionAnswers were successfully saved, and the Questionnaire is labeled as isOfferQuestionnaire,
+  // mark person.statusOfferQuestionnaireAnswered
+  const questionnaire = await findQuestionnaireById(questionnaireId);
+  // console.log('answerListSave questionnaire:', questionnaire);
+  if (answerListSaved && questionnaire && questionnaire.isOfferQuestionnaire) {
+    // const person =
+    await savePerson({
+      id: personId,
+      statusOfferQuestionnaireAnswered: true,
+    });
+    // console.log('answerListSave person.statusOfferQuestionnaireAnswered set to true:', person);
   }
 
   // Set up the default JSON response.

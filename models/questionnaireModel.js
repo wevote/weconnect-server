@@ -4,22 +4,23 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
-const QUESTIONNAIRE_FIELDS_ACCEPTED = [
-  'questionnaireInstructions',
-  'questionnaireName',
-  'questionnaireTitle',
-];
+const QUESTIONNAIRE_FIELDS_ACCEPTED = {
+  isOfferQuestionnaire: 'BOOLEAN',
+  questionnaireInstructions: 'STRING',
+  questionnaireName: 'STRING',
+  questionnaireTitle: 'STRING',
+};
 
-const QUESTION_FIELDS_ACCEPTED = [
-  'answerType',
-  'fieldMappingRule',
-  'questionInstructions',
-  'questionOrder',
-  'questionPlaceholder',
-  'questionText',
-  'requireAnswer',
-  'statusActive',
-];
+const QUESTION_FIELDS_ACCEPTED = {
+  answerType: 'STRING',
+  fieldMappingRule: 'STRING',
+  questionInstructions: 'STRING',
+  questionOrder: 'INTEGER',
+  questionPlaceholder: 'STRING',
+  questionText: 'STRING',
+  requireAnswer: 'BOOLEAN',
+  statusActive: 'BOOLEAN',
+};
 
 function removeProtectedFieldsFromQuestion (question) {
   const modifiedQuestion = { ...question };

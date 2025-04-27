@@ -63,6 +63,8 @@ const PERSON_FIELDS_ACCEPTED_ADMIN = {
   statusOfferApproved: 'BOOLEAN',
   statusOfferDecisionNeeded: 'BOOLEAN',
   statusOfferLetterSigned: 'BOOLEAN',
+  statusOfferQuestionnaireAnswered: 'BOOLEAN',
+  statusOfferQuestionnaireSent: 'BOOLEAN',
   statusOnLeave: 'BOOLEAN',
   statusResigned: 'BOOLEAN',
 };
@@ -147,6 +149,13 @@ function removeProtectedFieldsFromPersonAway (personAway) {
 }
 
 async function findPersonById (id, includeAllData = false) {
+  if (!id) {    // If the person has not been stored yet, during person creation
+    return {
+      id: 0,
+      personId: 0,
+      status: 'FIND_PERSON_BY_ID_NO_ID_PROVIDED ',
+    };
+  }
   const person = await prisma.person.findUnique({
     where: {
       id,
@@ -156,6 +165,7 @@ async function findPersonById (id, includeAllData = false) {
     return {
       id: 0,
       personId: 0,
+      status: 'FIND_PERSON_BY_ID_NO_PERSON_FOUND ',
     };
   }
   let modifiedPerson;
