@@ -1,6 +1,6 @@
 // weconnect-server/controllers/personController.js
 
-const { findPersonById, getAccessRightsForPerson } = require('../models/personModel');
+const { findPersonById, getAccessRightsForPerson, SITE_SUPER_USERS } = require('../models/personModel');
 const { getPersonIdsByTeamDict, getTeamAccessRightsForPerson } = require('../models/teamModel');
 const { getPersonIdBySessionId } = require('../models/clientSessionModel');
 
@@ -23,6 +23,10 @@ async function getAllAccessRightsForPerson (request) {
     console.error('Undefined viewerPerson in getAllAccessRightsForPerson isAuthenticated: ', isAuthenticated);
     return {};
   } else {
+    if (viewerPerson && SITE_SUPER_USERS && SITE_SUPER_USERS.includes(viewerPerson.emailOfficial)) {
+      // Temporary until we get database admin tool set up
+      viewerPerson.isAdmin = true;
+    }
     accessRights = getAccessRightsForPerson(viewerPerson);
     teamAccessRights = await getTeamAccessRightsForPerson(viewerPerson);
     personIdsByTeam = await getPersonIdsByTeamDict();
