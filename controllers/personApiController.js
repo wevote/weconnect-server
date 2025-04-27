@@ -277,7 +277,7 @@ exports.checkIsAdmin = async (req) => {
   }
 
   const ret = {
-    isAdmin: person.isAdmin || SITE_SUPER_USERS.includes(person.emailPersonal.trim()),
+    isAdmin: person.isAdmin || SITE_SUPER_USERS.includes(person.emailOfficial.trim()),
     person,
   };
   return ret;
