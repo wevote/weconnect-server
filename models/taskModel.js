@@ -50,6 +50,8 @@ const TASK_GROUP_FIELDS_ACCEPTED = {
   assignIfOfferDecisionNeeded: 'BOOLEAN',
   assignIfOfferLetterCreated: 'BOOLEAN',
   assignIfOfferLetterSigned: 'BOOLEAN',
+  assignIfOfferQuestionnaireAnswered: 'BOOLEAN',
+  assignIfOfferQuestionnaireSent: 'BOOLEAN',
   assignIfQuestionnaireAnswered: 'BOOLEAN',
   assignIfStatusOfferApproved: 'BOOLEAN',
   questionnaireId: 'INTEGER',

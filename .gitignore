@@ -24,7 +24,12 @@ wevotedeveloper.com_key.txt
 #Build
 public/css/main.css
 .nyc_output/*
+
+# Ignore all files in prisma/migrations except migration_lock.toml
 prisma/migrations/*
+!prisma/migrations/migration_lock.toml
+!prisma/migrations/*_production2025/
+!prisma/migrations/*_production2025/**
 
 # API keys and secrets
 .env

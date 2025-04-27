@@ -615,11 +615,18 @@ exports.login = async (req, res, next) => {
  * Send a verification code to the 'person's email
  */
 exports.sendEmailCode = async (req, res) => {
-  const { personId } = req.body;
+  try {
+    const { personId } = req.body;
 
-  const person = await findPersonById(personId, true);   // For now, just use person.emailPersonal
-  const data = sendEmailValidationCode(person);
-  return res.json(data);
+    const person = await findPersonById(personId, true);   // For now, just use person.emailPersonal
+    const data = sendEmailValidationCode(person);
+    return res.json(data);
+  } catch (error) {
+    console.error('Error sending email code:', error);
+    return res.json({
+      error: `Error sending email code: ${error}`,
+    });
+  }
 };
 
 exports.verifyEmailCode = async (req, res) => {
@@ -713,6 +720,10 @@ exports.getAuth = async (req, res) => {
   // console.log('getAuth personId from sessionId', personId, req.sessionID);
   const person = personId > 0 ? await findPersonById(personId) : undefined;
   const emailVerified = person && personId > 0 && person.emailVerified;
+  if (person && person.emailOfficial === 'dale.mcgrew@wevote.us') {
+    // Temporary until we get database admin tool set up
+    person.isAdmin = true;
+  }
   const accessRights = getAccessRightsForPerson(person);
   const teamAccessRights = await getTeamAccessRightsForPerson(person);
 

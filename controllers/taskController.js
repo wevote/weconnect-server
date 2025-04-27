@@ -23,6 +23,16 @@ const TASK_GROUP_MATCH_REQUIRED = [
     taskGroupField: 'assignIfOfferDecisionNeeded',
   },
   {
+    personField: 'statusOfferQuestionnaireAnswered',
+    personStatesThatIndicateThisIsNotNecessary: [''],
+    taskGroupField: 'assignIfOfferQuestionnaireAnswered',
+  },
+  {
+    personField: 'statusOfferQuestionnaireSent',
+    personStatesThatIndicateThisIsNotNecessary: [''],
+    taskGroupField: 'assignIfOfferQuestionnaireSent',
+  },
+  {
     personField: 'statusOfferLetterCreated',
     personStatesThatIndicateThisIsNotNecessary: [''],
     taskGroupField: 'assignIfOfferLetterCreated',
@@ -258,6 +268,9 @@ exports.generateTasksForPerson = async (
                 createThisTaskForThisPerson = true;
                 // console.log('===== questionnaire answered:', taskGroup.questionnaireId);
               }
+              // Note that if the questionnaire has isOfferQuestionnaire set to true,
+              // the field taskGroup.assignIfOfferQuestionnaireAnswered (which is linked to person.statusOfferQuestionnaireAnswered),
+              //  could also set createThisTaskForThisPerson to true.
             } else if (taskGroup[taskGroupMatchField] === true && person[personMatchField] === true) {
               createThisTaskForThisPerson = true;
               // console.log(`== generateTasksForPerson person (loop 2): ${person.firstName} ${person.lastName}`);
