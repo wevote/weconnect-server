@@ -41,8 +41,8 @@ model Person {
   jazzHrUrl     String?
   linkedInUrl   String?
   portfolioUrl  String?
+  slackHandle   String?
   snapchat      String?
-  // tokens        Json?
   twitch        String?
   twitterHandle String?
   websiteUrl    String?
@@ -75,7 +75,7 @@ model Person {
   statusAvailableForSpecialProjects Boolean?
   /// Hiring manager does not think this is a suitable candidate
   statusEmailCreated                Boolean?
-  statusActiveInLast90Days          Boolean?
+  statusActiveInLast90Days          Boolean?       // This should be calculated, not stored
   /// Person has stopped responding to inquiries, so we assume they are resigned
   statusNonresponsive               Boolean?
   statusOfferLetterCreated          Boolean?

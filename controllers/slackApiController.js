@@ -93,55 +93,90 @@ exports.slackListUsers = async (request, response) => {
   const membersList = [];
   const membersSkipped = [];
   let success = false;
+  let nextCursor = '';
+  let firstPass = true;
+
   try {
-    // Call the chat.postMessage method using the WebClient
-    const result = await webClient.users.list({
-      token: process.env.SLACK_BOT_BEARER_TOKEN,
-    });
+    while (firstPass || nextCursor.length) {
+      firstPass = false;
 
-    const { members } = result;
-    members.forEach((member) => {
-      const now = Math.trunc(new Date().getTime() / 1000);
-      // console.log('member.updated', now, member.updated, now - member.updated);
-      const haventUpdatedInAYear = now - member.updated > timeSpan;
-      if (!member.deleted && !haventUpdatedInAYear) {
-        membersList.push({
-          id: member.id,
-          name: member.name,
-          real_name: member.real_name,
-          phone: member.profile.phone,
-          email: member.profile.email,
-          title: member.profile.title,
-          image: member.profile.image_original,
-          tz: member.tz,
-          tz_label: member.tz_label,
-          last_updated: member.updated,
-          last_updated_date: new Date(member.updated),
-        });
-      } else {
-        membersSkipped.push(`${member.id} -- ${member.name}`);
-      }
-    });
+      const result = await webClient.users.list({
+        token: process.env.SLACK_BOT_BEARER_TOKEN,
+        cursor: nextCursor,
+        limit: 5000,
+      });
 
-    console.log(membersSkipped);
+      nextCursor = result?.response_metadata?.next_cursor;
+
+      const { members } = result;
+      members.forEach((member) => {
+        const now = Math.trunc(new Date().getTime() / 1000);
+        // console.log('member.updated', now, member.updated, now - member.updated);
+        const haventUpdatedInAYear = now - member.updated > timeSpan;
+        if (member?.real_name?.includes('odell')) {
+          console.log('Podell', member.id, member.real_name);
+        }
+        if (!member.deleted && !haventUpdatedInAYear) {
+          membersList.push({
+            id: member.id,
+            name: member.name,
+            real_name: member.real_name,
+            phone: member.profile.phone,
+            email: member.profile.email,
+            title: member.profile.title,
+            image: member.profile.image_original,
+            tz: member.tz,
+            tz_label: member.tz_label,
+            last_updated: member.updated,
+            last_updated_date: new Date(member.updated),
+          });
+        } else {
+          membersSkipped.push(`${member.id} -- ${member.name}`);
+        }
+      });
+      // console.log(result);
+    }
+
+    console.log('Members skipped: ', membersSkipped);
     success = true;
-    console.log(result);
+
   } catch (error) {
     console.error(error);
   }
   return response.json({ success, members: membersList });
 };
 
-const openConversation = async (channel) => {
-  const result = await webClient.conversations.open({
-    token: process.env.SLACK_BOT_BEARER_TOKEN,
-    channel,
-    username: 'Steve37 Podell',
-    return_im: true,
-  });
-  console.log('openConversation: ', result);
 
-  return result.channel.id;
+// Send in a user's U code like 'U527YE5J4' and get back their direct message D code like D08NSQQ8MKQ
+const openConversation = async (channel) => {
+  let result;
+  try {
+    result = await webClient.conversations.open({
+      token: process.env.SLACK_BOT_BEARER_TOKEN,
+      channel,
+    });
+    console.log('openConversation: ', result);
+  } catch (e) {
+    console.error('ERROR in openConversation: ', e);
+  }
+
+  return result?.channel.id;
+};
+
+const conversationsList = async (channel) => {
+  let result;
+  try {
+    result = await webClient.conversations.list({
+      token: process.env.SLACK_BOT_BEARER_TOKEN,
+      channel,
+      types: 'public_channel,private_channel,mpim,im',
+    });
+    console.log('conversationsList: ', result);
+  } catch (e) {
+    console.error('ERROR in conversationsList: ', e);
+  }
+
+  return result?.channel.id;
 };
 
 exports.slackSendMessage = async (request, response) => {
@@ -150,18 +185,14 @@ exports.slackSendMessage = async (request, response) => {
   let responseMessage = '';
   let success = true;
 
-  // try {
-  //   const directMessageChannelId = await openConversation(channel);
-  // } catch (e) {
-  //   console.error('openConversation: ', e);
-  // }
+  // let directMessageChannelId = 'D08NSQQ8MKQ';//await openConversation(channel);
 
   try {
     // Call the chat.postMessage method using the WebClient
     const result = await webClient.chat.postMessage({
       token: process.env.SLACK_BOT_BEARER_TOKEN,
-      channel,    // : directMessageChannelId,
-      // username: "Stevep",
+      // channel: directMessageChannelId,
+      channel,
       text: message,
     });
 

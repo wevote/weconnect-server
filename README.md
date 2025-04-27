@@ -327,7 +327,7 @@ Your database is now registered with pgAdmin 4!
 (If you already had Postgres installed, you will have other databases on the Databases list, this is not a problem, just continue
 with this step to create a new one for the weconnect-server.)
 
-On the left pane "Object Explorer" right click on "Databases" and add the "WeConnectDB".  An empty "WeConnectDB" has been created.
+NOTE 4/25/25:  This instruction is not necessary, since the later 'prisma migrate' command automatically creates the DB:  ~~On the left pane "Object Explorer" right click on "Databases" and add the "WeConnectDB".  An empty "WeConnectDB" has been created.~~
 
 Continue on to setup the Prisma ORM.
 
