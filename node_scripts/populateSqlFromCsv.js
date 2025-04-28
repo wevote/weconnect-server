@@ -31,6 +31,8 @@ const usaDateToIso = (dateString) => {
 
 const createPersonUpdateDict = (row, i) => {
   const dict = {
+    emailOfficial: '',
+    emailPersonal: '',
     isAdmin: false,
     isHiringManager: false,
     isIntern: false,
@@ -43,6 +45,8 @@ const createPersonUpdateDict = (row, i) => {
     statusResigned: false,
     statusNonresponsive: false,
     statusOfferApproved: false,
+    statusOfferQuestionnaireAnswered: false,
+    statusOfferQuestionnaireSent: false,
     statusOfferWillNotBeMade: false,
     isHRAdmin: false,
     isHRGeneralist1: false,
@@ -93,6 +97,8 @@ const createPersonUpdateDict = (row, i) => {
     dict.statusOfferDecisionNeeded = false; // We are setting this to false for all imported people
     dict.statusOfferLetterCreated = row['Create Offer Letter'].trim() === 'Done';
     dict.statusOfferLetterSigned = row['Offer Letter Status (before purple line)'].trim() === 'Signed';
+    dict.statusOfferQuestionnaireAnswered = (row['Answers received'].trim() === 'Yes') || dict.statusOfferQuestionnaireSent;
+    dict.statusOfferQuestionnaireSent = (row['Confirmation questions sent?'].trim() === 'Sent') || dict.statusOfferQuestionnaireAnswered || dict.statusOfferLetterCreated || dict.statusOfferLetterSigned;
     // dict.???  = row['Team On- boarding Status'].trim() === 'Complete';
     dict.jazzHrUrl = row['Jazz Link'];
     dict.location = row.Location;
@@ -126,8 +132,8 @@ const createPersonUpdateDict = (row, i) => {
 
     Not in db
       "Attended Intro to We Vote":  "IDE installed? (DM)":  "Eng Pair Scheduled (DM)":
-      "Team meeting OR 2nd interview": "Confirmation questions sent?": "Invite to Slack":
-      "Answers received": "Email Credentials sent via Slack":
+      "Team meeting OR 2nd interview": "Invite to Slack":
+      "Email Credentials sent via Slack":
       "JazzHR New WeVote Email Message": "*Offer Letter Created":
       "Offer Letter Signed by Dale": "Offer Letter Signed by Volunteer": "Welcome to the team!":
       "Access to Google Drive": "Update status in JazzHR": "Slack Profile\nReminder":
@@ -231,8 +237,10 @@ const processCsv = async (file) => {
           person = (person.length > 0) ? person[0] : undefined;
           const isNonAuthoritativeInSQL = person?.nonAuthoritativeImport || false;
 
-          console.log(`ROW ${personUpdateDict.lastName} ${personUpdateDict.emailPersonal} ${personUpdateDict.emailOfficial}`);
-          if (personUpdateDict.emailPersonal.length === 0 && personUpdateDict.emailOfficial.length === 0) {
+          console.log(`IMPORT_ROW: ${personUpdateDict.lastName} ${personUpdateDict.emailPersonal} ${personUpdateDict.emailOfficial}`);
+          const emailPersonalExists = personUpdateDict.emailPersonal && personUpdateDict.emailPersonal.length > 5;
+          const emailOfficialExists = personUpdateDict.emailOfficial && personUpdateDict.emailOfficial.length > 5;
+          if (!emailPersonalExists && !emailOfficialExists) {
             console.log(`ROW SKIPPED: No valid personal or official ('2nd Email' or 'Primary Email') in row #${i}: ${who}`);
           }
           if (isFlaggedInCsvAsAuthoritative && !person) {

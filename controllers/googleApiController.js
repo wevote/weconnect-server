@@ -457,48 +457,53 @@ async function transferDriveFilesAndFoldersOwnership (adminClient, transferClien
 }
 
 /**
- * GET /api/v1/google-get-user-list
+ * GET /apis/v1/google-get-user-info
  * Use the Google Admin SDK Directory API to add a new user to the WeVote Google organization
  */
 exports.googleGetUserInfo = async (request, response) => {
-  const { primaryEmail } = request.body;
-  const auth = await getAuth();
-  const adminClient = google.admin({ version: 'directory_v1', auth });
-  const user = await getOneUser(adminClient, primaryEmail);
-  // console.log('primaryEmail:', primaryEmail, ', Google User:', user);
-  let ret;
-  if (user.length === 0) {
-    ret = {
-      isMailboxSetup: false,
-      status: 'User not found',
-      success: true,
-      userFound: false,
-    };
-  } else {
-    ret = {
-      success: true,
-      firstName: user.name.givenName,
-      lastName: user.name.familyName,
-      fullName: user.name.fullName,
-      phoneNumber: user.phones[0].value,
-      primaryEmail: user.emails[0].address,
-      lastLoginTime: user.lastLoginTime,
-      isMailboxSetup: user.isMailboxSetup,
-      thumbnailPhotoUrl: user.thumbnailPhotoUrl,
-      userFound: true,
-      // Less important
-      creationTime: user.creationTime,
-      changePasswordAtNextLogin: user.changePasswordAtNextLogin,
-      agreedToTerms: user.agreedToTerms,
-      archived: user.archived,
-      googleUserId: user.id,
-      isAdmin: user.isAdmin,
-      isArchived: user.archived,
-      isDelegatedAdmin: user.isDelegatedAdmin,
-      isSuspended: user.suspended,
-    };
+  try {
+    const { primaryEmail } = request.body;
+    const auth = await getAuth();
+    const adminClient = google.admin({ version: 'directory_v1', auth });
+    const user = await getOneUser(adminClient, primaryEmail);
+    // console.log('primaryEmail:', primaryEmail, ', Google User:', user);
+    let ret;
+    if (!user || user.length === 0) {
+      ret = {
+        isMailboxSetup: false,
+        status: 'User not found',
+        success: true,
+        userFound: false,
+      };
+    } else {
+      ret = {
+        success: true,
+        firstName: user.name.givenName,
+        lastName: user.name.familyName,
+        fullName: user.name.fullName,
+        phoneNumber: user.phones[0].value,
+        primaryEmail: user.emails[0].address,
+        lastLoginTime: user.lastLoginTime,
+        isMailboxSetup: user.isMailboxSetup,
+        thumbnailPhotoUrl: user.thumbnailPhotoUrl,
+        userFound: true,
+        // Less important
+        creationTime: user.creationTime,
+        changePasswordAtNextLogin: user.changePasswordAtNextLogin,
+        agreedToTerms: user.agreedToTerms,
+        archived: user.archived,
+        googleUserId: user.id,
+        isAdmin: user.isAdmin,
+        isArchived: user.archived,
+        isDelegatedAdmin: user.isDelegatedAdmin,
+        isSuspended: user.suspended,
+      };
+    }
+    return response.json(ret);
+  } catch (error) {
+    console.error('Error in googleGetUserInfo:', error);
+    return response.status(500).json({ error: `Error in googleGetUserInfo: ${error}` });
   }
-  return response.json(ret);
 };
 
 /**
