@@ -24,7 +24,6 @@ exports.slackChannelInvite = async (request, response) => {
     console.error(errorJoin);
   }
 
-
   try {
     // https://api.slack.com/methods/conversations.invite
     result = await webClient.conversations.invite({
@@ -76,19 +75,24 @@ exports.slackGetPresence = async (request, response) => {
       token: process.env.SLACK_BOT_BEARER_TOKEN,
       user: userID,
     });
+    result.success = result.ok;
+    delete result.response_metadata;
     console.log(result);
   } catch (error) {
+    result.success = false;
+    result.warning = error;
     console.error(error);
   }
 
-  return response.json({ success: result.ok, presence: result.presence });
+  return response.json(result);
 };
+
 
 exports.slackListUsers = async (request, response) => {
   const { daysRange } = request.body;
   const timeSpan = daysRange ? daysRange * 24 * 60 * 60 : 365 * 24 * 60 * 60;
   // console.log(message, channel);
-  // ID of the channel you want to send the message to
+  // ID of the channel you want to list the users of
 
   const membersList = [];
   const membersSkipped = [];
@@ -100,6 +104,7 @@ exports.slackListUsers = async (request, response) => {
     while (firstPass || nextCursor.length) {
       firstPass = false;
 
+      // eslint-disable-next-line no-await-in-loop
       const result = await webClient.users.list({
         token: process.env.SLACK_BOT_BEARER_TOKEN,
         cursor: nextCursor,
@@ -113,9 +118,6 @@ exports.slackListUsers = async (request, response) => {
         const now = Math.trunc(new Date().getTime() / 1000);
         // console.log('member.updated', now, member.updated, now - member.updated);
         const haventUpdatedInAYear = now - member.updated > timeSpan;
-        if (member?.real_name?.includes('odell')) {
-          console.log('Podell', member.id, member.real_name);
-        }
         if (!member.deleted && !haventUpdatedInAYear) {
           membersList.push({
             id: member.id,
@@ -139,7 +141,6 @@ exports.slackListUsers = async (request, response) => {
 
     console.log('Members skipped: ', membersSkipped);
     success = true;
-
   } catch (error) {
     console.error(error);
   }
@@ -148,6 +149,7 @@ exports.slackListUsers = async (request, response) => {
 
 
 // Send in a user's U code like 'U527YE5J4' and get back their direct message D code like D08NSQQ8MKQ
+// eslint-disable-next-line no-unused-vars
 const openConversation = async (channel) => {
   let result;
   try {
@@ -163,13 +165,57 @@ const openConversation = async (channel) => {
   return result?.channel.id;
 };
 
-const conversationsList = async (channel) => {
+
+const MAX_PAGE_COUNT = 50;  // ~ 656,870 total
+/**
+ * Find the last time a user logged into Slack, this kind of works, but hits rate limiting at 60 pages of 100
+ * 50 pages only takes you back about 20 days, and takes 95 seconds to execute.
+ * @param userId
+ * @returns {Promise<{}>}
+ */
+// eslint-disable-next-line no-unused-vars
+const lastLoggedIntoTeam = async (userId) => {
+  const result = {};
+  let page = 1;
+  const t0 = Date.now();
+  let login;
+  try {
+    do {
+      // eslint-disable-next-line no-await-in-loop
+      const res = await webClient.team.accessLogs({
+        token: process.env.SLACK_USER_BEARER_TOKEN,
+        page,
+      });
+      const { logins } = res;
+      result.lastDateSearched = logins[logins.length - 1]?.date_last;
+      login = logins.find((element) => element.user_id === userId);
+      result.success = true;
+      result.login = login;
+      result.error = '';
+      result.page = page++;
+    } while (!login && page < MAX_PAGE_COUNT);
+    console.log('lastLoggedIntoTeam: ', result.login?.date_last);
+  } catch (e) {
+    console.error('ERROR in lastLoggedIntoTeam: ', e);
+    result.success = false;
+    result.login = '';
+    result.error = e;
+  }
+  result.elapsed_ms = (new Date()) - t0;
+
+  return result;
+};
+
+/**
+ * Lists team conversation channels
+ * @returns {Promise<*>}
+ */
+// eslint-disable-next-line no-unused-vars
+const conversationsList = async () => {
   let result;
   try {
     result = await webClient.conversations.list({
       token: process.env.SLACK_BOT_BEARER_TOKEN,
-      channel,
-      types: 'public_channel,private_channel,mpim,im',
     });
     console.log('conversationsList: ', result);
   } catch (e) {
@@ -185,14 +231,12 @@ exports.slackSendMessage = async (request, response) => {
   let responseMessage = '';
   let success = true;
 
-  // let directMessageChannelId = 'D08NSQQ8MKQ';//await openConversation(channel);
-
   try {
     // Call the chat.postMessage method using the WebClient
     const result = await webClient.chat.postMessage({
       token: process.env.SLACK_BOT_BEARER_TOKEN,
-      // channel: directMessageChannelId,
       channel,
+      username: sendAsBot ? '' : sender,
       text: message,
     });
 
@@ -206,4 +250,3 @@ exports.slackSendMessage = async (request, response) => {
 
   return response.json({ success, message: responseMessage });
 };
-
