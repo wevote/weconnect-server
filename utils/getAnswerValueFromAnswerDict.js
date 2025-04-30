@@ -3,11 +3,11 @@ function getAnswerValueFromAnswerDict (answerDict) {
   if (answerDict.answerType === 'BOOLEAN') {
     return answerDict.answerBoolean;
   } else if (answerDict.answerType === 'DATE') {
-    console.log('answerDict for DATE:', answerDict);
+    // console.log('answerDict for DATE:', answerDict);
     if (answerDict.answerDateTime) {
       const dateTime = new Date(answerDict.answerDateTime);
       const dateTimeString = dateTime.toISOString();
-      console.log('dateTimeString:', dateTimeString);
+      // console.log('dateTimeString:', dateTimeString);
       return dateTimeString;
     }
     return null;
