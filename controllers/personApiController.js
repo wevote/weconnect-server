@@ -5,7 +5,7 @@ const passport = require('passport');
 const { getAllAccessRightsForPerson, personCanSeeOrDo } = require('./personController');
 const {
   createPerson, createPersonAway, findPersonListByParams, getAccessRightsForPerson, PERSON_AWAY_FIELDS_ACCEPTED,
-  PERSON_FIELDS_ACCEPTED, PERSON_FIELDS_ACCEPTED_ADMIN,
+  PERSON_FIELDS_ACCEPTED_ADMIN, PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE,
   removeProtectedFieldsFromPerson, removeProtectedFieldsFromPersonAway,
   findOnePerson, findPersonById, savePerson, savePersonAway,
   SITE_SUPER_USERS, getUniqueKeyEmail,
@@ -329,9 +329,13 @@ exports.personSave = async (request, response) => {
   // See if this person is in a team this viewer has teamAccessRights for.
   const canEditPersonThisTeam = await viewerCanSeeOrDoForThisTeamMember('canEditPersonThisTeam', personId, teamAccessRights, personIdsByTeam);
   const canEditPerson = canEditPersonAnyone || canEditPersonThisTeam;
+  // Currently, this is allowing an unauthenticated session to update any of the fields a person could update.
+  //  Needs to be tightened up from a security perspective.
+  // We could set up a 'person-save-questionnaire' that allowed fields to be saved from the questionnaire,
+  //  which we wouldn't allow a person to update on their own, outside the context of the questionnaire.
   const personChangeDict = extractVariablesToChangeFromIncomingParams(
     queryParams,
-    canEditPerson ? PERSON_FIELDS_ACCEPTED_ADMIN : PERSON_FIELDS_ACCEPTED,
+    canEditPerson ? PERSON_FIELDS_ACCEPTED_ADMIN : PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE,
   );
   if (personChangeDict.password) {
     personChangeDict.password = await bcrypt.hash(personChangeDict.password, 10);
