@@ -1,13 +1,20 @@
 const { google } = require('googleapis');
-const path = require('path');
 
 exports.getGoogleAuth = async () => {
   let auth;
   // console.log('Getting auth  process.env.GOOGLE_SUPER_ADMIN_EMAIL:', process.env.GOOGLE_SUPER_ADMIN_EMAIL);
   // Note on scopes: Need to add new ones to https://admin.google.com/ac/owl/domainwidedelegation
   // and (rarely needed) enable the API at https://console.cloud.google.com/apis/dashboard?invt=Abuqxg&project=weconnectserverapp
+  let keyFileJson;
+  try {
+    const keyFileJsonRaw = process.env.GOOGLEAPIS_JSON_WEB_TOKEN;
+    keyFileJson = JSON.parse(keyFileJsonRaw);
+  } catch (error) {
+    console.error('GOOGLEAPIS_JSON_WEB_TOKEN Missing');
+    keyFileJson = JSON.parse('{}'); // default to empty object if error
+  }
   await google.auth.getClient({
-    keyFile: path.join(__dirname, '../jwt.keys.json'),
+    credentials: keyFileJson,
     scopes: [
       'https://www.googleapis.com/auth/admin.directory.group',
       'https://www.googleapis.com/auth/admin.directory.group.member',
