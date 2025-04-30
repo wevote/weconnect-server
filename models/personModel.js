@@ -25,12 +25,12 @@ const PERSON_AWAY_FIELDS_ACCEPTED = {
 };
 
 const PERSON_FIELDS_ACCEPTED = {
-  firstName: 'STRING',
-  firstNamePreferred: 'STRING',
   emailOfficialAlternate: 'STRING',
   emailPersonal: 'STRING',
   emailPersonalAlternate: 'STRING',
   emailPreferred: 'STRING',
+  firstName: 'STRING',
+  firstNamePreferred: 'STRING',
   lastName: 'STRING',
   linkedInUrl: 'STRING',
   location: 'STRING',
@@ -38,14 +38,19 @@ const PERSON_FIELDS_ACCEPTED = {
   stateCode: 'STRING',
   zipCode: 'STRING',
 };
-const PERSON_FIELDS_ACCEPTED_ADMIN = {
+
+const PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE = {
   ...PERSON_FIELDS_ACCEPTED,
   birthdayMonthAndDay: 'STRING',
   dateEndDate: 'DATE',
   dateStartDate: 'DATE',
   emailOfficial: 'STRING',
-  emailOfficialVerified: 'BOOLEAN',
   hoursPerWeekEstimate: 'INTEGER',
+};
+
+const PERSON_FIELDS_ACCEPTED_ADMIN = {
+  ...PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE,
+  emailOfficialVerified: 'BOOLEAN',
   isAdmin: 'BOOLEAN',
   isHRAdmin: 'BOOLEAN',
   isHROfferAdmin: 'BOOLEAN',
@@ -187,7 +192,7 @@ function extractPersonVariablesToChange (queryParams) {
   Object.entries(queryParams).forEach(([key, value]) => {
     // console.log('==== key:', key, ', value:', value);
     keyWithoutToBeSaved = key.replace('ToBeSaved', '');
-    if (PERSON_FIELDS_ACCEPTED.includes(keyWithoutToBeSaved) && value) {
+    if (PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE.includes(keyWithoutToBeSaved) && value) {
       if (queryParams && queryParams.get(`${keyWithoutToBeSaved}Changed`) === 'true') {
         updateDict[keyWithoutToBeSaved] = value;
       }
@@ -282,19 +287,23 @@ const setStatusFieldsIfNotInitialized = (person) => {
   if (person.isHROfferAdmin === null) person.isHROfferAdmin = false;
   if (person.statusAvailableForSpecialProjects === null) person.statusAvailableForSpecialProjects = false;
   /* eslint-enable no-param-reassign */
+  return person;
 };
 
-async function savePerson (person) {
-  setStatusFieldsIfNotInitialized(person);
-  // console.log('savePerson person:', person?.id, person);
-  const updatePerson = await prisma.person.update({
+async function savePerson (incomingPersonChangeDict) {
+  // 2025-04-30 This use of setStatusFieldsIfNotInitialized here can be destructive because
+  //  incomingPersonChangeDict may not have all of the person data from the database in it.
+  // TODO: setStatusFieldsIfNotInitialized should be called in another place.
+  // setStatusFieldsIfNotInitialized(incomingPerson);
+  // console.log('savePerson incomingPersonChangeDict BEFORE:', incomingPersonChangeDict?.id, incomingPersonChangeDict);
+  const updatedPerson = await prisma.person.update({
     where: {
-      id: person.id,
+      id: incomingPersonChangeDict.id,
     },
-    data: person,
+    data: incomingPersonChangeDict,
   });
-  // console.log(updatePerson);
-  return updatePerson;
+  // console.log('savePerson AFTER:', updatedPerson);
+  return updatedPerson;
 }
 
 async function savePersonAway (personAway) {
@@ -469,6 +478,7 @@ module.exports = {
   PERSON_AWAY_FIELDS_ACCEPTED,
   PERSON_FIELDS_ACCEPTED,
   PERSON_FIELDS_ACCEPTED_ADMIN,
+  PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE,
   removeProtectedFieldsFromPerson,
   removeProtectedFieldsFromPersonAway,
   savePerson,

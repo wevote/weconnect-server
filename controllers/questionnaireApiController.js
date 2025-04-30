@@ -1,6 +1,6 @@
 // weconnect-server/controllers/questionnaireApiController.js
-const { savePerson } = require('../models/personModel');
-const { retrieveQuestionnaireResponseListByPersonIdList, saveAnswerToMappedField } =  require('./questionnaireController');
+const { savePerson, PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE} = require('../models/personModel');
+const { retrieveQuestionnaireResponseListByPersonIdList } =  require('./questionnaireController');
 const { createQuestion, createQuestionnaire, findQuestionListByIdList,
   findQuestionListByParams, findQuestionnaireById, findQuestionnaireListByParams,
   QUESTION_FIELDS_ACCEPTED, QUESTIONNAIRE_FIELDS_ACCEPTED,
@@ -20,6 +20,8 @@ exports.answerListSave = async (request, response) => {
   const queryParams = new URLSearchParams(parsedUrl.search);
   const personId = convertToInteger(queryParams.get('personId'));
   const questionnaireId = convertToInteger(queryParams.get('questionnaireId'));
+  let personUpdateDict = { id: personId };
+  let personUpdatesFound = false;
 
   let answerListSaved = false;
   const answersSavedList = [];
@@ -51,7 +53,6 @@ exports.answerListSave = async (request, response) => {
       const questionList = await findQuestionListByIdList(questionIdList);
 
       // Now cycle through the questions we expect answers to
-      // eslint-disable-next-line no-restricted-syntax
       const savePromises = questionList.map(async (question) => {
         // console.log('== question:', question);
         const { answerType, fieldMappingRule, questionId, questionVersion } = question;
@@ -70,6 +71,16 @@ exports.answerListSave = async (request, response) => {
               updateDict.answerInteger = convertToInteger(answerValue);
             } else if (answerType === 'BOOLEAN') {
               updateDict.answerBoolean = !!(answerValue);
+            } else if (answerType === 'DATE') {
+              const parsedDate = new Date(answerValue);
+              if (!Number.isNaN(parsedDate.getTime())) {
+                // Valid date, convert to ISO string format
+                updateDict.answerDateTime = parsedDate.toISOString();
+              } else {
+                // Invalid date
+                console.warn(`Invalid date format for questionId ${questionId}: ${answerValue}`);
+                updateDict.answerDateTime = null;
+              }
             } else if (answerType === 'STRING') {
               updateDict.answerString = answerValue;
             } else {
@@ -83,10 +94,17 @@ exports.answerListSave = async (request, response) => {
               answersSavedList.push(updateDict);
               // Now update the other database field based on fieldMappingRule
               if (fieldMappingRule) {
+                const fieldToUpdate = fieldMappingRule.split('.')[1];
                 const answerValueTyped = getAnswerValueFromAnswerDict(updateDict);
-                // console.log('answerListSave fieldMappingRule:', fieldMappingRule, ', answerValueTyped:', answerValueTyped);
-                const results = await saveAnswerToMappedField(fieldMappingRule, answerValueTyped, personId);
-                status += results.status;
+                // console.log('answerListSave fieldToUpdate:', fieldToUpdate, ', answerValueTyped:', answerValueTyped);
+                if (fieldToUpdate in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE) {
+                  // console.log('fieldToUpdate in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE');
+                  personUpdateDict = {
+                    ...personUpdateDict,
+                    [fieldToUpdate]: answerValueTyped,
+                  };
+                  personUpdatesFound = true;
+                }
               }
               return true;
             } catch (err) {
@@ -113,11 +131,16 @@ exports.answerListSave = async (request, response) => {
   // console.log('answerListSave questionnaire:', questionnaire);
   if (answerListSaved && questionnaire && questionnaire.isOfferQuestionnaire) {
     // const person =
-    await savePerson({
-      id: personId,
+    personUpdateDict = {
+      ...personUpdateDict,
       statusOfferQuestionnaireAnswered: true,
-    });
-    // console.log('answerListSave person.statusOfferQuestionnaireAnswered set to true:', person);
+    };
+    personUpdatesFound = true;
+    // console.log('answerListSave person.statusOfferQuestionnaireAnswered personUpdateDict:', personUpdateDict);
+  }
+
+  if (personUpdatesFound) {
+    await savePerson(personUpdateDict);
   }
 
   // Set up the default JSON response.

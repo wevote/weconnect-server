@@ -1,5 +1,5 @@
 // weconnect-server/controllers/questionnaireController.js
-const { PERSON_FIELDS_ACCEPTED_ADMIN, savePerson } = require('../models/personModel');
+const { PERSON_FIELDS_ACCEPTED_FOR_QUESTIONNAIRE, savePerson } = require('../models/personModel');
 const { findQuestionAnswerListByParams, findQuestionListByParams, findQuestionnaireListByIdList } = require('../models/questionnaireModel');
 const { arrayContains } = require('../utils/arrayContains');
 
@@ -96,7 +96,8 @@ exports.retrieveQuestionnaireResponseListByPersonIdList = async (personIdList) =
 };
 
 exports.saveAnswerToMappedField = async (fieldMappingRule, answerValueTyped, personId) => {
-  //
+  // DALE NOTE: 2025-04-30 We tend to gather Person updates into a change dictionary outside of this function,
+  //  and then use savePerson. We might be able to deprecate this function.
   const fieldOfInterest = fieldMappingRule.split('.')[1];
   const personChangeDict = {};
   let status = '';
@@ -121,7 +122,7 @@ exports.saveAnswerToMappedField = async (fieldMappingRule, answerValueTyped, per
   if (success) {
     try {
       // For questionnaire answers, we let the person update fields that normally they can't edit in their profile.
-      if (fieldOfInterest in PERSON_FIELDS_ACCEPTED_ADMIN) {
+      if (fieldOfInterest in PERSON_FIELDS_ACCEPTED_FOR_QUESTIONNAIRE) {
         personChangeDict.id = personId;
         personChangeDict[fieldOfInterest] = answerValueTyped;
         // console.log('Updating person:', personChangeDict);
