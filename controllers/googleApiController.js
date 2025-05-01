@@ -632,7 +632,7 @@ exports.googleShareDriveAccess = async (request, response) => {
 
 /* Failure to implement (for now!)
    I can get driveClient.permissions.list, and it returns the ~150 users who have been granted drive permission
-   But driveClient.files.list() returns no data when called from this file, unless queried without a 'q' query, in which case you get all files, and with fields: '*', you get permssions and owners (scratch_28.json)
+   But driveClient.files.list() returns no data when called from this file, unless queried without a 'q' query, in which case you get all files, and with fields: '*', you get permissions and owners (scratch_28.json)
    so I tried a workaround of searching ALL files for the owner whose email matches, and it is super slow, and doesn't return any newer files
  */
 exports.googleRevokeDriveAccess = async (request, response) => {

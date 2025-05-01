@@ -130,7 +130,7 @@ exports.slackListUsers = async (request, response) => {
             tz: member.tz,
             tz_label: member.tz_label,
             last_updated: member.updated,
-            last_updated_date: new Date(member.updated),
+            last_updated_date: new Date(member.updated * 1000),
           });
         } else {
           membersSkipped.push(`${member.id} -- ${member.name}`);
