@@ -22,6 +22,7 @@ exports.answerListSave = async (request, response) => {
   const questionnaireId = convertToInteger(queryParams.get('questionnaireId'));
   let personUpdateDict = { id: personId };
   let personUpdatesFound = false;
+  console.log('answerListSave personId:', personId, ', questionnaireId:', questionnaireId);
 
   let answerListSaved = false;
   const answersSavedList = [];
@@ -32,11 +33,12 @@ exports.answerListSave = async (request, response) => {
     status += 'personId_MISSING ';
     requiredFieldsExist = false;
     success = false;
+    console.log('answerListSave: missing personId');
   }
 
   if (success && requiredFieldsExist) {
     const answerChangeDict = extractQuestionAnswersFromIncomingParams(queryParams);
-    // console.log('answerChangeDict:', answerChangeDict);
+    console.log('answerChangeDict:', answerChangeDict);
 
     // Retrieve all the questions, so we know the expected answerType, questionVersion
     const questionIdKeys = Object.keys(answerChangeDict);
@@ -96,14 +98,16 @@ exports.answerListSave = async (request, response) => {
               if (fieldMappingRule) {
                 const fieldToUpdate = fieldMappingRule.split('.')[1];
                 const answerValueTyped = getAnswerValueFromAnswerDict(updateDict);
-                // console.log('answerListSave fieldToUpdate:', fieldToUpdate, ', answerValueTyped:', answerValueTyped);
+                console.log('answerListSave fieldToUpdate:', fieldToUpdate, ', answerValueTyped:', answerValueTyped);
                 if (fieldToUpdate in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE) {
-                  // console.log('fieldToUpdate in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE');
+                  console.log('fieldToUpdate (', fieldToUpdate, ') in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE');
                   personUpdateDict = {
                     ...personUpdateDict,
                     [fieldToUpdate]: answerValueTyped,
                   };
                   personUpdatesFound = true;
+                } else {
+                  console.log('fieldToUpdate (', fieldToUpdate, ') NOT in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE');
                 }
               }
               return true;
@@ -139,6 +143,7 @@ exports.answerListSave = async (request, response) => {
     // console.log('answerListSave person.statusOfferQuestionnaireAnswered personUpdateDict:', personUpdateDict);
   }
 
+  console.log('answerListSave personUpdatesFound:', personUpdatesFound, ', personUpdateDict:', personUpdateDict);
   if (personUpdatesFound) {
     await savePerson(personUpdateDict);
   }
