@@ -13,6 +13,8 @@ const TASK_DEFINITION_FIELDS_ACCEPTED = {
   order: 'INTEGER',
   questionnaireId: 'INTEGER',
   statusActive: 'BOOLEAN',
+  statusOfferQuestionnaireAnswered: 'BOOLEAN',
+  statusOfferQuestionnaireSent: 'BOOLEAN',
   taskGroupId: 'INTEGER',
   taskActionUrl: 'STRING',
   taskName: 'STRING',

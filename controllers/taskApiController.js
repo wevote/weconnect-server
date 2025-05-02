@@ -582,10 +582,12 @@ exports.taskSave = async (request, response) => {
     let personUpdateFound = false;
     // eslint-disable-next-line no-restricted-syntax
     for (const [taskDefinitionField, personField] of Object.entries(TASK_DEFINITION_FIELDS_TO_MAP_TO_PERSON_FIELDS)) {
-      if (taskDefinition[taskDefinitionField] === true) {
+      if (personField && taskDefinition && taskDefinitionField && taskDefinition[taskDefinitionField] === true) {
         // console.log('Updating person field:', personField, ' with TRUE');
         personUpdateDict[personField] = true;
         personUpdateFound = true;
+      } else {
+        console.log('MISSING_TASKDONE_VARIABLE ');
       }
     }
     if (personUpdateFound) {
