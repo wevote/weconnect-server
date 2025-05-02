@@ -21,6 +21,11 @@ const TASK_DEFINITION_FIELDS_ACCEPTED = {
   taskWhyWeDoIt: 'STRING',
 };
 
+const TASK_DEFINITION_FIELDS_TO_MAP_TO_PERSON_FIELDS = {
+  statusOfferQuestionnaireAnswered: 'statusOfferQuestionnaireAnswered',
+  statusOfferQuestionnaireSent: 'statusOfferQuestionnaireSent',
+};
+
 const TASK_FIELDS_ACCEPTED = [
   'doneByPersonId',
   'googleDriveSuccess',
@@ -159,6 +164,16 @@ async function findTaskListByIdList (idList, includeAllData = false) {
   }
   // console.log('findTaskListByIdList modifiedTaskList:', modifiedTaskList);
   return modifiedTaskList;
+}
+
+async function findTaskDefinitionById (id) {
+  const taskDefinition = await prisma.taskDefinition.findUnique({
+    where: {
+      id,
+    },
+  });
+  taskDefinition.taskDefinitionId = taskDefinition.id;
+  return taskDefinition;
 }
 
 async function findTaskDefinitionListByParams (params = {}) {
@@ -420,6 +435,7 @@ module.exports = {
   deleteOneTaskGroup,
   deleteOneTaskGroupTeamLink,
   extractTaskGroupVariablesToChange,
+  findTaskDefinitionById,
   findTaskDefinitionListByParams,
   findTaskDependencyListByParams,
   findTaskListByIdList,
@@ -439,6 +455,7 @@ module.exports = {
   saveTaskGroup,
   saveTaskGroupTeamLink,
   TASK_DEFINITION_FIELDS_ACCEPTED,
+  TASK_DEFINITION_FIELDS_TO_MAP_TO_PERSON_FIELDS,
   TASK_FIELDS_ACCEPTED,
   TASK_FIELDS_ACCEPTED_DICT,
   TASK_GROUP_FIELDS_ACCEPTED,

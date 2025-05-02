@@ -1,12 +1,14 @@
 // weconnect-server/controllers/taskApiController.js
 const { retrieveTaskStatusListByPersonIdList } =  require('./taskController');
-const { createTaskDefinition, createTaskGroup, deleteOneTaskGroupTeamLink,
+const { createTaskDefinition, createTaskGroup, deleteOneTaskGroupTeamLink, findTaskDefinitionById,
   findTaskDefinitionListByParams, findTaskGroupById, findTaskGroupTeamLinkListByParams, findTaskGroupListByParams,
-  TASK_DEFINITION_FIELDS_ACCEPTED, TASK_FIELDS_ACCEPTED_DICT, TASK_GROUP_FIELDS_ACCEPTED,
+  TASK_DEFINITION_FIELDS_ACCEPTED, TASK_DEFINITION_FIELDS_TO_MAP_TO_PERSON_FIELDS,
+  TASK_FIELDS_ACCEPTED_DICT, TASK_GROUP_FIELDS_ACCEPTED,
   removeProtectedFieldsFromTask, removeProtectedFieldsFromTaskDefinition, removeProtectedFieldsFromTaskGroup,
   saveTaskDefinition, saveTaskGroup, updateOrCreateTask, updateOrCreateTaskGroupTeamLink } = require('../models/taskModel');
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { convertToInteger } = require('../utils/convertToInteger');
+const { savePerson } = require('../models/personModel');
 
 /**
  * GET /api/v1/task-definition-list-retrieve
@@ -508,6 +510,7 @@ exports.taskSave = async (request, response) => {
     success: true,
     updateErrors: [],
   };
+  let taskDone = false;
   try {
     jsonData.personId = personId;
     jsonData.taskDefinitionId = taskDefinitionId;
@@ -515,8 +518,12 @@ exports.taskSave = async (request, response) => {
     jsonData.success = true;
     const keys = Object.keys(taskChangeDict);
     const values = Object.values(taskChangeDict);
+    // console.log('keys:', keys, ', values:', values);
     for (let i = 0; i < keys.length; i++) {
       jsonData[keys[i]] = values[i];
+      if (keys[i] === 'statusDone' && (values[i] === 'true' || values[i] === true)) {
+        taskDone = true;
+      }
     }
   } catch (err) {
     jsonData.status += err.message;
@@ -552,11 +559,40 @@ exports.taskSave = async (request, response) => {
       for (let i = 0; i < taskKeys.length; i++) {
         jsonData[taskKeys[i]] = taskValues[i];
       }
+    } else {
+      jsonData.success = false;
     }
   } catch (err) {
     console.error('Error while saving task:', err);
     jsonData.status += err.message;
     jsonData.success = false;
+  }
+
+  // When a task is marked as completed, update the corresponding Person table field, as
+  //  defined in TASK_DEFINITION_FIELDS_TO_MAP_TO_PERSON_FIELDS.
+  const taskDoneFinal = jsonData.success && taskDone && taskDefinitionId;
+  // console.log('taskDoneFinal:', taskDoneFinal, ', jsonData.success:', jsonData.success, ', taskDone:', taskDone, ', taskDefinitionId:', taskDefinitionId);
+  if (taskDoneFinal) {
+    // Now go on to update Person table
+    const taskDefinition = await findTaskDefinitionById(taskDefinitionId);
+    // console.log('taskDefinition:', taskDefinition);
+    // If the field in taskDefinition is true and matches a key found in TASK_DEFINITION_FIELDS_TO_MAP_TO_PERSON_FIELDS,
+    // then update the corresponding field in Person table.
+    const personUpdateDict = {};
+    let personUpdateFound = false;
+    // eslint-disable-next-line no-restricted-syntax
+    for (const [taskDefinitionField, personField] of Object.entries(TASK_DEFINITION_FIELDS_TO_MAP_TO_PERSON_FIELDS)) {
+      if (taskDefinition[taskDefinitionField] === true) {
+        // console.log('Updating person field:', personField, ' with TRUE');
+        personUpdateDict[personField] = true;
+        personUpdateFound = true;
+      }
+    }
+    if (personUpdateFound) {
+      personUpdateDict.id = personId;
+      // console.log('Save changes to Person table:', personUpdateDict);
+      await savePerson(personUpdateDict);
+    }
   }
 
   response.json(jsonData);

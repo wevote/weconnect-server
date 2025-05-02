@@ -43,29 +43,32 @@ model TaskChangeLog {
 
 /// The description of one task is a TaskDefinition. The status of one person for a particular TaskDefinition, is a Task.
 model TaskDefinition {
-  id                          Int      @id @default(autoincrement())
-  emailTemplateId             Int? /// Which email template to use in completing this step
+  id                               Int      @id @default(autoincrement())
+  emailTemplateId                  Int? /// Which email template to use in completing this step
   /// Needed for Google Drive API
-  googleDriveAssetId          String?
+  googleDriveAssetId               String?
   /// The default is that tasks are for HR staff. If a task is for a volunteer to complete, 'isForVolunteer' is true.
-  isForVolunteer              Boolean  @default(false)
-  isGoogleDrivePermissionTask Boolean?
+  isForVolunteer                   Boolean  @default(false)
+  isGoogleDrivePermissionTask      Boolean?
   /// If completing this step includes answering a questionnaire, set 'isQuestionnaireTask' to true.
-  isQuestionnaireTask         Boolean?
+  isQuestionnaireTask              Boolean?
   /// What step is this in the series
-  order                       Int      @default(0)
+  order                            Int      @default(0)
   /// Questionnaire to refer to in the instructions
-  questionnaireId             Int      @default(-1)
+  questionnaireId                  Int      @default(-1)
   /// This is a TaskDefinition that is in use
-  statusActive                Boolean  @default(true)
+  statusActive                     Boolean  @default(true)
+  /// When these fields are set to true, we want to also update Person field of same name when task is marked complete
+  statusOfferQuestionnaireAnswered Boolean?
+  statusOfferQuestionnaireSent     Boolean?
   /// Id of the TaskGroup this task is a part of
-  taskGroupId                 Int
+  taskGroupId                      Int
   /// Where HR team goes to do this task. The link could be a Google drive folder.
-  taskActionUrl               String?
-  taskName                    String /// task name to show before it is done
-  taskNameCompleted           String? /// task name to show after done
-  taskWhatToDo                String?
-  taskWhyWeDoIt               String?
+  taskActionUrl                    String?
+  taskName                         String /// task name to show before it is done
+  taskNameCompleted                String? /// task name to show after done
+  taskWhatToDo                     String?
+  taskWhyWeDoIt                    String?
 }
 
 /// How is one TaskDefinition related to (or dependent on) prior TaskDefinitions?
