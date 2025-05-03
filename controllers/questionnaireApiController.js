@@ -74,9 +74,9 @@ exports.answerListSave = async (request, response) => {
             } else if (answerType === 'BOOLEAN') {
               updateDict.answerBoolean = !!(answerValue);
             } else if (answerType === 'DATE') {
-              const parsedDate = new Date(answerValue);
+              const answerValueWithTime = (answerValue) ? `${answerValue}T12:00:00.000Z` : '';
+              const parsedDate = new Date(answerValueWithTime);
               if (!Number.isNaN(parsedDate.getTime())) {
-                // Valid date, convert to ISO string format
                 updateDict.answerDateTime = parsedDate.toISOString();
               } else {
                 // Invalid date
@@ -141,11 +141,23 @@ exports.answerListSave = async (request, response) => {
     };
     personUpdatesFound = true;
     // console.log('answerListSave person.statusOfferQuestionnaireAnswered personUpdateDict:', personUpdateDict);
+    status += `personUpdateDict_TO_BE_SAVED: ${JSON.stringify(personUpdateDict)} `;
+  } else {
+    status += `QUESTIONNAIRE_IS_NOT_OFFER_QUESTIONNAIRE_OR not answerListSaved: ${answerListSaved}`;
   }
 
   console.log('answerListSave personUpdatesFound:', personUpdatesFound, ', personUpdateDict:', personUpdateDict);
   if (personUpdatesFound) {
-    await savePerson(personUpdateDict);
+    try {
+      await savePerson(personUpdateDict);
+      status += 'PERSON_SAVED ';
+    } catch (err) {
+      console.error('ERROR saving person: ', err);
+      status += `ERROR_SAVING_PERSON: ${err} `;
+      success = false;
+    }
+  } else {
+    status += 'NO_PERSON_UPDATES_FOUND ';
   }
 
   // Set up the default JSON response.
