@@ -67,6 +67,7 @@ const PERSON_FIELDS_ACCEPTED_ADMIN = {
   statusEmailCreated: 'BOOLEAN',
   statusOfferApproved: 'BOOLEAN',
   statusOfferDecisionNeeded: 'BOOLEAN',
+  statusOfferLetterCreated: 'BOOLEAN',
   statusOfferLetterSigned: 'BOOLEAN',
   statusOfferQuestionnaireAnswered: 'BOOLEAN',
   statusOfferQuestionnaireSent: 'BOOLEAN',
