@@ -13,6 +13,7 @@ const TASK_DEFINITION_FIELDS_ACCEPTED = {
   order: 'INTEGER',
   questionnaireId: 'INTEGER',
   statusActive: 'BOOLEAN',
+  statusOfferLetterSigned: 'BOOLEAN',
   statusOfferQuestionnaireAnswered: 'BOOLEAN',
   statusOfferQuestionnaireSent: 'BOOLEAN',
   taskGroupId: 'INTEGER',
@@ -24,6 +25,7 @@ const TASK_DEFINITION_FIELDS_ACCEPTED = {
 };
 
 const TASK_DEFINITION_FIELDS_TO_MAP_TO_PERSON_FIELDS = {
+  statusOfferLetterSigned: 'statusOfferLetterSigned',
   statusOfferQuestionnaireAnswered: 'statusOfferQuestionnaireAnswered',
   statusOfferQuestionnaireSent: 'statusOfferQuestionnaireSent',
 };

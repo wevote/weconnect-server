@@ -59,6 +59,7 @@ model TaskDefinition {
   /// This is a TaskDefinition that is in use
   statusActive                     Boolean  @default(true)
   /// When these fields are set to true, we want to also update Person field of same name when task is marked complete
+  statusOfferLetterSigned          Boolean?
   statusOfferQuestionnaireAnswered Boolean?
   statusOfferQuestionnaireSent     Boolean?
   /// Id of the TaskGroup this task is a part of
