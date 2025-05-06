@@ -6,6 +6,7 @@ const taskApiController = require('../controllers/taskApiController');
 const teamApiController = require('../controllers/teamApiController');
 const { slackChannelInvite, slackGetPresence, slackSendMessage, slackListUsers, slackChannelMembers } = require('../controllers/slackApiController');
 const { updateDbFromCsv } = require('../controllers/updateSqlFromCsvController');
+const { jazzGetApplicants, jazzGetUsers } = require('../controllers/jazzHrController');
 
 /**
  * WeConnect API routes.
@@ -45,9 +46,12 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.post('/apis/v1/google-delete-user', googleApiController.googleDeleteUserAccount);
   weconnectServer.post('/apis/v1/google-get-user-info', googleApiController.googleGetUserInfo);
   weconnectServer.post('/apis/v1/google-get-user-list', googleApiController.googleGetUserList);
-  weconnectServer.post('/apis/v1/google-share-drive-access', googleApiController.googleShareDriveAccess);
-  weconnectServer.post('/apis/v1/google-revoke-drive-access', googleApiController.googleRevokeDriveAccess);
   weconnectServer.post('/apis/v1/google-reset-user-password', googleApiController.googleResetUserPassword);
+  weconnectServer.post('/apis/v1/google-revoke-sharing', googleApiController.googleRevokeShare);
+  weconnectServer.post('/apis/v1/google-share-drive-access', googleApiController.googleShareDriveAccess);
+  weconnectServer.post('/apis/v1/google-transfer-drive-access', googleApiController.googleDriveTransferOwnership);
+  weconnectServer.post('/apis/v1/jazz-get-applicants', jazzGetApplicants);
+  weconnectServer.post('/apis/v1/jazz-get-users', jazzGetUsers);
   weconnectServer.post('/apis/v1/login', personApiController.login);
   weconnectServer.post('/apis/v1/logout', personApiController.logout);
   weconnectServer.post('/apis/v1/save-password', personApiController.savePassword);
