@@ -48,7 +48,12 @@ const TASK_GROUP_MATCH_REQUIRED = [
   {
     personField: 'statusOfferApproved',
     personStatesThatIndicateThisIsNotNecessary: [''],
-    taskGroupField: 'assignIfStatusOfferApproved',
+    taskGroupField: 'assignIfOfferApproved',
+  },
+  {
+    personField: 'statusOfferWillNotBeMade',
+    personStatesThatIndicateThisIsNotNecessary: [''],
+    taskGroupField: 'assignIfOfferWillNotBeMade',
   },
 ];
 

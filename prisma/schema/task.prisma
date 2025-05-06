@@ -59,9 +59,12 @@ model TaskDefinition {
   /// This is a TaskDefinition that is in use
   statusActive                     Boolean  @default(true)
   /// When these fields are set to true, we want to also update Person field of same name when task is marked complete
+  statusOfferApproved              Boolean?
+  statusOfferLetterCreated         Boolean?
   statusOfferLetterSigned          Boolean?
   statusOfferQuestionnaireAnswered Boolean?
   statusOfferQuestionnaireSent     Boolean?
+  statusOfferWillNotBeMade         Boolean?
   /// Id of the TaskGroup this task is a part of
   taskGroupId                      Int
   /// Where HR team goes to do this task. The link could be a Google drive folder.
@@ -86,14 +89,14 @@ model TaskGroup {
   id                                 Int      @id @default(autoincrement())
   /// Create tasks in this TaskGroup for a person if...
   assignIfEmailCreated               Boolean?
+  assignIfOfferApproved              Boolean?
   assignIfOfferDecisionNeeded        Boolean?
   assignIfOfferLetterCreated         Boolean?
   assignIfOfferLetterSigned          Boolean?
-  /// There are times when we want to just record that we have the answers we need, even if person doesn't fill out offer questionnaire
   assignIfOfferQuestionnaireAnswered Boolean?
   assignIfOfferQuestionnaireSent     Boolean?
+  assignIfOfferWillNotBeMade         Boolean?
   assignIfQuestionnaireAnswered      Boolean?
-  assignIfStatusOfferApproved        Boolean?
   questionnaireId                    Int      @default(-1)
   /// This is a series that is in use
   statusActive                       Boolean  @default(true)
