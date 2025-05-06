@@ -75,9 +75,11 @@ model Person {
   statusAvailableForSpecialProjects Boolean?
   /// Hiring manager does not think this is a suitable candidate
   statusEmailCreated                Boolean?
-  statusActiveInLast90Days          Boolean?       // This should be calculated, not stored
+  statusActiveInLast90Days          Boolean? // This should be calculated, not stored
   /// Person has stopped responding to inquiries, so we assume they are resigned
   statusNonresponsive               Boolean?
+  /// Hiring manager would like an offer sent to this person
+  statusOfferApproved               Boolean?
   statusOfferLetterCreated          Boolean?
   statusOfferLetterSigned           Boolean?
   statusOfferDecisionNeeded         Boolean   @default(false)
@@ -85,8 +87,6 @@ model Person {
   statusOfferQuestionnaireAnswered  Boolean?
   /// In the offer process, once the offer letter questionnaire has been sent, we set up other tasks
   statusOfferQuestionnaireSent      Boolean?
-  /// Hiring manager would like an offer sent to this person
-  statusOfferApproved               Boolean?
   /// Hiring manager does not think this is a suitable candidate
   statusOfferWillNotBeMade          Boolean?
   /// Person notified us they are on leave

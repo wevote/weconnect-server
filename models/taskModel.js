@@ -13,6 +13,7 @@ const TASK_DEFINITION_FIELDS_ACCEPTED = {
   order: 'INTEGER',
   questionnaireId: 'INTEGER',
   statusActive: 'BOOLEAN',
+  statusOfferApproved: 'BOOLEAN',
   statusOfferLetterCreated: 'BOOLEAN',
   statusOfferLetterSigned: 'BOOLEAN',
   statusOfferQuestionnaireAnswered: 'BOOLEAN',
@@ -26,10 +27,12 @@ const TASK_DEFINITION_FIELDS_ACCEPTED = {
 };
 
 const TASK_DEFINITION_FIELDS_TO_MAP_TO_PERSON_FIELDS = {
+  statusOfferApproved: 'statusOfferApproved',
   statusOfferLetterCreated: 'statusOfferLetterCreated',
   statusOfferLetterSigned: 'statusOfferLetterSigned',
   statusOfferQuestionnaireAnswered: 'statusOfferQuestionnaireAnswered',
   statusOfferQuestionnaireSent: 'statusOfferQuestionnaireSent',
+  statusOfferWillNotBeMade: 'statusOfferWillNotBeMade',
 };
 
 const TASK_FIELDS_ACCEPTED = [
@@ -58,13 +61,14 @@ const TASK_FIELDS_ACCEPTED_DICT = {
 
 const TASK_GROUP_FIELDS_ACCEPTED = {
   assignIfEmailCreated: 'BOOLEAN',
+  assignIfOfferApproved: 'BOOLEAN',
   assignIfOfferDecisionNeeded: 'BOOLEAN',
   assignIfOfferLetterCreated: 'BOOLEAN',
   assignIfOfferLetterSigned: 'BOOLEAN',
   assignIfOfferQuestionnaireAnswered: 'BOOLEAN',
   assignIfOfferQuestionnaireSent: 'BOOLEAN',
+  assignIfOfferWillNotBeMade: 'BOOLEAN',
   assignIfQuestionnaireAnswered: 'BOOLEAN',
-  assignIfStatusOfferApproved: 'BOOLEAN',
   questionnaireId: 'INTEGER',
   statusActive: 'BOOLEAN',
   taskGroupName: 'STRING',
