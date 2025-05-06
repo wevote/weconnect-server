@@ -71,6 +71,7 @@ const PERSON_FIELDS_ACCEPTED_ADMIN = {
   statusOfferLetterSigned: 'BOOLEAN',
   statusOfferQuestionnaireAnswered: 'BOOLEAN',
   statusOfferQuestionnaireSent: 'BOOLEAN',
+  statusOfferWillNotBeMade: 'BOOLEAN',
   statusOnLeave: 'BOOLEAN',
   statusResigned: 'BOOLEAN',
 };
