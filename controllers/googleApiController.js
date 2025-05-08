@@ -94,7 +94,11 @@ async function listUsers (adminClient) {
   // console.log('Users:');
   const brief = [];
   users.forEach((user) => {
-    brief.push(`${user.primaryEmail} (${user.name.fullName})`);
+    brief.push({
+      primaryEmail: user.primaryEmail,
+      userName: user.name.fullName,
+      id: user.id,
+    });
     // console.log(`${user.primaryEmail} (${user.name.fullName})`);
   });
   return brief;
@@ -261,50 +265,6 @@ async function listDriveFilesLimitedByEmail (driveClient) {
   return filesToReturn;
 }
 
-// 4/19/25 -- this (bad workaround) "works" but only finds files owned by Dale, and a couple of others, none of mine, and none of my test accounts
-async function getPermissionsToTransfer (driveClient, primaryEmail) {
-  let res;
-  const filesToReturn = [];
-  let pageToken = '';       // nextPageToken in docs!
-  let firstPass = true;
-  let cnt = 0;
-  try {
-    while (firstPass || pageToken) {
-      firstPass = false;
-      // eslint-disable-next-line no-await-in-loop
-      res = await driveClient.files.list({
-        corpora: 'user',
-        includeItemsFromAllDrives: true,
-        supportsAllDrives: true,
-        fields: '*',
-        pageToken,
-      });
-      const { nextPageToken, files } = res.data;
-      pageToken = nextPageToken;
-      // eslint-disable-next-line no-loop-func
-      files.forEach((file) => {
-        cnt++;
-        file.owners.forEach((owner) => {
-          console.log(cnt, owner.emailAddress, file.name, file.kind);
-        });
-        const matchingOwner = file.owners.find((owner) => owner.emailAddress === primaryEmail);
-        if (matchingOwner) {
-          filesToReturn.push({
-            kind: file.kind,
-            ownerEmailAddress: matchingOwner.emailAddress,
-            permissionId: matchingOwner.permissionId,
-            fileId: file.id,
-            fileName: file.name,
-          });
-          console.log('getPermissionsToTransfer: ', filesToReturn.length, file.name);
-        }
-      });
-    }
-  } catch (err) {
-    console.log('ERROR listDriveFilesLimitedByEmail:', err);
-  }
-  return filesToReturn;
-}
 
 
 
@@ -384,84 +344,144 @@ async function resetUserPassword (adminClient, primaryEmail, newPassword) {
   return ret;
 }
 
-async function getDataTransferApplicationResourceId (transferClient) {
-  try {
-    const serverResponse = await transferClient.applications.list();
-    const app = serverResponse.data.applications.find((appElement) => appElement.name === 'Drive and Docs');
-    return app.id;
-  } catch (e) {
-    console.log('ERROR transferClient.applications.list:', e);
-    return '';
-  }
-}
-
 /**
  * Transfer a user's ownership of files and folders to a new user
  * https://developers.google.com/workspace/admin/data-transfer/v1/transfer-data
+ * https://stackoverflow.com/questions/79569838/ownership-transfer-of-google-drive-files-using-the-node-api-fails-with-missing
  *
- * @param adminClient
- * @param oldOwnerUserId
- * @param newOwnerEmail
+ * @param request
+ * @param response
  */
-// eslint-disable-next-line no-unused-vars
-async function transferDriveFilesAndFoldersOwnership (adminClient, transferClient, oldOwnersEmail, newOwnersEmail) {
+exports.googleDriveTransferOwnership = async (request, response) => {
+  const { oldOwnersEmail, newOwnersEmail } = request.body;
+  const auth = await getAuth();
+  const adminClient = google.admin({ version: 'directory_v1', auth });
+  const transferClient = google.admin({ version: 'datatransfer_v1', auth });
   let serverResponse = {};
+  let error = '';
 
   const oldOwner = await getOneUser(adminClient, oldOwnersEmail);
   const oldOwnerUserId = oldOwner.id;
   const newOwner = await getOneUser(adminClient, newOwnersEmail);
   const newOwnerUserId = newOwner.id;
 
-  console.log('transferDriveFilesAndFoldersOwnership: ', oldOwner, oldOwnerUserId, newOwner, newOwnerUserId);
-
-  // TODO error checking
-
-  // 4/11/25 posted: https://stackoverflow.com/questions/79569838/ownership-transfer-of-google-drive-files-using-the-node-api-fails-with-missing
-  // https://www.google.com/search?q=Google+Docs+and+Google+Drive+Application+ID
-  // https://developers.google.com/workspace/explore?filter=&discoveryUrl=https%3A%2F%2Fadmin.googleapis.com%2F%24discovery%2Frest%3Fversion%3Ddatatransfer_v1&discoveryRef=resources.transfers.methods.insert&operationId=datatransfer.transfers.insert
-
-  const applicationId = await getDataTransferApplicationResourceId(transferClient);
+  console.log('googleDriveTransferOwnership: ', oldOwner, oldOwnerUserId, newOwner, newOwnerUserId);
 
   const requestBody = {
-    kind: 'admin#datatransfer#DataTransfer',
     oldOwnerUserId,
     newOwnerUserId,
     applicationDataTransfers: [{
-      applicationId,
-      // In some dart code from github, /// [customerId] - Immutable ID of the Google Workspace account. (is passed into the insert request)
-      // applicationId: '103626277937150531336', // Service account, Unique ID:  jwt.keys.json ... '"You'll be provided with a Client ID and Client Secret. The Client ID is the application ID you need."
-      // applicationId: '0B4Sb2OJjaaGOfk53TmxCV3F6bnpQaGVhNGdFdEZ5MU1FZ2o2bl9obEpIUlhMN2Y3cjlGTEk', // from the url
-      // applicationId: '435070579839',  // https://developers.google.com/workspace/admin/data-transfer/v1/transfer-data
-      // applicationId: '55656082996',  // Google Docs and Google Drive (Application ID: 55656082996), same for all api users The https://developers.google.com/workspace/admin/data-transfer/v1/parameters
-      // applicationId: 1008827788717,  // The Client ID from https://console.cloud.google.com/welcome?pli=1&invt=AbugjA&project=weconnectserverapp
-      // applicationId: 103626277937150531336,  // The Client ID from https://admin.google.com/ac/owl/domainwidedelegation
+      applicationId: 55656082996, // GOOGLE DRIVE -- This will not change for any other project's implementation
       applicationTransferParams: [
         {
-          key: 'RELEASE_RESOURCES',
-          value: [
-            'TRUE',
-          ],
-        },
-        {
           key: 'PRIVACY_LEVEL',
-          value: [
-            'PRIVATE',
-            'SHARED',
-          ],
+          value: ['PRIVATE', 'SHARED'],
         },
       ],
     }],
   };
 
   try {
-    serverResponse = await transferClient.transfers.insert(requestBody);
+    serverResponse = await transferClient.transfers.insert({ requestBody });
   } catch (e) {
     console.log('ERROR driveDriveFilesAndFoldersOwnership:', e);
+    error = e;
   }
-  console.log('transferDriveFilesAndFoldersOwnership:', serverResponse);
 
-  return serverResponse;
-}
+  response.json({
+    applicationTransferStatus: serverResponse?.data.applicationTransferStatus,
+    error: serverResponse?.data.error || error,
+    kind: serverResponse?.data.kind,
+    newOwnerUserId,
+    newOwnersEmail,
+    oldOwnerUserId,
+    oldOwnersEmail,
+    overallTransferStatusCode: serverResponse?.data.overallTransferStatusCode,
+    requestTime: serverResponse?.data.requestTime,
+    responseUrl: serverResponse?.data.url,
+    status: serverResponse?.data.status,
+    statusText: serverResponse?.data.statusText,
+    success: serverResponse?.data.status === 200,
+  });
+};
+
+/**
+ * Revoke sharing permission from files and directories for a Member/Staff/person
+ * https://stackoverflow.com/questions/78860040/how-to-programmatically-remove-my-access-to-a-shared-google-drive-file-when-i-am
+ * https://developers.google.com/workspace/drive/api/guides/search-files
+ * https://developers.google.com/workspace/drive/api/guides/ref-search-terms#file-properties
+ *
+ * @param request
+ * @param response
+ * @returns {Promise<*>}
+ */
+exports.googleRevokeShare = async (request, response) => {
+  const { ownersEmail } = request.body;
+  const auth = await getAuth();
+  const driveClient = google.drive({ version: 'v3', auth });
+  let pageToken = null;
+  let filesRevoked = '';
+  let f = 0;
+
+  do {
+    // eslint-disable-next-line no-await-in-loop
+    const result = await driveClient.files.list({
+      q: `trashed = false and "${ownersEmail}" in writers`,
+      pageSize: 500,
+      pageToken,
+      corpora: 'allDrives',
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+      fields: 'nextPageToken, files(id, name, permissions)',
+      // spaces: 'drive',
+    });
+    pageToken = result?.data?.nextPageToken;
+    console.log('pageToken', pageToken);
+
+    if (result?.data?.files && result.data.files.length > 0) {
+      const { files } = result.data;
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+
+        console.log(`${++f}:  ${file.name}`);
+
+        for (let j = 0; j < file.permissions.length; j++) {
+          const permission = file.permissions[j];
+          // console.log(`${++f}: ${permission.emailAddress} -- ${file.name}`);
+          if (permission.emailAddress === ownersEmail) {
+            const url = `https://www.googleapis.com/drive/v3/files/${file.id}/permissions/${permission.id}`;
+            console.log('DELETE: ', url);
+            filesRevoked += `${file.name},`;
+            //   //     //   // const res = await driveClient.permissions.delete({
+            // TODO: Cinco de Mayo, 2025:  Not even bothering with trying the permissions delete, since the files.list() only returns some of the files.
+            //       Seems crazy, but only seems to find current files in old directories, not in newly created ones.
+            //       Dale says this feature is not that important, so putting it aside for now.
+            // let response = const res = await axios.get(url, {
+            //   method: 'delete',
+            //   headers: {
+            //     Authorization: 'Bearer ' + getOAuthToken(),
+            //   },
+            //   muteHttpExceptions: true,
+            // });
+
+            // if (response.getResponseCode() === 204) {
+            //   console.log(`Successfully removed ${ownersEmail} from: ${file.name}`);
+            // } else {
+            //   console.log(`Failed to remove ${ownersEmail} from: ${file.name} - Response: ${response.getContentText()}`);
+            // }
+          }
+        }
+      }
+    }
+  } while (pageToken);
+
+  return response.json({
+    success: true,
+    filesRevoked,
+  });
+};
+
 
 /**
  * GET /apis/v1/google-get-user-info
@@ -635,60 +655,105 @@ exports.googleShareDriveAccess = async (request, response) => {
    But driveClient.files.list() returns no data when called from this file, unless queried without a 'q' query, in which case you get all files, and with fields: '*', you get permissions and owners (scratch_28.json)
    so I tried a workaround of searching ALL files for the owner whose email matches, and it is super slow, and doesn't return any newer files
  */
-exports.googleRevokeDriveAccess = async (request, response) => {
-  // eslint-disable-next-line no-unused-vars
-  const { oldOwnersEmail, newOwnersEmail } = request.body;
-  let success = false;
-  let error = '';
-  const primaryEmail = oldOwnersEmail;
-  const auth = await getAuth();
-  // Waiting for response https://stackoverflow.com/questions/79569838/ownership-transfer-of-google-drive-files-using-the-node-api-fails-with-missing
-  // const adminClient = google.admin({ version: 'directory_v1', auth });
-  // const transferClient = google.admin({ version: 'datatransfer_v1', auth });
-  // const ret = await transferDriveFilesAndFoldersOwnership(adminClient, transferClient, oldOwnersEmail, newOwnersEmail);
-  // console.log(ret);
+// exports.googleRevokeDriveAccess = async (request, response) => {
+//   // eslint-disable-next-line no-unused-vars
+//   const { oldOwnersEmail, newOwnersEmail } = request.body;
+//   let success = false;
+//   let error = '';
+//   const primaryEmail = oldOwnersEmail;
+//   const auth = await getAuth();
+//   // Waiting for response https://stackoverflow.com/questions/79569838/ownership-transfer-of-google-drive-files-using-the-node-api-fails-with-missing
+//   const adminClient = google.admin({ version: 'directory_v1', auth });
+//   const transferClient = google.admin({ version: 'datatransfer_v1', auth });
+//   const ret = await googleDriveTransferOwnership(adminClient, transferClient, oldOwnersEmail, newOwnersEmail);
+//   console.log(ret);
+//
+//   // const driveClient = google.drive({ version: 'v3', auth });
+//   // const driveFolderId = await driveIdForDirectory(driveClient, 'We Vote Education');  // This matches the 72 char id, in the url when I browse the Drive
+//   // if (driveFolderId.length === 0) {
+//   //   success = false;
+//   //   error = 'Unable to find drive folder';
+//   // } else {
+//   //   try {
+//   //     // eslint-disable-next-line no-unused-vars
+//   //     const permissions = await getPermissionsToTransfer(driveClient, primaryEmail);  // TODO: maybe we can enhance to revoke all permission, but lets start with transfers
+//   //
+//   //     // const pList = await driveClient.permissions.list({
+//   //     //   fileId: driveFolderId,  // <---this is ID of a shared drive, not a file
+//   //     //   emailAddress: oldOwnersEmail,
+//   //     //   supportsAllDrives: true,
+//   //     //   fields: '*',
+//   //     //   // fields: 'permissions/permissionDetails',
+//   //     // });
+//   //     // console.log('permissions.list: ',pList);
+//   //     // const { data: { permissions } } = pList;
+//   //     // permissions.forEach(async (permission) => {
+//   //     //   // const res = await driveClient.permissions.delete({
+//   //     //   //   fileId: driveFolderId,
+//   //     //   //   permissionId: permission.id,
+//   //     //   // });
+//   //     //   console.log('permission deleted: ', permission);
+//   //     //   // console.log('permission deleted: ', res);
+//   //     // });
+//   //
+//   //     // console.log(`File sharing removed for ${primaryEmail} (Permission ID: ${res.data.id})`);
+//   //     success = true;
+//   //   } catch (err) {
+//   //     error = `Error sharing file: ${err}`;
+//   //     console.error(error);
+//   //   }
+//   // }
+//
+//   return response.json({
+//     success,
+//     res: '',
+//     // driveFolderId,
+//     error,
+//   });
+// };
 
-  const driveClient = google.drive({ version: 'v3', auth });
-  const driveFolderId = await driveIdForDirectory(driveClient, 'We Vote Education');  // This matches the 72 char id, in the url when I browse the Drive
-  if (driveFolderId.length === 0) {
-    success = false;
-    error = 'Unable to find drive folder';
-  } else {
-    try {
-      // eslint-disable-next-line no-unused-vars
-      const permissions = await getPermissionsToTransfer(driveClient, primaryEmail);  // TODO: maybe we can enhance to revoke all permission, but lets start with transfers
-
-      // const pList = await driveClient.permissions.list({
-      //   fileId: driveFolderId,  // <---this is ID of a shared drive, not a file
-      //   emailAddress: oldOwnersEmail,
-      //   supportsAllDrives: true,
-      //   fields: '*',
-      //   // fields: 'permissions/permissionDetails',
-      // });
-      // console.log('permissions.list: ',pList);
-      // const { data: { permissions } } = pList;
-      // permissions.forEach(async (permission) => {
-      //   // const res = await driveClient.permissions.delete({
-      //   //   fileId: driveFolderId,
-      //   //   permissionId: permission.id,
-      //   // });
-      //   console.log('permission deleted: ', permission);
-      //   // console.log('permission deleted: ', res);
-      // });
-
-      // console.log(`File sharing removed for ${primaryEmail} (Permission ID: ${res.data.id})`);
-      success = true;
-    } catch (err) {
-      error = `Error sharing file: ${err}`;
-      console.error(error);
-    }
-  }
-
-  return response.json({
-    success,
-    res: '',
-    // driveFolderId,
-    error,
-  });
-};
+// // 4/19/25 -- this (bad workaround) "works" but only finds files owned by Dale, and a couple of others, none of mine, and none of my test accounts
+// async function getPermissionsToTransfer (driveClient, primaryEmail) {
+//   let res;
+//   const filesToReturn = [];
+//   let pageToken = '';       // nextPageToken in docs!
+//   let firstPass = true;
+//   let cnt = 0;
+//   try {
+//     while (firstPass || pageToken) {
+//       firstPass = false;
+//       // eslint-disable-next-line no-await-in-loop
+//       res = await driveClient.files.list({
+//         corpora: 'user',
+//         includeItemsFromAllDrives: true,
+//         supportsAllDrives: true,
+//         fields: '*',
+//         pageToken,
+//       });
+//       const { nextPageToken, files } = res.data;
+//       pageToken = nextPageToken;
+//       // eslint-disable-next-line no-loop-func
+//       files.forEach((file) => {
+//         cnt++;
+//         file.owners.forEach((owner) => {
+//           console.log(cnt, owner.emailAddress, file.name, file.kind);
+//         });
+//         const matchingOwner = file.owners.find((owner) => owner.emailAddress === primaryEmail);
+//         if (matchingOwner) {
+//           filesToReturn.push({
+//             kind: file.kind,
+//             ownerEmailAddress: matchingOwner.emailAddress,
+//             permissionId: matchingOwner.permissionId,
+//             fileId: file.id,
+//             fileName: file.name,
+//           });
+//           console.log('getPermissionsToTransfer: ', filesToReturn.length, file.name);
+//         }
+//       });
+//     }
+//   } catch (err) {
+//     console.log('ERROR listDriveFilesLimitedByEmail:', err);
+//   }
+//   return filesToReturn;
+// }
 
