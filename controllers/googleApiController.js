@@ -614,9 +614,14 @@ exports.googleShareDriveAccess = async (request, response) => {
   } else if (driveFolder && driveFolder.length === 0) {
     driveFolderId = await driveIdForDirectory(driveClient, driveFolder);
   }
-  if (!driveFolderId) {
+  if (!driveFolderId || !primaryEmail) {
     success = false;
-    error = `Unable to find drive folder: ${status} `;
+    if (!driveFolderId) {
+      error += `MISSING_driveFolderId: ${status} `;
+    }
+    if (!primaryEmail) {
+      error += `MISSING_primaryEmail: ${status} `;
+    }
   } else {
     try {
       const res = await driveClient.permissions.create({
