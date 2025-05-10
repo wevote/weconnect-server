@@ -186,7 +186,12 @@ exports.personRetrieveByEmail = async (request, response) => {
   const emailPersonal = queryParams.get('emailPersonal');
   let filteredPerson = {};
   try {
-    const person = await findOnePerson({ emailPersonal });
+    let person = await findOnePerson({ emailPersonal });
+    if (Object.keys(person).length === 0) {
+      // Fallback if they sent in emailOfficial instead of emailPersonal
+      const personList = await findPersonListByParams({ emailOfficial: emailPersonal }, true);
+      person = personList[0];   // It should not be possible to have multiple persons with the same emailOffical
+    }
     filteredPerson = removeProtectedFieldsFromPerson(person);
     filteredPerson.status = '';
     filteredPerson.success = true;
@@ -614,13 +619,13 @@ exports.login = async (req, res, next) => {
 
 /**
  * POST /apis/v1/send-email-code
- * Send a verification code to the 'person's email
+ * Send a verification code to the person's emailPersonal, and the same to their emailOfficial
  */
 exports.sendEmailCode = async (req, res) => {
   try {
     const { personId } = req.body;
 
-    const person = await findPersonById(personId, true);   // For now, just use person.emailPersonal
+    const person = await findPersonById(personId, true);
     const data = sendEmailValidationCode(person);
     return res.json(data);
   } catch (error) {
