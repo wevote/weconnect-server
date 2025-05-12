@@ -375,11 +375,11 @@ stevepodell@Steves-MacBook-Air weconnect-server %
 
 ## Add `wevotedeveloper.com` to your /etc/hosts file
 
-Use a macOS command line text editor to edit the `/etc/hosts` file.   Edit with nano or vi or vim the `/etc/hosts` file.
+Use a macOS command line text editor to edit the `/etc/hosts` file.   Edit the `/etc/hosts` file with nano (or vi or vim).
 
 `sudo nano /etc/hosts`
 
-The nano editor is easiest to use if you are unfamilar with vi or vim editors.  Use the same password that you use to log into your 
+The nano editor is easiest to use if you are unfamiliar with vi or vim editors.  Use the same password that you use to log into your 
 Mac when prompted by sudo, then once in the nano text editor make your changes, and then press  Ctrl+o (to save the changes)
 and Ctrl+x (to quit).
 
