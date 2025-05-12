@@ -375,9 +375,15 @@ stevepodell@Steves-MacBook-Air weconnect-server %
 
 ## Add `wevotedeveloper.com` to your /etc/hosts file
 
-sudo chmod -R 0777 /etc/hosts
+Use a macOS command line text editor to edit the `/etc/hosts` file.   Edit with nano or vi or vim the `/etc/hosts` file.
 
-Edit with vi the /etc/hosts file, and add `wevotedeveloper.com` to the right of your local IP, so your /etc/hosts file looks something like this:
+`sudo nano /etc/hosts`
+
+The nano editor is easiest to use if you are unfamilar with vi or vim editors.  Use the same password that you use to log into your 
+Mac when prompted by sudo, then once in the nano text editor make your changes, and then press  Ctrl+o (to save the changes)
+and Ctrl+x (to quit).
+
+In the editor add `wevotedeveloper.com` at the end of the first line, so that your /etc/hosts file looks something like this:  
 
 ```
 127.0.0.1       localhost wevotedeveloper.com
@@ -406,6 +412,21 @@ in a familiar way to what you might be used to with Chrome Dev Tools (Inspect) o
 
 <img src="docs/images/StartDebug.png" alt="Alt Text" width="1200" >
 <br><br>
+
+## Create a default admin user
+
+Run the createDevUser node script. You can use any name and password you want!
+
+`createDevUser {firstName} {lastName} {email} {password}`
+
+example:
+
+```
+stevepodell@Steves-MBP-M1-Dec2021 node_scripts % cd ..
+stevepodell@Steves-MBP-M1-Dec2021 weconnect-server % node ./node_scripts/createDevUser Samuel Adams samuel@adams.com ale
+person created id # 365
+stevepodell@Steves-MBP-M1-Dec2021 weconnect-server % 
+```
 
 ## View the app in the Chrome browser
 
