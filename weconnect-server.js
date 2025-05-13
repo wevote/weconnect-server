@@ -20,6 +20,7 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const useragent = require('express-useragent');
 
+process.env.NODE_DEBUG = '';    // Use our custom http logger, that shortens long GET urls
 
 /**
  * Load environment variables from .env file, where API keys and passwords are configured.
@@ -160,10 +161,20 @@ weconnectServer.use('/js/lib', express.static(path.join(__dirname, 'node_modules
 weconnectServer.use('/js/lib', express.static(path.join(__dirname, 'node_modules/jquery/dist'), { maxAge: 31557600000 }));
 weconnectServer.use('/webfonts', express.static(path.join(__dirname, 'node_modules/@fortawesome/fontawesome-free/webfonts'), { maxAge: 31557600000 }));
 
-// Middleware function to log requests
+// Middleware function to log HTTP requests
 weconnectServer.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next(); // Call next middleware
+  const start = Date.now();
+  let url = req.url;
+  if (url.length > 100) {
+    url = `${url.substring(0, 100)}...`;
+  }
+
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`${req.method} ${url} ${res.statusCode} ${duration}ms`);
+  });
+
+  next();
 });
 
 /**
