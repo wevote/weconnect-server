@@ -1,5 +1,6 @@
 // weconnect-server/controllers/questionnaireApiController.js
-const { savePerson, PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE} = require('../models/personModel');
+const bcrypt = require('@node-rs/bcrypt');
+const { findOnePerson, PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE, savePerson, createPerson} = require('../models/personModel');
 const { retrieveQuestionnaireResponseListByPersonIdList } =  require('./questionnaireController');
 const { createQuestion, createQuestionnaire, findQuestionListByIdList,
   findQuestionListByParams, findQuestionnaireById, findQuestionnaireListByParams,
@@ -8,6 +9,7 @@ const { createQuestion, createQuestionnaire, findQuestionListByIdList,
   saveQuestion, saveQuestionnaire, updateOrCreateQuestionAnswer } = require('../models/questionnaireModel');
 const { extractQuestionAnswersFromIncomingParams, extractQuestionOrderDictFromIncomingParams, extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { convertToInteger } = require('../utils/convertToInteger');
+const { generateRandomString } = require('../utils/generateRandomString');
 const { getAnswerValueFromAnswerDict } = require('../utils/getAnswerValueFromAnswerDict');
 
 
@@ -18,7 +20,7 @@ const { getAnswerValueFromAnswerDict } = require('../utils/getAnswerValueFromAns
 exports.answerListSave = async (request, response) => {
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
-  const personId = convertToInteger(queryParams.get('personId'));
+  let personId = convertToInteger(queryParams.get('personId'));
   const questionnaireId = convertToInteger(queryParams.get('questionnaireId'));
   let personUpdateDict = { id: personId };
   let personUpdatesFound = false;
@@ -29,7 +31,29 @@ exports.answerListSave = async (request, response) => {
   let status = '';
   let success = true;
   let requiredFieldsExist = true;
-  if (!personId || personId === -1) {
+
+  if (!questionnaireId || questionnaireId === -1) {
+    status += 'questionnaireId_MISSING ';
+    requiredFieldsExist = false;
+    success = false;
+    console.log('answerListSave: missing questionnaireId');
+  }
+
+  const questionnaire = await findQuestionnaireById(questionnaireId);
+  const isOfferQuestionnaire = questionnaire && questionnaire.isOfferQuestionnaire === true;
+  const isCreatePersonQuestionnaire = questionnaire && questionnaire.isCreatePersonQuestionnaire === true;
+
+  let personIdRequired = true;
+  if (questionnaire && questionnaire.id) {
+    personIdRequired = !(questionnaire.isCreatePersonQuestionnaire === true);
+  } else {
+    status += 'questionnaire_MISSING ';
+    requiredFieldsExist = false;
+    success = false;
+    console.log('answerListSave: missing questionnaire');
+  }
+
+  if (personIdRequired && (!personId || personId === -1)) {
     status += 'personId_MISSING ';
     requiredFieldsExist = false;
     success = false;
@@ -54,53 +78,54 @@ exports.answerListSave = async (request, response) => {
     if (questionIdList.length > 0) {
       const questionList = await findQuestionListByIdList(questionIdList);
 
-      // Now cycle through the questions we expect answers to
-      const savePromises = questionList.map(async (question) => {
+      // Cycle through the questions we expect answers to, clean the data, and put it into answerUpdateDict
+      const answerUpdateDictByQuestionId = {};
+      questionList.forEach((question) => {
         // console.log('== question:', question);
         const { answerType, fieldMappingRule, questionId, questionVersion } = question;
         if (questionId >= 0) {
           if (question.questionnaireId !== questionnaireId) {
-            status += `questionnaireId_MISMATCH_FOR_QUESTION_ID_${questionId} `;
+            status += `Create answerUpdateDict questionnaireId_MISMATCH_FOR_QUESTION_ID_${questionId} `;
           } else {
             const answerValue = answerChangeDict[questionId];
-            const updateDict = {
-              personId,
+            const answerUpdateDict = {
               questionId,
               questionnaireId,
               questionVersion,
             };
+            if (personId) {
+              answerUpdateDict.personId = personId;
+            }
             if (answerType === 'INTEGER') {
-              updateDict.answerInteger = convertToInteger(answerValue);
+              answerUpdateDict.answerInteger = convertToInteger(answerValue);
             } else if (answerType === 'BOOLEAN') {
-              updateDict.answerBoolean = !!(answerValue);
+              answerUpdateDict.answerBoolean = !!(answerValue);
             } else if (answerType === 'DATE') {
               const answerValueWithTime = (answerValue) ? `${answerValue}T12:00:00.000Z` : '';
               const parsedDate = new Date(answerValueWithTime);
               if (!Number.isNaN(parsedDate.getTime())) {
-                updateDict.answerDateTime = parsedDate.toISOString();
+                answerUpdateDict.answerDateTime = parsedDate.toISOString();
               } else {
                 // Invalid date
                 console.warn(`Invalid date format for questionId ${questionId}: ${answerValue}`);
-                updateDict.answerDateTime = null;
+                answerUpdateDict.answerDateTime = null;
               }
             } else if (answerType === 'STRING') {
-              updateDict.answerString = answerValue;
+              answerUpdateDict.answerString = answerValue;
             } else {
-              updateDict.answerString = answerValue;
+              answerUpdateDict.answerString = answerValue;
             }
-            updateDict.answerType = answerType;
-            // console.log('=== updateDict:', updateDict);
+            answerUpdateDict.answerType = answerType;
+            // console.log('=== answerUpdateDict:', answerUpdateDict);
+            answerUpdateDictByQuestionId[questionId] = answerUpdateDict;
             try {
-              // eslint-disable-next-line no-await-in-loop
-              await updateOrCreateQuestionAnswer(personId, questionId, questionnaireId, updateDict);
-              answersSavedList.push(updateDict);
               // Now update the other database field based on fieldMappingRule
               if (fieldMappingRule) {
                 const fieldToUpdate = fieldMappingRule.split('.')[1];
-                const answerValueTyped = getAnswerValueFromAnswerDict(updateDict);
+                const answerValueTyped = getAnswerValueFromAnswerDict(answerUpdateDict);
                 console.log('answerListSave fieldToUpdate:', fieldToUpdate, ', answerValueTyped:', answerValueTyped);
                 if (fieldToUpdate in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE) {
-                  console.log('fieldToUpdate (', fieldToUpdate, ') in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE');
+                  // console.log('fieldToUpdate (', fieldToUpdate, ') in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE');
                   personUpdateDict = {
                     ...personUpdateDict,
                     [fieldToUpdate]: answerValueTyped,
@@ -110,6 +135,99 @@ exports.answerListSave = async (request, response) => {
                   console.log('fieldToUpdate (', fieldToUpdate, ') NOT in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE');
                 }
               }
+            } catch (err) {
+              console.log('ERROR updating personUpdateDict: ', err);
+            }
+          }
+        }
+      });
+
+      if (isCreatePersonQuestionnaire) {
+        // emailPersonal and firstName are the only two required fields for creating a new person,
+        // and if they weren't passed in, we create fake ones so we can create a new person
+        let passwordAlreadyExists = false;
+        personUpdatesFound = true;
+        let personWithThisEmailExists = false;
+        const randomUniqueId = generateRandomString(9);
+        if (personUpdateDict.emailPersonal) {
+          // Search the database to see if existing record
+          try {
+            // const params = { emailPersonal: { contains: personUpdateDict?.emailPersonal, mode: 'insensitive' } };
+            // const params = personUpdateDict?.emailPersonal ? { emailPersonal: { equals: personUpdateDict.emailPersonal, mode: 'insensitive' } } : {};
+            const params = { emailPersonal: personUpdateDict.emailPersonal };
+            const personOnStage = await findOnePerson(params);
+            if (personOnStage && personOnStage.id) {
+              console.log('Existing person found:', personOnStage);
+              // Account already exists
+              personId = personOnStage.id;
+              personUpdateDict.id = personId;
+              if (personOnStage.password) {
+                passwordAlreadyExists = true;
+              }
+              personWithThisEmailExists = true;
+            } else {
+              // Account does not exist, so leave emailPersonal in place so we can create a new account
+              delete personUpdateDict.id;
+              delete personUpdateDict.personId;
+              console.log('Existing person does NOT exist:', personUpdateDict);
+            }
+          } catch (err) {
+            console.log('Error searching for existing person: ', err);
+            // We can't guarantee the uniqueness of the emailPersonal, so alter it slightly
+            personUpdateDict.emailPersonal = `confirm-${personUpdateDict.emailPersonal}`;
+          }
+        } else {
+          // Generate a fake emailPersonal which can be adjusted later
+          personUpdateDict.emailPersonal = `fake_email_${randomUniqueId}@weconnectfake.com`;
+        }
+        if (!personUpdateDict.firstName) {
+          personUpdateDict.firstName = `fake_name_${randomUniqueId}`;
+        }
+        if (passwordAlreadyExists) {
+          // Do not update password
+        } else if (personUpdateDict.password) {
+          personUpdateDict.password = await bcrypt.hash(personUpdateDict.password, 10);
+        } else {
+          const tempPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+          personUpdateDict.password = await bcrypt.hash(tempPassword, 10);
+        }
+        //
+        if (personWithThisEmailExists) {
+          try {
+            console.log('Updating existing person:', personUpdateDict);
+            const person = await savePerson(personUpdateDict);
+            personId = person.id;
+          } catch (err) {
+            console.log('Error saving existing person: ', err);
+          }
+        } else {
+          // For this routine, we need to set statusOfferDecisionNeeded to true for new accounts to indicate they need to be interviewed by a hiring manager.
+          personUpdateDict.statusOfferDecisionNeeded = true;
+          try {
+            delete personUpdateDict.id;
+            console.log('Creating new person:', personUpdateDict);
+            const person = await createPerson(personUpdateDict);
+            personId = person.id;
+            personUpdateDict.id = personId;
+            // Now loop through answerUpdateDictByQuestionId and add this new personId to answerUpdateDict
+          } catch (err) {
+            console.log('Error creating new person: ', err);
+          }
+        }
+      }
+
+      const saveQuestionAnswerPromises = questionList.map(async (question) => {
+        // console.log('== question:', question);
+        const { questionId } = question;
+        const answerUpdateDict = answerUpdateDictByQuestionId[questionId];
+        if (questionId >= 0 && answerUpdateDict && answerUpdateDict.questionnaireId === questionnaireId) {
+          if (question.questionnaireId !== questionnaireId) {
+            status += `saveQuestionAnswerPromises questionnaireId_MISMATCH_FOR_QUESTION_ID_${questionId} `;
+          } else {
+            try {
+              // eslint-disable-next-line no-await-in-loop
+              await updateOrCreateQuestionAnswer(personId, questionId, questionnaireId, answerUpdateDict);
+              answersSavedList.push(answerUpdateDict);
               return true;
             } catch (err) {
               console.log('ERROR saving answer: ', err);
@@ -121,7 +239,7 @@ exports.answerListSave = async (request, response) => {
         return false;
       });
 
-      const results = await Promise.all(savePromises);
+      const results = await Promise.all(saveQuestionAnswerPromises);
       answerListSaved = results.some((result) => result);
       status += `QUESTIONS_ANSWERED: ${answerListSaved ? 'YES' : 'NO'} `;
     } else {
@@ -131,9 +249,8 @@ exports.answerListSave = async (request, response) => {
 
   // If QuestionAnswers were successfully saved, and the Questionnaire is labeled as isOfferQuestionnaire,
   // mark person.statusOfferQuestionnaireAnswered
-  const questionnaire = await findQuestionnaireById(questionnaireId);
   // console.log('answerListSave questionnaire:', questionnaire);
-  if (answerListSaved && questionnaire && questionnaire.isOfferQuestionnaire) {
+  if (answerListSaved && questionnaire && isOfferQuestionnaire) {
     // const person =
     personUpdateDict = {
       ...personUpdateDict,
@@ -247,21 +364,21 @@ exports.questionListSave = async (request, response) => {
     // Create questionIdList so we can cycle through questions to save
     const questionIdKeys = Object.keys(questionChangeDict);
     // console.log('questionIdKeys:', questionIdKeys);
-    const savePromises = questionIdKeys.map(async (questionIdString) => {
+    const saveQuestionPromises = questionIdKeys.map(async (questionIdString) => {
       const questionId = convertToInteger(questionIdString);
       const questionOrderString = questionChangeDict[questionId];
       const questionOrder = convertToInteger(questionOrderString);
       // console.log('== questionOrder:', questionOrder);
       // const {answerType, fieldMappingRule, questionId, questionVersion} = question;
       if (questionId > 0) {
-        const updateDict = {
+        const questionUpdateDict = {
           id: questionId,
           questionOrder,
         };
-        // console.log('=== updateDict:', updateDict);
+        // console.log('=== questionUpdateDict:', questionUpdateDict);
         try {
           // eslint-disable-next-line no-await-in-loop
-          await saveQuestion(updateDict);
+          await saveQuestion(questionUpdateDict);
           return `question saved for questionId: ${questionId}`;
         } catch (err) {
           console.log('ERROR saving answer: ', err);
@@ -271,7 +388,7 @@ exports.questionListSave = async (request, response) => {
       return null;
     });
 
-    const results = await Promise.all(savePromises);
+    const results = await Promise.all(saveQuestionPromises);
     status += results.filter(Boolean).join(' ');
   }
 
