@@ -5,6 +5,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const QUESTIONNAIRE_FIELDS_ACCEPTED = {
+  isCreatePersonQuestionnaire: 'BOOLEAN',
   isOfferQuestionnaire: 'BOOLEAN',
   questionnaireInstructions: 'STRING',
   questionnaireName: 'STRING',

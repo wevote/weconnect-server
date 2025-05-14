@@ -1,14 +1,15 @@
 // weconnect-server/prisma/schema/questionnaire.prisma, parallel to /models/questionnaireModel.js
 
 model Questionnaire {
-  id                        Int                     @id @default(autoincrement())
-  isOfferQuestionnaire      Boolean?
-  questionnaireInstructions String?
-  questionnaireName         String
-  questionnaireTitle        String?
-  questions                 QuestionnaireQuestion[]
+  id                          Int                     @id @default(autoincrement())
+  isCreatePersonQuestionnaire Boolean?
+  isOfferQuestionnaire        Boolean?
+  questionnaireInstructions   String?
+  questionnaireName           String
+  questionnaireTitle          String?
+  questions                   QuestionnaireQuestion[]
   /// statusActive is true if a questionnaire is in use
-  statusActive              Boolean                 @default(true)
+  statusActive                Boolean                 @default(true)
 }
 
 enum AnswerType {

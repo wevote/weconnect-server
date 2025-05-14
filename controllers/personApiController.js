@@ -289,27 +289,6 @@ exports.checkIsAdmin = async (req) => {
 exports.personSave = async (request, response) => {
   let shouldCreatePerson = false;
   let shouldUpdatePerson = false;
-
-  // const userIsAdmin = await checkIsAdmin(request);
-  //
-  // const searchFragment = request.url.substring(request.url.indexOf('?') + 1);
-  // const urlSearchParams = new URLSearchParams(searchFragment);
-  // const params = Object.fromEntries(urlSearchParams.entries());
-  //
-  // let personId = convertToInteger(params?.id || params.personId);
-  // const teamName = params?.teamName;
-  // const teamIdText = params?.teamId || 0;
-  // const teamId = convertToInteger(teamIdText) || 0;
-  // const teamMemberFirstName = params?.firstNameToBeSaved;
-  // const teamMemberLastName = params?.lastNameToBeSaved;
-  // const personChangeDict = extractVariablesToChangeFromIncomingParamsObject(
-  //   params,
-  //   userIsAdmin ? PERSON_FIELDS_ACCEPTED_ADMIN : PERSON_FIELDS_ACCEPTED,
-  // );
-  // if (personChangeDict.password) {
-  //   personChangeDict.password = await bcrypt.hash(personChangeDict.password, 10);
-  // }
-
   const results = await getAllAccessRightsForPerson(request);
   const { accessRights, personIdsByTeam, teamAccessRights } = results;
   // console.log('personSave accessRights: ', accessRights);
@@ -333,12 +312,12 @@ exports.personSave = async (request, response) => {
   //  Needs to be tightened up from a security perspective.
   // We could set up a 'person-save-questionnaire' that allowed fields to be saved from the questionnaire,
   //  which we wouldn't allow a person to update on their own, outside the context of the questionnaire.
-  const personChangeDict = extractVariablesToChangeFromIncomingParams(
+  const personUpdateDict = extractVariablesToChangeFromIncomingParams(
     queryParams,
     canEditPerson ? PERSON_FIELDS_ACCEPTED_ADMIN : PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE,
   );
-  if (personChangeDict.password) {
-    personChangeDict.password = await bcrypt.hash(personChangeDict.password, 10);
+  if (personUpdateDict.password) {
+    personUpdateDict.password = await bcrypt.hash(personUpdateDict.password, 10);
   }
   // Set up the default JSON response.
   const jsonData = {
@@ -353,8 +332,8 @@ exports.personSave = async (request, response) => {
   try {
     jsonData.personId = personId;
     jsonData.success = true;
-    const keys = Object.keys(personChangeDict);
-    const values = Object.values(personChangeDict);
+    const keys = Object.keys(personUpdateDict);
+    const values = Object.values(personUpdateDict);
     for (let i = 0; i < keys.length; i++) {
       jsonData[keys[i]] = values[i];
     }
@@ -375,15 +354,15 @@ exports.personSave = async (request, response) => {
 
     if (shouldCreatePerson) {
       if (canAddPerson) {
-        const emailOfficialExists = !!(personChangeDict?.emailOfficial);
-        const emailPreferredExists = !!(personChangeDict?.emailPreferred);
+        const emailOfficialExists = !!(personUpdateDict?.emailOfficial);
+        const emailPreferredExists = !!(personUpdateDict?.emailPreferred);
         let emailOfficialIsUnique;
         if (emailOfficialExists) {
-          emailOfficialIsUnique = await manuallyConfirmEmailUniqueness({ emailOfficial: personChangeDict?.emailOfficial });
+          emailOfficialIsUnique = await manuallyConfirmEmailUniqueness({ emailOfficial: personUpdateDict?.emailOfficial });
         }
         let emailPreferredIsUnique;
         if (emailPreferredExists) {
-          emailPreferredIsUnique = await manuallyConfirmEmailUniqueness({ emailPreferred: personChangeDict?.emailPreferred });
+          emailPreferredIsUnique = await manuallyConfirmEmailUniqueness({ emailPreferred: personUpdateDict?.emailPreferred });
         }
         const cannotInsertEmailOfficial = emailOfficialExists && !emailOfficialIsUnique;
         const cannotInsertEmailPreferred = emailPreferredExists && !emailPreferredIsUnique;
@@ -393,15 +372,15 @@ exports.personSave = async (request, response) => {
           jsonData.status += 'canAddPerson-NON_UNIQUE_EMAIL ';
           jsonData.success = false;
           if (cannotInsertEmailOfficial) {
-            jsonData.updateErrors.push('Email is not unique, emailOfficial:', personChangeDict?.emailOfficial);
+            jsonData.updateErrors.push('Email is not unique, emailOfficial:', personUpdateDict?.emailOfficial);
           }
           if (cannotInsertEmailPreferred) {
-            jsonData.updateErrors.push('Email is not unique, emailPreferred:', personChangeDict?.emailPreferred);
+            jsonData.updateErrors.push('Email is not unique, emailPreferred:', personUpdateDict?.emailPreferred);
           }
         } else {
           const tempPassword = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-          personChangeDict.password = await bcrypt.hash(tempPassword, 10);
-          const person = await createPerson(personChangeDict);
+          personUpdateDict.password = await bcrypt.hash(tempPassword, 10);
+          const person = await createPerson(personUpdateDict);
           personId = person.id;
           // console.log('Created new person:', person);
           jsonData.personCreated = true;
@@ -421,10 +400,10 @@ exports.personSave = async (request, response) => {
         jsonData.success = false;
       }
     } else if (shouldUpdatePerson) {
-      if (canEditPerson || ('password' in personChangeDict)) {   // Have to let a person change their password
-        personChangeDict.id = personId;
-        // console.log('Updating person:', personChangeDict);
-        const person = await savePerson(personChangeDict);
+      if (canEditPerson || ('password' in personUpdateDict)) {   // Have to let a person change their password
+        personUpdateDict.id = personId;
+        // console.log('Updating person:', personUpdateDict);
+        const person = await savePerson(personUpdateDict);
         jsonData.personUpdated = true;
         jsonData.personId = person.id;
         jsonData.status += 'PERSON_UPDATED ';
