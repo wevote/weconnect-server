@@ -125,9 +125,9 @@ exports.answerListSave = async (request, response) => {
               if (fieldMappingRule) {
                 const fieldToUpdate = fieldMappingRule.split('.')[1];
                 const answerValueTyped = getAnswerValueFromAnswerDict(answerUpdateDict);
-                // console.log('answerListSave fieldToUpdate:', fieldToUpdate, ', answerValueTyped:', answerValueTyped);
+                console.log('answerListSave fieldToUpdate:', fieldToUpdate, ', answerValueTyped:', answerValueTyped);
                 if (fieldToUpdate in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE) {
-                  // console.log('fieldToUpdate (', fieldToUpdate, ') in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE');
+                  console.log('fieldToUpdate (', fieldToUpdate, ') in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE');
                   personUpdateDict = {
                     ...personUpdateDict,
                     [fieldToUpdate]: answerValueTyped,
@@ -150,6 +150,7 @@ exports.answerListSave = async (request, response) => {
         let passwordAlreadyExists = false;
         personUpdatesFound = true;
         let personWithThisEmailExists = false;
+        console.log('personUpdateDict at start of isCreatePersonQuestionnaire:', personUpdateDict);
         const randomUniqueId = generateRandomString(9);
         if (personUpdateDict.emailPersonal) {
           // Search the database to see if existing record
@@ -166,7 +167,7 @@ exports.answerListSave = async (request, response) => {
               if (personOnStage.password) {
                 passwordAlreadyExists = true;
               }
-              if (personOnStage.stateCode) {
+              if (personOnStage.stateCode && personOnStage.stateCode.length === 2 && isValidUSStateCode(personOnStage.stateCode)) {
                 stateCodeAlreadyExists = true;
               }
               personWithThisEmailExists = true;
@@ -206,7 +207,7 @@ exports.answerListSave = async (request, response) => {
         //
         if (personWithThisEmailExists) {
           try {
-            // console.log('Updating existing person:', personUpdateDict);
+            console.log('Updating existing person:', personUpdateDict);
             const person = await savePerson(personUpdateDict);
             personId = person.id;
           } catch (err) {
@@ -218,7 +219,7 @@ exports.answerListSave = async (request, response) => {
           personUpdateDict.statusOfferDecisionNeeded = true;
           try {
             delete personUpdateDict.id;
-            // console.log('Creating new person:', personUpdateDict);
+            console.log('Creating new person:', personUpdateDict);
             const person = await createPerson(personUpdateDict);
             personId = person.id;
             personUpdateDict.id = personId;
@@ -264,7 +265,6 @@ exports.answerListSave = async (request, response) => {
   // mark person.statusOfferQuestionnaireAnswered
   // console.log('answerListSave questionnaire:', questionnaire);
   if (answerListSaved && questionnaire && isOfferQuestionnaire) {
-    // const person =
     personUpdateDict = {
       ...personUpdateDict,
       statusOfferQuestionnaireAnswered: true,
@@ -276,7 +276,7 @@ exports.answerListSave = async (request, response) => {
     status += `QUESTIONNAIRE_IS_NOT_OFFER_QUESTIONNAIRE_OR not answerListSaved: ${answerListSaved}`;
   }
 
-  // console.log('answerListSave personUpdatesFound:', personUpdatesFound, ', personUpdateDict:', personUpdateDict);
+  console.log('answerListSave personUpdatesFound:', personUpdatesFound, ', personUpdateDict:', personUpdateDict);
   if (personUpdatesFound) {
     try {
       await savePerson(personUpdateDict);
