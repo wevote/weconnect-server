@@ -46,6 +46,7 @@ const PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE = {
   dateStartDate: 'DATE',
   emailOfficial: 'STRING',
   hoursPerWeekEstimate: 'INTEGER',
+  jobTitle: 'STRING',
 };
 
 const PERSON_FIELDS_ACCEPTED_ADMIN = {
