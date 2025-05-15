@@ -1,6 +1,6 @@
 // weconnect-server/controllers/questionnaireApiController.js
 const bcrypt = require('@node-rs/bcrypt');
-const { findOnePerson, PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE, savePerson, createPerson} = require('../models/personModel');
+const { findOnePerson, PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE, savePerson, createPerson } = require('../models/personModel');
 const { retrieveQuestionnaireResponseListByPersonIdList } =  require('./questionnaireController');
 const { createQuestion, createQuestionnaire, findQuestionListByIdList,
   findQuestionListByParams, findQuestionnaireById, findQuestionnaireListByParams,
@@ -11,6 +11,7 @@ const { extractQuestionAnswersFromIncomingParams, extractQuestionOrderDictFromIn
 const { convertToInteger } = require('../utils/convertToInteger');
 const { generateRandomString } = require('../utils/generateRandomString');
 const { getAnswerValueFromAnswerDict } = require('../utils/getAnswerValueFromAnswerDict');
+const { isValidUSStateCode } = require('../utils/stateUtils');
 
 
 /**
@@ -24,10 +25,11 @@ exports.answerListSave = async (request, response) => {
   const questionnaireId = convertToInteger(queryParams.get('questionnaireId'));
   let personUpdateDict = { id: personId };
   let personUpdatesFound = false;
-  console.log('answerListSave personId:', personId, ', questionnaireId:', questionnaireId);
+  // console.log('answerListSave personId:', personId, ', questionnaireId:', questionnaireId);
 
   let answerListSaved = false;
   const answersSavedList = [];
+  let stateCodeAlreadyExists = false;
   let status = '';
   let success = true;
   let requiredFieldsExist = true;
@@ -62,7 +64,7 @@ exports.answerListSave = async (request, response) => {
 
   if (success && requiredFieldsExist) {
     const answerChangeDict = extractQuestionAnswersFromIncomingParams(queryParams);
-    console.log('answerChangeDict:', answerChangeDict);
+    // console.log('answerChangeDict:', answerChangeDict);
 
     // Retrieve all the questions, so we know the expected answerType, questionVersion
     const questionIdKeys = Object.keys(answerChangeDict);
@@ -119,11 +121,11 @@ exports.answerListSave = async (request, response) => {
             // console.log('=== answerUpdateDict:', answerUpdateDict);
             answerUpdateDictByQuestionId[questionId] = answerUpdateDict;
             try {
-              // Now update the other database field based on fieldMappingRule
+              // Now update the person field based on fieldMappingRule
               if (fieldMappingRule) {
                 const fieldToUpdate = fieldMappingRule.split('.')[1];
                 const answerValueTyped = getAnswerValueFromAnswerDict(answerUpdateDict);
-                console.log('answerListSave fieldToUpdate:', fieldToUpdate, ', answerValueTyped:', answerValueTyped);
+                // console.log('answerListSave fieldToUpdate:', fieldToUpdate, ', answerValueTyped:', answerValueTyped);
                 if (fieldToUpdate in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE) {
                   // console.log('fieldToUpdate (', fieldToUpdate, ') in PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE');
                   personUpdateDict = {
@@ -157,19 +159,22 @@ exports.answerListSave = async (request, response) => {
             const params = { emailPersonal: personUpdateDict.emailPersonal };
             const personOnStage = await findOnePerson(params);
             if (personOnStage && personOnStage.id) {
-              console.log('Existing person found:', personOnStage);
+              // console.log('Existing person found:', personOnStage);
               // Account already exists
               personId = personOnStage.id;
               personUpdateDict.id = personId;
               if (personOnStage.password) {
                 passwordAlreadyExists = true;
               }
+              if (personOnStage.stateCode) {
+                stateCodeAlreadyExists = true;
+              }
               personWithThisEmailExists = true;
             } else {
               // Account does not exist, so leave emailPersonal in place so we can create a new account
               delete personUpdateDict.id;
               delete personUpdateDict.personId;
-              console.log('Existing person does NOT exist:', personUpdateDict);
+              // console.log('Existing person does NOT exist:', personUpdateDict);
             }
           } catch (err) {
             console.log('Error searching for existing person: ', err);
@@ -183,6 +188,13 @@ exports.answerListSave = async (request, response) => {
         if (!personUpdateDict.firstName) {
           personUpdateDict.firstName = `fake_name_${randomUniqueId}`;
         }
+        if (personUpdateDict.location && !personUpdateDict.stateCode && !stateCodeAlreadyExists) {
+          const locationCleaned = personUpdateDict.location.trim();
+          const stateCode = locationCleaned.split(', ')[1];
+          if (stateCode && stateCode.length === 2 && isValidUSStateCode(stateCode)) {
+            personUpdateDict.stateCode = stateCode.toUpperCase();
+          }
+        }
         if (passwordAlreadyExists) {
           // Do not update password
         } else if (personUpdateDict.password) {
@@ -194,18 +206,19 @@ exports.answerListSave = async (request, response) => {
         //
         if (personWithThisEmailExists) {
           try {
-            console.log('Updating existing person:', personUpdateDict);
+            // console.log('Updating existing person:', personUpdateDict);
             const person = await savePerson(personUpdateDict);
             personId = person.id;
           } catch (err) {
             console.log('Error saving existing person: ', err);
           }
         } else {
+          personUpdateDict.statusActive = true;
           // For this routine, we need to set statusOfferDecisionNeeded to true for new accounts to indicate they need to be interviewed by a hiring manager.
           personUpdateDict.statusOfferDecisionNeeded = true;
           try {
             delete personUpdateDict.id;
-            console.log('Creating new person:', personUpdateDict);
+            // console.log('Creating new person:', personUpdateDict);
             const person = await createPerson(personUpdateDict);
             personId = person.id;
             personUpdateDict.id = personId;
@@ -263,7 +276,7 @@ exports.answerListSave = async (request, response) => {
     status += `QUESTIONNAIRE_IS_NOT_OFFER_QUESTIONNAIRE_OR not answerListSaved: ${answerListSaved}`;
   }
 
-  console.log('answerListSave personUpdatesFound:', personUpdatesFound, ', personUpdateDict:', personUpdateDict);
+  // console.log('answerListSave personUpdatesFound:', personUpdatesFound, ', personUpdateDict:', personUpdateDict);
   if (personUpdatesFound) {
     try {
       await savePerson(personUpdateDict);
