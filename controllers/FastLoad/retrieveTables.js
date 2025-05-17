@@ -82,7 +82,7 @@ exports.getTotalRowCount = async () => {
 };
 
 // These global tables will be used, if we need to anonymise more than just the Person table, so
-// that the anonymized data will be consistent in the other tables.
+// that the anonymised data will be consistent in the other tables.
 const globalFirstNameSubstitutions = {};
 const globalLastNameSubstitutions = {};
 const globalEmailSubstitutions = {};
@@ -161,17 +161,13 @@ const anonymizeTempTable = async (tempTableName) => {
       if (globalFirstNameSubstitutions[person?.firstName]) {
         newFirstName = globalFirstNameSubstitutions[person.firstName];
       } else if (person?.firstName) {
-        newFirstName = await uniqueNamesGenerator({ dictionaries: [names] });
+        newFirstName = await uniqueNamesGenerator({ dictionaries: [names]});
         globalFirstNameSubstitutions[person.firstName] = newFirstName;
       }
       if (newFirstName) {
         firstNameFields.forEach((field) => {
           sql = `${sql} "${field}" = '${newFirstName}', `;
         });
-      }
-
-      if (person.lastName === 'Paige') {
-        console.log(person);
       }
 
       let newLastName = '';

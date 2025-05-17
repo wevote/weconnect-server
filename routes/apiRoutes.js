@@ -45,7 +45,7 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
   weconnectServer.get('/apis/v1/versions', getStatus);
 
-  weconnectServer.post('/apis/v1/fast-load-allowable-tables', getAllowableTables);
+  weconnectServer.post('/apis/v1/fast-load-get-allowable-tables', getAllowableTables);
   weconnectServer.post('/apis/v1/fast-load-table-retrieve', getOneFastLoadTable);
   weconnectServer.post('/apis/v1/get-auth', personApiController.getAuth);
   weconnectServer.post('/apis/v1/google-create-user', googleApiController.googleCreateUserAccount);
