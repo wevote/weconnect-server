@@ -3,7 +3,7 @@
 
 // The fast load apis will only return the data from the following tables
 exports.allowableTables = [
-  'ClientSession',
+  // 'ClientSession',
   'Meeting',
   'MeetingAttendee',
   'Person',
