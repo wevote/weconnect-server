@@ -19,6 +19,16 @@ const prisma = new PrismaClient();
  * @returns {Promise<boolean>}
  */
 exports.makeTempTable = async (tableName, tempTableName) => {
+  if (!tempTableName || tempTableName.length === 0) {
+    // Prevent an attempt to drop a non-existent tempTableName
+    console.log('makeTempTable: No temp table name provided');
+    return false;
+  }
+  // This is a security measure to prevent dropping a table that is in the allowableTables list
+  if (allowableTables.includes(tempTableName)) {
+    console.log(`makeTempTable: Table ${tempTableName} is required for the operation of weconnect. Not allowed to drop.`);
+    return false;
+  }
   let query = `DROP TABLE "${tempTableName}";`;
   try {
     try {
@@ -72,7 +82,7 @@ exports.getTotalRowCount = async () => {
 };
 
 // These global tables will be used, if we need to anonymise more than just the Person table, so
-// that the anonmized data will be consistent in the other tables.
+// that the anonymized data will be consistent in the other tables.
 const globalFirstNameSubstitutions = {};
 const globalLastNameSubstitutions = {};
 const globalEmailSubstitutions = {};

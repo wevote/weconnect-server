@@ -99,7 +99,7 @@ exports.generateTaskStatusListForAllPeople = async () => {
     success = false;
   }
 
-  // Get all task definitions
+  // Get all task definitions (even if turned off)
   const paramsTaskDefinitionList = {};
   const taskDefinitionList = await findTaskDefinitionListByParams(paramsTaskDefinitionList);
 
@@ -233,31 +233,38 @@ exports.generateTasksForPerson = async (
         // Already exists, so we don't need to create a new one
         // console.log('Task already exists taskDefinition.id:', taskDefinition.id);
         return null;
+      } else if (taskDefinition.statusActive === false) {
+        // Task is turned off, so we don't create this task for this person
+        // console.log('Task is turned off taskDefinition.id:', taskDefinition.id);
+        return null;
       }
       // console.log('=== Task does NOT exist taskDefinition.id:', taskDefinition.id);
       // Check here if the task should be created for this person
       if (taskDefinition.taskGroupId) {
         // Currently we require all tasks to be organized within a task group
         const taskGroup = taskGroupDict[taskDefinition.taskGroupId];
-        if (taskGroup.statusActive === true && taskGroup.taskGroupIsForTeam === true) {
-          // console.log(`== generateTasksForPerson person, taskGroupIsForTeam, taskGroupId: ${taskDefinition.taskGroupId} ${person.firstName} ${person.lastName}`);
-          // If this taskGroup is for a team, it will only apply if the person is in that team.
-          const teamIdListForThisTaskGroup = taskGroupTeamIdLists[taskGroup.id] || [];
-          // console.log('==== teamIdListForThisTaskGroup:', teamIdListForThisTaskGroup);
-          // console.log('==== teamsForThisPerson:', teamsForThisPerson);
-          if (teamIdListForThisTaskGroup.length === 0) {
-            // If teamIdListForThisTaskGroup is empty, always return null when taskGroupIsForTeam === true
-            return null;
-          }
-          const personIsInTaskGroupTeam = teamIdListForThisTaskGroup.some((teamId) => teamsForThisPerson[teamId]);
-          // console.log('==== personIsInTaskGroupTeam:', personIsInTaskGroupTeam);
+        if (taskGroup.statusActive !== true) {
+          // Task group is turned off
+          return null;
+        } else {
+          if (taskGroup.taskGroupIsForTeam === true) {
+            // console.log(`== generateTasksForPerson person, taskGroupIsForTeam, taskGroupId: ${taskDefinition.taskGroupId} ${person.firstName} ${person.lastName}`);
+            // If this taskGroup is for a team, it will only apply if the person is in that team.
+            const teamIdListForThisTaskGroup = taskGroupTeamIdLists[taskGroup.id] || [];
+            // console.log('==== teamIdListForThisTaskGroup:', teamIdListForThisTaskGroup);
+            // console.log('==== teamsForThisPerson:', teamsForThisPerson);
+            if (teamIdListForThisTaskGroup.length === 0) {
+              // If teamIdListForThisTaskGroup is empty, always return null when taskGroupIsForTeam === true
+              return null;
+            }
+            const personIsInTaskGroupTeam = teamIdListForThisTaskGroup.some((teamId) => teamsForThisPerson[teamId]);
+            // console.log('==== personIsInTaskGroupTeam:', personIsInTaskGroupTeam);
 
-          if (!personIsInTaskGroupTeam) {
-            // If the person is not in any of the teams for this task group, skip this task
-            return null;
+            if (!personIsInTaskGroupTeam) {
+              // If the person is not in any of the teams for this task group, skip this task
+              return null;
+            }
           }
-        }
-        if (taskGroup.statusActive === true) {
           // console.log('Task group is active:', taskGroup);
           for (let i = 0; i < TASK_GROUP_MATCH_REQUIRED.length; i++) {
             let createThisTaskForThisPerson = false;
@@ -293,7 +300,7 @@ exports.generateTasksForPerson = async (
               return createTask(taskChangeDict);
             }
           }
-        } else return null;
+        }
         return null;
       } else return null;
     } catch (err) {
