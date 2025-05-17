@@ -14,8 +14,7 @@
 <script>
   const now = new Date();
   const datetime = now.toLocaleString();
-  let url = 'https://teamapi.wevote.org/apis/v1/versions';
-  // let url = 'https://wevotedeveloper.com:4500/apis/v1/versions';
+  const url = `${window.location.href}apis/v1/versions`;
   axios.get(url).then((response) => {
     const keys = Object.keys(response.data);
     let html = '<div style="padding: 10px; display: grid; grid-template-columns: 8% auto" >'
