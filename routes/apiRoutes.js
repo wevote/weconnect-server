@@ -7,6 +7,9 @@ const teamApiController = require('../controllers/teamApiController');
 const { slackChannelInvite, slackGetPresence, slackSendMessage, slackListUsers, slackChannelMembers } = require('../controllers/slackApiController');
 const { updateDbFromCsv } = require('../controllers/updateSqlFromCsvController');
 const { jazzGetApplicants, jazzGetUsers } = require('../controllers/jazzHrController');
+const { getStatus } = require('../controllers/statusController');
+const { getAllowableTables } = require('../controllers/FastLoad/allowableTables');
+const { getOneFastLoadTable } = require('../controllers/FastLoad/retrieveTables');
 
 /**
  * WeConnect API routes.
@@ -40,7 +43,10 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/team-save', teamApiController.teamSave);
   weconnectServer.get('/apis/v1/team-delete', teamApiController.teamDelete);
   weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
+  weconnectServer.get('/apis/v1/versions', getStatus);
 
+  weconnectServer.post('/apis/v1/fast-load-allowable-tables', getAllowableTables);
+  weconnectServer.post('/apis/v1/fast-load-table-retrieve', getOneFastLoadTable);
   weconnectServer.post('/apis/v1/get-auth', personApiController.getAuth);
   weconnectServer.post('/apis/v1/google-create-user', googleApiController.googleCreateUserAccount);
   weconnectServer.post('/apis/v1/google-delete-user', googleApiController.googleDeleteUserAccount);

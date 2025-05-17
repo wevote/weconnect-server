@@ -464,11 +464,47 @@ const getUniqueKeyEmail = async (emailSubmitted) => {
   return emailSubmittedCleaned;
 };
 
+/**
+ * For fast load: Would this person have isAdmin privileges?
+ * @param email
+ * @param password
+ * @returns {Promise<*>}
+ */
+const doesPersonHaveIsAdmin = async (email, password) => {
+  const emailSubmittedCleaned = validator.normalizeEmail(email, { gmail_remove_dots: false });
+  let person = await findOnePerson({ emailPersonal: emailSubmittedCleaned }, true);
+
+  let isAdmin = false;
+
+  if (Object.keys(person).length > 0) {
+    isAdmin = person.isAdmin;
+  } else {
+    const personList = await findPersonListByParams({ emailOfficial: emailSubmittedCleaned }, true);
+    if (personList.length === 1) {
+      person = personList[0];
+      isAdmin = person.isAdmin;
+    } else if (personList.length > 1) {
+      console.error(`doesPersonHaveIsAdmin found more than one matching emailOfficial '${emailSubmittedCleaned}' rows, this is a data corruption error`);
+      isAdmin = false;
+    }
+  }
+
+  if (!isAdmin || !person || Object.keys(person).length === 0) {
+    return isAdmin;
+  }
+
+  const verified = await bcrypt.verify(password, person.password);
+  return verified;
+};
+
+
+
 module.exports = {
   comparePassword,
   createPerson,
   createPersonAway,
   deleteOne,
+  doesPersonHaveIsAdmin,
   extractPersonVariablesToChange,
   findOnePerson,
   findPersonById,

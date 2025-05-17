@@ -15,6 +15,7 @@ results
 tmp
 
 # SSL Certificates
+/cert/**
 wevotedeveloper.com.crt
 wevotedeveloper.com_key.txt
 
