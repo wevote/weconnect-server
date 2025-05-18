@@ -1,7 +1,7 @@
-<html>
+<html lang="en">
   <body>
     <h1>
-      <img src="we-vote-logo-wordmark-vertical-color-on-white-256x256.png"  width="100" height="100">
+      <img src="we-vote-logo-wordmark-vertical-color-on-white-256x256.png"  width="100" height="100" alt="">
     </h1>
     <h1>The weconnect-server is running</h1>
     <br />
@@ -14,11 +14,10 @@
 <script>
   const now = new Date();
   const datetime = now.toLocaleString();
-  // let url = 'https://teamapi.wevote.org/apis/v1/versions';
-  let url = 'https://wevotedeveloper.com:4500/apis/v1/versions';
+  const url = `${window.location.href}apis/v1/versions`;
   axios.get(url).then((response) => {
     const keys = Object.keys(response.data);
-    let html = '<div style="padding: 10px; display: grid; grid-template-columns: 8% auto">'
+    let html = '<div style="padding: 10px; display: grid; grid-template-columns: 8% auto" >'
     html += `<span>Date</span><span>${datetime}</span>`;
     keys.forEach((key) => {
       html += `<span>${key}</span><span>${response.data[key]}</span>`;
