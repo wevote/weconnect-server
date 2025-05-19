@@ -136,14 +136,14 @@ exports.generateTaskStatusListForAllPeople = async () => {
   }
 
   // Get all team members so for each person, we can tell which team(s) they are in
-  const paramsTeamMemberList = {};
-  const TeamMemberList = await findTeamMemberListByParams(paramsTeamMemberList);
+  const paramsTeamMemberInfoList = {};
+  const TeamMemberInfoList = await findTeamMemberListByParams(paramsTeamMemberInfoList);
   const teamMemberDict = {};
-  TeamMemberList.forEach((answer) => {
-    if (!teamMemberDict[answer.personId]) {
-      teamMemberDict[answer.personId] = {};
+  TeamMemberInfoList.forEach((teamMember) => {
+    if (!teamMemberDict[teamMember.personId]) {
+      teamMemberDict[teamMember.personId] = {};
     }
-    teamMemberDict[answer.personId][answer.teamId] = true;
+    teamMemberDict[teamMember.personId][teamMember.teamId] = true;
   });
 
   // Add params that look for values in person records that imply tasks needs to be generated?

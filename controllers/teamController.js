@@ -43,10 +43,10 @@ const retrieveTeamMemberList = async (teamId) => {
 
   /// Retrieve the ids of the team
   // const teamMemberListPromise = findTeamMemberListByParams({ teamId });
-  const teamMemberListTemp = await findTeamMemberListByParams({ teamId });
-  // console.log('Team member list 1:', teamMemberListTemp);
+  const teamMemberInfoList = await findTeamMemberListByParams({ teamId });
+  // console.log('Team member list 1:', teamMemberInfoList);
 
-  const teamMemberPersonIdList = teamMemberListTemp.map((member) => member.personId);
+  const teamMemberPersonIdList = teamMemberInfoList.map((member) => member.personId);
   // console.log('teamMemberPersonIdList:', teamMemberPersonIdList);
   status += `TEAM_MEMBERS_FOUND: ${teamMemberPersonIdList.length} `;
 
@@ -61,6 +61,7 @@ const retrieveTeamMemberList = async (teamId) => {
     status += 'TEAM_MEMBERS_NOT_FOUND ';
   }
   return {
+    teamMemberInfoList,
     teamMemberList,
     success,
     status,
