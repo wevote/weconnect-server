@@ -7,6 +7,8 @@ const {
 } = require('../models/teamModel');
 const { convertToInteger } = require('../utils/convertToInteger');
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
+const { TEAM_MEMBER_FIELDS_ACCEPTED } = require('../models/teamModel');
+// const { getAllAccessRightsForPerson } = require('./personController');
 
 /**
  * GET /api/v1/add-person-to-team
@@ -15,18 +17,17 @@ const { extractVariablesToChangeFromIncomingParams } = require('./dataTransforma
 exports.addPersonToTeam = async (request, response) => {
   let shouldAddPersonToTeam = false;
 
+  // const results = await getAllAccessRightsForPerson(request);
+  // const { accessRights, personIdsByTeam, teamAccessRights } = results;
+
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
   const personId = convertToInteger(queryParams.get('personId'));
   const teamId = convertToInteger(queryParams.get('teamId'));
-  const teamMemberFirstName = queryParams.get('teamMemberFirstName');
-  const teamMemberLastName = queryParams.get('teamMemberLastName');
-  const teamName = queryParams.get('teamName');
-  const changeDict = {
-    teamMemberFirstName,
-    teamMemberLastName,
-    teamName,
-  };
+  const teamMemberUpdateDict = extractVariablesToChangeFromIncomingParams(
+    queryParams,
+    TEAM_MEMBER_FIELDS_ACCEPTED,
+  );
   // Set up the default JSON response.
   const jsonData = {
     addPersonToTeamSuccessful: false,
@@ -61,14 +62,11 @@ exports.addPersonToTeam = async (request, response) => {
 
     if (shouldAddPersonToTeam) {
       // Note: This doesn't return a teamMember object
-      await updateOrCreateTeamMember(personId, teamId, changeDict);
+      await updateOrCreateTeamMember(personId, teamId, teamMemberUpdateDict);
       jsonData.addPersonToTeamSuccessful = true;
-      jsonData.firstName = teamMemberFirstName;
-      jsonData.lastName = teamMemberLastName;
       jsonData.personId = personId;
       jsonData.status += 'PERSON_ADDED_TO_TEAM ';
       jsonData.success = true;
-      jsonData.teamName = teamName;
       // console.log('Person added to team:', teamMember);
     }
   } catch (err) {
@@ -162,7 +160,8 @@ exports.teamListRetrieve = async (request, response) => {
         try {
           const results = await retrieveTeamMemberList(team.id);
           // console.log('teamListRetrieve retrieveTeamMemberList results:', results);
-          teamModified.teamMemberList = results.teamMemberList;
+          teamModified.teamMemberInfoList = results.teamMemberInfoList; // Just the contents of TeamMember table (without Person table details)
+          teamModified.teamMemberList = results.teamMemberList; // We want to phase this out
           jsonData.status += results.status;
         } catch (err) {
           jsonData.status += 'FAILED_retrieveTeamMemberList ';
@@ -215,7 +214,8 @@ exports.teamRetrieve = async (request, response) => {
       try {
         const results = await retrieveTeamMemberList(teamId);
         // console.log('teamRetrieve retrieveTeamMemberList results:', results);
-        jsonData.teamMemberList = results.teamMemberList;
+        jsonData.teamMemberInfoList = results.teamMemberInfoList; // Just the contents of TeamMember table (without Person table details)
+        jsonData.teamMemberList = results.teamMemberList; // We want to phase this out
         jsonData.status += results.status;
       } catch (err) {
         jsonData.status += 'FAILED_retrieveTeamMemberList ';

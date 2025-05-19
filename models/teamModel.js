@@ -18,6 +18,13 @@ const TEAM_FIELDS_ACCEPTED = [
   'teamName',
 ];
 
+const TEAM_MEMBER_FIELDS_ACCEPTED = {
+  isTeamLead: 'BOOLEAN',
+  teamMemberFirstName: 'STRING',
+  teamMemberLastName: 'STRING',
+  teamName: 'STRING',
+};
+
 async function findTeamById (id) {
   const team = await prisma.team.findUnique({
     where: {
@@ -232,5 +239,6 @@ module.exports = {
   removeProtectedFieldsFromTeam,
   saveTeam,
   TEAM_FIELDS_ACCEPTED,
+  TEAM_MEMBER_FIELDS_ACCEPTED,
   updateOrCreateTeamMember,
 }; // Export the functions
