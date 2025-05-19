@@ -1,10 +1,13 @@
-
+const { writeFile, unlink } = require('node:fs');
+const util = require('util');
 const { readFileSync } = require('fs');
 const { PrismaClient } = require('@prisma/client');
 const { DateTime } = require('luxon');
 const { uniqueNamesGenerator, animals, names } = require('unique-names-generator');
 const { allowableTables } = require('./allowableTables');
 const { doesPersonHaveIsAdmin } = require('../../models/personModel');
+
+const exec = util.promisify(require('child_process').exec);
 
 
 const prisma = new PrismaClient();
@@ -111,6 +114,32 @@ const anonymizeTempTable = async (tempTableName) => {
   const firstNameFields = [];
   const lastNameFields = [];
   const emailFields = [];
+
+  // BEGIN TEMPORARY TEST CODE
+  const testFile = '/tmp/steveFile.txt';
+  unlink(testFile, (err) => {
+    if (err) {
+      console.error('Error deleting file:', testFile, err);
+      return;
+    }
+    console.log('File deleted successfully', testFile);
+  });
+
+  writeFile(testFile, 'Hello world!', (err) => {
+    if (err) {
+      console.error('writeFile steve', err);
+    } else {
+      console.log('writeFile steveFile created successfully!');
+    }
+  });
+
+  try {
+    const { stdout } = await exec('ls -la /tmp/');
+    console.log('writeFile steveFile ls -la /tmp/', stdout);
+  } catch (error) {
+    console.error('writeFile steve ls -la /tmp/ returned', error);
+  }
+  // END TEMPORARY TEST CODE
 
   const maxId = await getMaxId(tempTableName);
 
