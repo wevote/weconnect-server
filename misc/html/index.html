@@ -18,9 +18,19 @@
   axios.get(url).then((response) => {
     const keys = Object.keys(response.data);
     let html = '<div style="padding: 10px; display: grid; grid-template-columns: 8% auto" >'
-    html += `<span>Date</span><span>${datetime}</span>`;
+    // html += `<span>Date</span><span>${datetime}</span>`;
     keys.forEach((key) => {
-      html += `<span>${key}</span><span>${response.data[key]}</span>`;
+      if (key === 'git_commit_hash') {
+        const lastIndex = response.data[key].lastIndexOf("/");
+        const hash = response.data[key].substring(lastIndex + 1);
+        html += `<span>Git Committ Hash</span>
+                 <span>
+                    <a href="${response.data[key]}">${hash}</a>
+                 </span>`;
+      } else {
+
+        html += `<span>${key}</span><span>${response.data[key]}</span>`;
+      }
     });
     html += '</div>';
     document.getElementById('versions').innerHTML = html;

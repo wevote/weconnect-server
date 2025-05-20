@@ -19,6 +19,7 @@ const passport = require('passport');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const useragent = require('express-useragent');
+const { getPersonIdBySessionId } = require('./models/clientSessionModel');
 
 process.env.NODE_DEBUG = '';    // Use our custom http logger, that shortens long GET urls
 
@@ -130,6 +131,36 @@ weconnectServer.use((req, res, next) => {
 weconnectServer.use((req, res, next) => {
   res.locals.isSignedIn = true; // TODO hack maybe useless
   next();
+});
+
+// Check for authenticated Person when handling API requests
+weconnectServer.use(async (req, res, next) => {
+  const { cookies, method, sessionID, url } = req;
+  let is403 = true;
+  try {
+    if (cookies && cookies?.WeConnectSession && sessionID) {
+      const personId = await getPersonIdBySessionId(req.sessionID || 0);
+      const apiPieces = url.split('/');
+      const api = apiPieces[3];
+      if (personId === 0 && !['get-auth', 'send-email-code', 'logout', 'login'].includes(api)) {
+        is403 = true;
+        console.log(`${method} ${url} 403 (Not authorized)`);  // DO NOT DELETE!:  This will be the only url logging in the console in this case
+      } else {
+        is403 = false;
+        // console.log('auth check url  SUCCESS', url);
+      }
+    }
+  } catch (error) {
+    is403 = true;
+    console.error('Exception while validating session for API request', error);
+  }
+  if (is403) {
+    // console.log('auth check 403 at bottom', url);
+    res.status(403).send('Forbidden, Not authorized');
+  } else {
+    // console.log('auth check url  NEXT', url);
+    next();
+  }
 });
 
 // After successful login, redirect back to the intended page
