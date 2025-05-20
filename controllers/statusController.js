@@ -61,6 +61,19 @@ exports.getStatus = async (req, res) => {
     if (!ret.prisma) ret.prisma = 'prisma cli client not found';
   }
 
+  try {
+    const { stdout: temp } = await exec('env | grep TMP');
+    ret.temp = temp;
+  } catch (error) {
+    ret.temp = '$TMP not found';
+  }
+
+  try {
+    const { stdout: tempFC } = await exec('ls -la /tmp/ | wc -l');
+    ret.tempDirFileCount = tempFC;
+  } catch (error) {
+    ret.temp = 'failed to find files in /tmp/';
+  }
 
   return res.json(ret);
 };
