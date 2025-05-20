@@ -1,13 +1,7 @@
-const { writeFile, unlink } = require('node:fs');
-const util = require('util');
-const { readFileSync } = require('fs');
 const { PrismaClient } = require('@prisma/client');
-const { DateTime } = require('luxon');
 const { uniqueNamesGenerator, animals, names } = require('unique-names-generator');
 const { allowableTables } = require('./allowableTables');
 const { doesPersonHaveIsAdmin } = require('../../models/personModel');
-
-const exec = util.promisify(require('child_process').exec);
 
 
 const prisma = new PrismaClient();
@@ -28,7 +22,7 @@ exports.makeTempTable = async (tableName, tempTableName) => {
     return false;
   }
   // This is a security measure to prevent dropping a table that is in the allowableTables list
-  if (allowableTables.includes(tempTableName)) {
+  if (allowableTables.includes(tempTableName) || !tempTableName.includes('_temp')) {
     console.log(`makeTempTable: Table ${tempTableName} is required for the operation of weconnect. Not allowed to drop.`);
     return false;
   }
@@ -48,12 +42,11 @@ exports.makeTempTable = async (tableName, tempTableName) => {
   }
 };
 
-/*
-"""
-Returns the maximum id of table to be fetched from the MASTER server
-Runs on the Master server
-  :return: the number of rows
-"""
+/**
+ * Returns the maximum id of table to be fetched from the MASTER server
+ * Runs on the Master server
+ * @param tableName
+ * @returns {Promise<number|*>} the number of rows
  */
 const getMaxId = async (tableName) => {
   try {
@@ -90,16 +83,15 @@ const globalFirstNameSubstitutions = {};
 const globalLastNameSubstitutions = {};
 const globalEmailSubstitutions = {};
 
-const copyTempTableToFile = async (tempTableName) => {
+
+const getTempTableAsJSON = async (tempTableName) => {
   try {
-    const pathRows = `${process.env.PATH_FOR_TEMP_FILES}/fastLoadCopy${tempTableName}.${DateTime.now().toISO()}.rows`;
-    // const pathZip = pathRows.replace('.rows', '.zip');
-    const query = `COPY "${tempTableName}" to '${pathRows}'`;
+    const orderBy = !['MeetingAttendee', 'QuestionAnswer', 'Task', 'TaskGroupTeamLink', 'TeamMember'].includes(tempTableName.replace('_temp', ''));
+    const query = `SELECT * FROM "${tempTableName}" ${orderBy ? 'ORDER BY id' : ''}`;
     console.log(`dumpDatabaseTableToTmp: ${query}`);
-    await prisma.$queryRawUnsafe(query);
-    return pathRows;
+    return await prisma.$queryRawUnsafe(query);
   } catch (error) {
-    console.error(error);
+    console.error('getTempTableAsJSON: ', error);
     return undefined;
   }
 };
@@ -114,32 +106,6 @@ const anonymizeTempTable = async (tempTableName) => {
   const firstNameFields = [];
   const lastNameFields = [];
   const emailFields = [];
-
-  // BEGIN TEMPORARY TEST CODE
-  const testFile = '/tmp/steveFile.txt';
-  unlink(testFile, (err) => {
-    if (err) {
-      console.error('Error deleting file:', testFile, err);
-      return;
-    }
-    console.log('File deleted successfully', testFile);
-  });
-
-  writeFile(testFile, 'Hello world!', (err) => {
-    if (err) {
-      console.error('writeFile steve', err);
-    } else {
-      console.log('writeFile steveFile created successfully!');
-    }
-  });
-
-  try {
-    const { stdout } = await exec('ls -la /tmp/');
-    console.log('writeFile steveFile ls -la /tmp/', stdout);
-  } catch (error) {
-    console.error('writeFile steve ls -la /tmp/ returned', error);
-  }
-  // END TEMPORARY TEST CODE
 
   const maxId = await getMaxId(tempTableName);
 
@@ -190,7 +156,7 @@ const anonymizeTempTable = async (tempTableName) => {
       if (globalFirstNameSubstitutions[person?.firstName]) {
         newFirstName = globalFirstNameSubstitutions[person.firstName];
       } else if (person?.firstName) {
-        newFirstName = await uniqueNamesGenerator({ dictionaries: [names]});
+        newFirstName = uniqueNamesGenerator({ dictionaries: [names]});
         globalFirstNameSubstitutions[person.firstName] = newFirstName;
       }
       if (newFirstName) {
@@ -203,7 +169,7 @@ const anonymizeTempTable = async (tempTableName) => {
       if (globalLastNameSubstitutions[person?.lastName]) {
         newLastName = globalLastNameSubstitutions[person.lastName];
       } else if (person?.lastName) {
-        newLastName = await uniqueNamesGenerator({ dictionaries: [animals]});
+        newLastName = uniqueNamesGenerator({ dictionaries: [animals]});
         globalLastNameSubstitutions[person.lastName] = newLastName;
       }
       let newLastCapitalized = newLastName.slice(1);
@@ -248,12 +214,12 @@ const anonymizeTempTable = async (tempTableName) => {
 };
 
 /**
- * Make the temp file, and copy it to disk in the /tmp directory
+ * Make the temp file, and get its output as JSON
  * @param tableName
  * @param isAdminAndDoNotAnonymize
  * @returns {Promise<string>}
  */
-exports.makeATempTableAndCopyItToTempFile = async (tableName, isAdminAndDoNotAnonymize) => {
+exports.makeATempTableAndReturnJSON = async (tableName, isAdminAndDoNotAnonymize) => {
   const tempTableName = `${tableName}_temp`;
   await this.makeTempTable(tableName, tempTableName);
 
@@ -262,9 +228,7 @@ exports.makeATempTableAndCopyItToTempFile = async (tableName, isAdminAndDoNotAno
     await anonymizeTempTable(tempTableName);
   }
 
-  const filenameAndPath = await copyTempTableToFile(tempTableName);
-  console.log(tempTableName, filenameAndPath);
-  return filenameAndPath;
+  return getTempTableAsJSON(tempTableName);
 };
 
 exports.getOneFastLoadTable = async (req, res) => {
@@ -272,22 +236,10 @@ exports.getOneFastLoadTable = async (req, res) => {
 
   const isAdminAndDoNotAnonymize = doNotAnonymize && await doesPersonHaveIsAdmin(email, password);
 
-  const filenameAndPath = await this.makeATempTableAndCopyItToTempFile(tableName, isAdminAndDoNotAnonymize);
-  const data = readFileSync(filenameAndPath, 'utf8');
+  const tableJSON = await this.makeATempTableAndReturnJSON(tableName, isAdminAndDoNotAnonymize);
+
   return res.json({
     tableName,
-    data,
+    tableJSON,
   });
 };
-
-// const exec = util.promisify(require('child_process').exec);
-// const util = require('util');
-// exports.getAllTables = async () => {
-//   try {
-//     const result = await prisma.$queryRaw`SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname='public' order by "tablename";`;
-//     console.log(result);
-//   } catch (error) {
-//     console.error(error);
-//   }
-// };
-

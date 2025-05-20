@@ -1,28 +1,23 @@
 const util = require('util');
+const fs = require('node:fs');
 const exec = util.promisify(require('child_process').exec);
 
 exports.getStatus = async (req, res) => {
   const ret = {};
 
   try {
+    let hash = fs.readFileSync('./git_commit_hash', 'utf8');
+    hash = hash.trim();
+    ret.git_commit_hash = `https://github.com/wevote/weconnect-server/commit/${hash}`;
+  } catch (error) {
+    ret.uname = 'uname error';
+  }
+
+  try {
     const { stdout: node } = await exec('node --version');
     ret.node = node.trim();
   } catch (error) {
     ret.node = 'node not found';
-  }
-
-  try {
-    const { stdout: dump } = await exec('pg_dump --version');
-    ret.pg_dump = dump.trim();
-  } catch (error) {
-    ret.pg_dump = 'pg_dump not found';
-  }
-
-  try {
-    const { stdout: uname } = await exec('uname -a ');
-    ret.uname = uname.trim();
-  } catch (error) {
-    ret.uname = 'uname error';
   }
 
   try {
@@ -33,46 +28,10 @@ exports.getStatus = async (req, res) => {
   }
 
   try {
-    const { stdout: psql } = await exec('psql --version');
-    ret.psql = psql.trim();
+    const { stdout: uname } = await exec('uname -a ');
+    ret.uname = uname.trim();
   } catch (error) {
-    ret.psql = 'psql not found';
-  }
-
-  try {
-    const { stdout: zipTxt } = await exec('zip --version');
-    const re = /^.*?\d\.\d.*?$/m;
-    ret.zip = re.exec(zipTxt)[0];
-  } catch (error) {
-    ret.zip = 'zip not found';
-  }
-
-  try {
-    const { stdout: prismaTxt } = await exec('prisma --version', { shell: '/bin/zsh' });
-    let re = /^prisma\s\s.*?(\d.\d.\d)$/gm;
-    ret.prisma = re.exec(prismaTxt)[1];
-    re = /^@prisma.*?(\d.\d.\d)$/gm;
-    ret.prisma_client = re.exec(prismaTxt)[1];
-    re = /^Operating System\s\s*: (.*?)$/gm;
-    ret.os = re.exec(prismaTxt)[1];
-    re = /^Architecture.*?: (.*?)$/gm;
-    ret.arch = re.exec(prismaTxt)[1];
-  } catch (error) {
-    if (!ret.prisma) ret.prisma = 'prisma cli client not found';
-  }
-
-  try {
-    const { stdout: temp } = await exec('env | grep TMP');
-    ret.temp = temp;
-  } catch (error) {
-    ret.temp = '$TMP not found';
-  }
-
-  try {
-    const { stdout: tempFC } = await exec('ls -la /tmp/ | wc -l');
-    ret.tempDirFileCount = tempFC;
-  } catch (error) {
-    ret.temp = 'failed to find files in /tmp/';
+    ret.uname = 'uname error';
   }
 
   return res.json(ret);
