@@ -5,13 +5,13 @@ const { Octokit } = require('@octokit/rest');
 const stripe = require('stripe')(process.env.STRIPE_SKEY);
 // Note 11/24/24: The following line fails if you don't have a TWILIO_SID, so leave commented out for now
 // const twilio = require('twilio')(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);
-const paypal = require('paypal-rest-sdk');
+// const paypal = require('paypal-rest-sdk');
 const axios = require('axios');
 const googledrive = require('@googleapis/drive');
 const googlesheets = require('@googleapis/sheets');
 const validator = require('validator');
 const {
-  Configuration: LobConfiguration, LetterEditable, LettersApi, ZipEditable, ZipLookupsApi
+  Configuration: LobConfiguration, LetterEditable, LettersApi, ZipEditable, ZipLookupsApi,
 } = require('@lob/lob-typescript-sdk');
 
 /**
@@ -20,7 +20,7 @@ const {
  */
 exports.getApi = (req, res) => {
   res.render('api/index', {
-    title: 'API Examples'
+    title: 'API Examples',
   });
 };
 
@@ -36,7 +36,7 @@ exports.getFoursquare = async (req, res, next) => {
   axios.all([
     axios.get(`https://api.foursquare.com/v2/venues/trending?ll=40.7222756,-74.0022724&limit=50&oauth_token=${token.accessToken}&v=20140806`),
     axios.get(`https://api.foursquare.com/v2/venues/49da74aef964a5208b5e1fe3?oauth_token=${token.accessToken}&v=20190113`),
-    axios.get(`https://api.foursquare.com/v2/users/self/checkins?oauth_token=${token.accessToken}&v=20190113`)
+    axios.get(`https://api.foursquare.com/v2/users/self/checkins?oauth_token=${token.accessToken}&v=20190113`),
   ])
     .then(axios.spread((trendingVenuesRes, venueDetailRes, userCheckinsRes) => {
       trendingVenues = trendingVenuesRes.data.response;
@@ -46,7 +46,7 @@ exports.getFoursquare = async (req, res, next) => {
         title: 'Foursquare API',
         trendingVenues,
         venueDetail,
-        userCheckins
+        userCheckins,
       });
     }))
     .catch((error) => {
@@ -72,7 +72,7 @@ exports.getTumblr = (req, res, next) => {
       res.render('api/tumblr', {
         title: 'Tumblr API',
         blog: response.data.response.blog,
-        photoset: response.data.response.posts[0].photos
+        photoset: response.data.response.posts[0].photos,
       });
     })
     .catch((error) => {
@@ -92,7 +92,7 @@ exports.getFacebook = (req, res, next) => {
     .then((response) => {
       res.render('api/facebook', {
         title: 'Facebook API',
-        profile: response.data
+        profile: response.data,
       });
     })
     .catch((error) => next(error.response));
@@ -112,7 +112,7 @@ exports.getScraping = (req, res, next) => {
       });
       res.render('api/scraping', {
         title: 'Web Scraping',
-        links
+        links,
       });
     })
     .catch((error) => next(error));
@@ -128,7 +128,7 @@ exports.getGithub = async (req, res, next) => {
     const { data: repo } = await github.repos.get({ owner: 'sahat', repo: 'hackathon-starter' });
     res.render('api/github', {
       title: 'GitHub API',
-      repo
+      repo,
     });
   } catch (error) {
     next(error);
@@ -152,19 +152,19 @@ exports.getQuickbooks = (req, res) => {
   const headers = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    Authorization: `Bearer ${token.accessToken}`
+    Authorization: `Bearer ${token.accessToken}`,
   };
 
   const options = {
     url,
     method: 'GET',
-    headers
+    headers,
   };
 
   axios(options).then((customers) => {
     res.render('api/quickbooks', {
       title: 'Quickbooks API',
-      customers: customers.data.QueryResponse.Customer
+      customers: customers.data.QueryResponse.Customer,
     });
   });
 };
@@ -180,7 +180,7 @@ exports.getNewYorkTimes = (req, res, next) => {
       const books = response.data.results;
       res.render('api/nyt', {
         title: 'New York Times API',
-        books
+        books,
       });
     })
     .catch((err) => {
@@ -196,7 +196,7 @@ exports.getNewYorkTimes = (req, res, next) => {
 exports.getLastfm = async (req, res, next) => {
   const lastfm = new LastFmNode({
     api_key: process.env.LASTFM_KEY,
-    secret: process.env.LASTFM_SECRET
+    secret: process.env.LASTFM_SECRET,
   });
   const getArtistInfo = () =>
     new Promise((resolve, reject) => {
@@ -204,8 +204,8 @@ exports.getLastfm = async (req, res, next) => {
         artist: 'Roniit',
         handlers: {
           success: resolve,
-          error: reject
-        }
+          error: reject,
+        },
       });
     });
   const getArtistTopTracks = () =>
@@ -216,8 +216,8 @@ exports.getLastfm = async (req, res, next) => {
           success: ({ toptracks }) => {
             resolve(toptracks.track.slice(0, 10));
           },
-          error: reject
-        }
+          error: reject,
+        },
       });
     });
   const getArtistTopAlbums = () =>
@@ -228,8 +228,8 @@ exports.getLastfm = async (req, res, next) => {
           success: ({ topalbums }) => {
             resolve(topalbums.album.slice(0, 3));
           },
-          error: reject
-        }
+          error: reject,
+        },
       });
     });
   try {
@@ -243,11 +243,11 @@ exports.getLastfm = async (req, res, next) => {
       stats: artistInfo.stats,
       similar: artistInfo.similar ? artistInfo.similar.artist : [],
       topTracks,
-      topAlbums
+      topAlbums,
     };
     res.render('api/lastfm', {
       title: 'Last.fm API',
-      artist
+      artist,
     });
   } catch (err) {
     console.log('See error codes at: https://www.last.fm/api/errorcodes');
@@ -328,7 +328,7 @@ exports.getSteam = async (req, res, next) => {
       title: 'Steam Web API',
       ownedGames: ownedGames.response,
       playerAchievements: playerstats,
-      playerSummary: playerSummaries.response.players[0]
+      playerSummary: playerSummaries.response.players[0],
     });
   } catch (err) {
     next(err);
@@ -342,7 +342,7 @@ exports.getSteam = async (req, res, next) => {
 exports.getStripe = (req, res) => {
   res.render('api/stripe', {
     title: 'Stripe API',
-    publishableKey: process.env.STRIPE_PKEY
+    publishableKey: process.env.STRIPE_PKEY,
   });
 };
 
@@ -356,7 +356,7 @@ exports.postStripe = (req, res) => {
     amount: 395,
     currency: 'usd',
     source: stripeToken,
-    description: stripeEmail
+    description: stripeEmail,
   }, (err) => {
     if (err && err.type === 'StripeCardError') {
       req.flash('errors', { msg: 'Your card has been declined.' });
@@ -373,7 +373,7 @@ exports.postStripe = (req, res) => {
  */
 exports.getTwilio = (req, res) => {
   res.render('api/twilio', {
-    title: 'Twilio API'
+    title: 'Twilio API',
   });
 };
 
@@ -394,7 +394,7 @@ exports.postTwilio = (req, res, next) => {
   const message = {
     to: req.body.number,
     from: '+13472235148',
-    body: req.body.message
+    body: req.body.message,
   };
   twilio.messages.create(message).then((sentMessage) => {
     req.flash('success', { msg: `Text send to ${sentMessage.to}` });
@@ -460,7 +460,7 @@ exports.getChart = async (req, res, next) => {
           '2023-05-26', '2023-05-30', '2023-05-31', '2023-06-01', '2023-06-02', '2023-06-05', '2023-06-06', '2023-06-07', '2023-06-08', '2023-06-09',
           '2023-06-12', '2023-06-13', '2023-06-14', '2023-06-15', '2023-06-16', '2023-06-20', '2023-06-21', '2023-06-22', '2023-06-23', '2023-06-26',
           '2023-06-27', '2023-06-28', '2023-06-29', '2023-06-30', '2023-07-03', '2023-07-05', '2023-07-06', '2023-07-07', '2023-07-10', '2023-07-11',
-          '2023-07-12', '2023-07-13', '2023-07-14', '2023-07-17', '2023-07-18', '2023-07-19', '2023-07-20', '2023-07-21', '2023-07-24', '2023-07-25'
+          '2023-07-12', '2023-07-13', '2023-07-14', '2023-07-17', '2023-07-18', '2023-07-19', '2023-07-20', '2023-07-21', '2023-07-24', '2023-07-25',
         ];
         closing = [
           '251.1100', '255.2900', '256.8700', '254.1500', '253.7000', '252.3200', '248.5900', '253.9200', '260.7900', '265.4400', '276.2000', '279.4300',
@@ -471,7 +471,7 @@ exports.getChart = async (req, res, next) => {
           '332.8900', '331.2100', '328.3900', '332.5800', '335.4000', '335.9400', '333.6800', '323.3800', '325.2600', '326.7900', '331.8500', '334.2900',
           '337.3400', '348.1000', '342.3300', '338.0500', '333.5600', '339.7100', '335.0200', '328.6000', '334.5700', '335.8500', '335.0500', '340.5400',
           '337.9900', '338.1500', '341.2700', '337.2200', '331.8300', '332.4700', '337.2000', '342.6600', '345.2400', '345.7300', '359.4900', '355.0800',
-          '346.8700', '343.7700', '345.1100', '350.9800'
+          '346.8700', '343.7700', '345.1100', '350.9800',
         ];
       } else {
         dataType = 'Using data from Alpha Vantage';
@@ -490,7 +490,7 @@ exports.getChart = async (req, res, next) => {
         dataType,
         title: 'Chart',
         dates,
-        closing
+        closing,
       });
     }).catch((err) => {
       next(err);
@@ -501,71 +501,71 @@ exports.getChart = async (req, res, next) => {
  * GET /api/paypal
  * PayPal SDK example.
  */
-exports.getPayPal = (req, res, next) => {
-  paypal.configure({
-    mode: 'sandbox',
-    client_id: process.env.PAYPAL_ID,
-    client_secret: process.env.PAYPAL_SECRET
-  });
-
-  const paymentDetails = {
-    intent: 'sale',
-    payer: {
-      payment_method: 'paypal'
-    },
-    redirect_urls: {
-      return_url: `${process.env.BASE_URL}/api/paypal/success`,
-      cancel_url: `${process.env.BASE_URL}/api/paypal/cancel`
-    },
-    transactions: [{
-      description: 'Hackathon Starter',
-      amount: {
-        currency: 'USD',
-        total: '1.99'
-      }
-    }]
-  };
-
-  paypal.payment.create(paymentDetails, (err, payment) => {
-    if (err) { return next(err); }
-    const { links, id } = payment;
-    req.session.paymentId = id;
-    for (let i = 0; i < links.length; i++) {
-      if (links[i].rel === 'approval_url') {
-        res.render('api/paypal', {
-          approvalUrl: links[i].href
-        });
-      }
-    }
-  });
-};
-
-/**
- * GET /api/paypal/success
- * PayPal SDK example.
- */
-exports.getPayPalSuccess = (req, res) => {
-  const { paymentId } = req.session;
-  const paymentDetails = { payer_id: req.query.PayerID };
-  paypal.payment.execute(paymentId, paymentDetails, (err) => {
-    res.render('api/paypal', {
-      result: true,
-      success: !err
-    });
-  });
-};
-
-/**
- * GET /api/paypal/cancel
- * PayPal SDK example.
- */
-exports.getPayPalCancel = (req, res) => {
-  req.session.paymentId = null;
-  res.render('api/paypal', {
-    result: true,
-    canceled: true
-  });
-};
+// exports.getPayPal = (req, res, next) => {
+//   paypal.configure({
+//     mode: 'sandbox',
+//     client_id: process.env.PAYPAL_ID,
+//     client_secret: process.env.PAYPAL_SECRET
+//   });
+//
+//   const paymentDetails = {
+//     intent: 'sale',
+//     payer: {
+//       payment_method: 'paypal'
+//     },
+//     redirect_urls: {
+//       return_url: `${process.env.BASE_URL}/api/paypal/success`,
+//       cancel_url: `${process.env.BASE_URL}/api/paypal/cancel`
+//     },
+//     transactions: [{
+//       description: 'Hackathon Starter',
+//       amount: {
+//         currency: 'USD',
+//         total: '1.99'
+//       }
+//     }]
+//   };
+//
+//   paypal.payment.create(paymentDetails, (err, payment) => {
+//     if (err) { return next(err); }
+//     const { links, id } = payment;
+//     req.session.paymentId = id;
+//     for (let i = 0; i < links.length; i++) {
+//       if (links[i].rel === 'approval_url') {
+//         res.render('api/paypal', {
+//           approvalUrl: links[i].href
+//         });
+//       }
+//     }
+//   });
+// };
+//
+// /**
+//  * GET /api/paypal/success
+//  * PayPal SDK example.
+//  */
+// exports.getPayPalSuccess = (req, res) => {
+//   const { paymentId } = req.session;
+//   const paymentDetails = { payer_id: req.query.PayerID };
+//   paypal.payment.execute(paymentId, paymentDetails, (err) => {
+//     res.render('api/paypal', {
+//       result: true,
+//       success: !err
+//     });
+//   });
+// };
+//
+// /**
+//  * GET /api/paypal/cancel
+//  * PayPal SDK example.
+//  */
+// exports.getPayPalCancel = (req, res) => {
+//   req.session.paymentId = null;
+//   res.render('api/paypal', {
+//     result: true,
+//     canceled: true
+//   });
+// };
 
 /**
  * GET /api/lob
@@ -583,7 +583,7 @@ exports.getLob = async (req, res, next) => {
     address_line1: '123 Main Street',
     address_city: 'New York',
     address_state: 'NY',
-    address_zip: '94107'
+    address_zip: '94107',
   };
   const addressFrom = {
     name: 'Hackathon Starter',
@@ -591,11 +591,11 @@ exports.getLob = async (req, res, next) => {
     address_city: 'Seattle',
     address_state: 'WA',
     address_zip: '98109',
-    address_country: 'US'
+    address_country: 'US',
   };
 
   const zipData = new ZipEditable({
-    zip_code: addressTo.address_zip
+    zip_code: addressTo.address_zip,
   });
 
   const letterData = new LetterEditable({
@@ -607,7 +607,7 @@ exports.getLob = async (req, res, next) => {
           <body><div class="page"><div class="page-content"><div class="text">
           Hello ${addressTo.name}, <p> We would like to welcome you to the community! Thanks for being a part of the team! <p><p> Cheer,<br>${addressFrom.name}
           </div></div></div></body></html>`,
-    color: false
+    color: false,
   });
 
   try {
@@ -630,7 +630,7 @@ exports.getLob = async (req, res, next) => {
 
 exports.getFileUpload = (req, res) => {
   res.render('api/upload', {
-    title: 'File Upload'
+    title: 'File Upload',
   });
 };
 
@@ -649,7 +649,7 @@ exports.getPinterest = (req, res, next) => {
     .then((response) => {
       res.render('api/pinterest', {
         title: 'Pinterest API',
-        boards: response.data.data
+        boards: response.data.data,
       });
     })
     .catch((error) => {
@@ -676,7 +676,7 @@ exports.postPinterest = (req, res, next) => {
     board: req.body.board,
     note: req.body.note,
     link: req.body.link,
-    image_url: req.body.image_url
+    image_url: req.body.image_url,
   };
 
   axios.post(`https://api.pinterest.com/v1/pins/?access_token=${token.accessToken}`, formData)
@@ -694,32 +694,32 @@ exports.getHereMaps = (req, res) => {
   res.render('api/here-maps', {
     app_id: process.env.HERE_APP_ID,
     app_code: process.env.HERE_APP_CODE,
-    title: 'Here Maps API'
+    title: 'Here Maps API',
   });
 };
 
 exports.getGoogleMaps = (req, res) => {
   res.render('api/google-maps', {
     title: 'Google Maps API',
-    google_map_api_key: process.env.GOOGLE_MAP_API_KEY
+    google_map_api_key: process.env.GOOGLE_MAP_API_KEY,
   });
 };
 
 exports.getGoogleDrive = (req, res) => {
   const token = req.user.tokens.find((token) => token.kind === 'google');
   const authObj = new googledrive.auth.OAuth2({
-    access_type: 'offline'
+    access_type: 'offline',
   });
   authObj.setCredentials({
-    access_token: token.accessToken
+    access_token: token.accessToken,
   });
   const drive = googledrive.drive({
     version: 'v3',
-    auth: authObj
+    auth: authObj,
   });
 
   drive.files.list({
-    fields: 'files(iconLink, webViewLink, name)'
+    fields: 'files(iconLink, webViewLink, name)',
   }, (err, response) => {
     if (err) return console.log(`The API returned an error: ${err}`);
     res.render('api/google-drive', {
@@ -732,15 +732,15 @@ exports.getGoogleDrive = (req, res) => {
 exports.getGoogleSheets = (req, res) => {
   const token = req.user.tokens.find((token) => token.kind === 'google');
   const authObj = new googlesheets.auth.OAuth2({
-    access_type: 'offline'
+    access_type: 'offline',
   });
   authObj.setCredentials({
-    access_token: token.accessToken
+    access_token: token.accessToken,
   });
 
   const sheets = googlesheets.sheets({
     version: 'v4',
-    auth: authObj
+    auth: authObj,
   });
 
   const url = 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit#gid=0';
