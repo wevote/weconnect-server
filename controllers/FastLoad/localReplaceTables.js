@@ -5,6 +5,7 @@ const fs = require('fs');
 const { DateTime } = require('luxon');
 
 
+// eslint-disable-next-line no-unused-vars
 const prisma = new PrismaClient();
 
 const isLocal = async (req) => {
@@ -63,16 +64,12 @@ const backupTheDatabase = async () => {
 
 const emptyTheTable = async (tableName) => {
   try {
-    const file = `WeConnectDBdumpfile${DateTime.now()}`;
-    const command = `pg_dump WeConnectDB > ${file}`;
+    const command = `TRUNCATE TABLE ${tableName};`;
     console.log(command);
-    await prisma.$executeRawUnsafe();
-    // command = `TRUNCATE TABLE ${tableName};`;
-    // console.log(command);
     // await prisma.$executeRawUnsafe();
     return true;
   } catch (error) {
-    console.log({ error });
+    console.log(error);
     return false;
   }
 };
@@ -103,12 +100,14 @@ const fillTheTable = async (tableName, tableJSON) => {
   }
   fs.writeFileSync(outTempFile, tableTSV);
   const sql = `COPY ${tableName} FROM ${outTempFile};`;
+  console.log('fillTheTable', sql);
 };
 
 exports.localReplaceTable = async (req, res) => {
   const { tablePacket: { tableName, tableJSON } } = req.body;
   let success = true;
   let didFill = false;
+  let didEmpty = false;
   let error = '';
 
   // If localReplaceTable was somehow successfully run on the production server
@@ -117,7 +116,7 @@ exports.localReplaceTable = async (req, res) => {
   if (local) {
     backupTheDatabase();
 
-    // const didEmpty = emptyTheTable(tableName);
+    didEmpty = emptyTheTable(tableName);
     didFill = fillTheTable(tableName, tableJSON);
   } else {
     success = false;
@@ -127,6 +126,7 @@ exports.localReplaceTable = async (req, res) => {
   return res.json({
     success,
     error,
+    didEmpty,
     didFill,
     isLocal: local,
   });
