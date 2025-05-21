@@ -1,7 +1,7 @@
-const path = require('path');
-const lusca = require('lusca');
+// const path = require('path');
+// const lusca = require('lusca');
 const passport = require('passport');
-const multer = require('multer');
+// const multer = require('multer');
 
 const passportConfig = require('../strategy/passport');
 const homeController = require('../controllers/home');
@@ -9,7 +9,7 @@ const prismaUserController = require('../controllers/userController');
 const apiController = require('../controllers/futureOptionsApiController');
 const contactController = require('../controllers/contact');
 
-const upload = multer({ dest: path.join(process.env.PATH_FOR_TEMP_FILES, 'uploads') });
+// const upload = multer({ dest: path.join(process.env.PATH_FOR_TEMP_FILES, 'uploads') });
 
 
 // const upload = multer({ dest: path.join(__dirname, 'uploads') });
@@ -54,12 +54,12 @@ module.exports = function (weconnectServer) {
   weconnectServer.get('/api/facebook', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getFacebook);
   weconnectServer.get('/api/github', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getGithub);
   weconnectServer.get('/api/twitch', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getTwitch);
-  weconnectServer.get('/api/paypal', apiController.getPayPal);
-  weconnectServer.get('/api/paypal/success', apiController.getPayPalSuccess);
-  weconnectServer.get('/api/paypal/cancel', apiController.getPayPalCancel);
+  // weconnectServer.get('/api/paypal', apiController.getPayPal);
+  // weconnectServer.get('/api/paypal/success', apiController.getPayPalSuccess);
+  // weconnectServer.get('/api/paypal/cancel', apiController.getPayPalCancel);
   weconnectServer.get('/api/lob', apiController.getLob);
-  weconnectServer.get('/api/upload', lusca({ csrf: true }), apiController.getFileUpload);
-  weconnectServer.post('/api/upload', upload.single('myFile'), lusca({ csrf: true }), apiController.postFileUpload);
+  // weconnectServer.get('/api/upload', lusca({ csrf: true }), apiController.getFileUpload);
+  // weconnectServer.post('/api/upload', upload.single('myFile'), lusca({ csrf: true }), apiController.postFileUpload);
   weconnectServer.get('/api/pinterest', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.getPinterest);
   weconnectServer.post('/api/pinterest', passportConfig.isAuthenticated, passportConfig.isAuthorized, apiController.postPinterest);
   weconnectServer.get('/api/here-maps', apiController.getHereMaps);

@@ -96,11 +96,12 @@ const fillTheTable = async (tableName, tableJSON) => {
   try {
     fs.unlinkSync(outTempFile);
   } catch {
-    // pass
+    // if the file does not exist (not a problem)
   }
   fs.writeFileSync(outTempFile, tableTSV);
   const sql = `COPY ${tableName} FROM ${outTempFile};`;
   console.log('fillTheTable', sql);
+  // don't run command this until I can get the data from the production server
 };
 
 exports.localReplaceTable = async (req, res) => {
