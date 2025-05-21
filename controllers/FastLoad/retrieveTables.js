@@ -72,7 +72,7 @@ exports.getTotalRowCount = async () => {
     const tableName = allowableTables[i];
     // eslint-disable-next-line no-await-in-loop
     rows += await this.getMaxId(tableName);
-    console.log(`rows after ${tableName} --- ${rows}`);
+    console.log(`rows count after ${tableName} --- ${rows}`);
   }
   return rows;
 };

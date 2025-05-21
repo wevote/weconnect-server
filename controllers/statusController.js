@@ -34,5 +34,7 @@ exports.getStatus = async (req, res) => {
     ret.uname = 'uname error';
   }
 
+  ret.host = req.host;
+
   return res.json(ret);
 };
