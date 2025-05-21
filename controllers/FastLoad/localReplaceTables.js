@@ -39,7 +39,7 @@ const backupTheDatabase = async () => {
     const dateSplit = resp?.stdout.split(' ');
     const dateStr = `${dateSplit[14]} ${dateSplit[15]} ${dateSplit[16]}`;
     console.log('RESPONSE', dateStr);
-    let priorFastLoadDate = new DateTime(dateStr);
+    const priorFastLoadDate = new DateTime(dateStr);
 
     //   -rw-r--r--@   1 stevepodell  wheel       0 May 20 16:29 TeamToTeamRoleLink
     // Don't backup local db if the last {table}.sql was written to /tmp within 5 minutes
@@ -58,6 +58,7 @@ const backupTheDatabase = async () => {
     console.log({ error });
     return false;
   }
+  return false;
 };
 
 const emptyTheTable = async (tableName) => {
