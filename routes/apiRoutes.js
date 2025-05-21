@@ -10,6 +10,7 @@ const { jazzGetApplicants, jazzGetUsers } = require('../controllers/jazzHrContro
 const { getStatus } = require('../controllers/statusController');
 const { getAllowableTables } = require('../controllers/FastLoad/allowableTables');
 const { getOneFastLoadTable } = require('../controllers/FastLoad/retrieveTables');
+const { localReplaceTable } = require('../controllers/FastLoad/localReplaceTables');
 
 /**
  * WeConnect API routes.
@@ -46,6 +47,7 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/versions', getStatus);
 
   weconnectServer.post('/apis/v1/fast-load-get-allowable-tables', getAllowableTables);
+  weconnectServer.post('/apis/v1/fast-load-local-table-replace', localReplaceTable);
   weconnectServer.post('/apis/v1/fast-load-table-retrieve', getOneFastLoadTable);
   weconnectServer.post('/apis/v1/get-auth', personApiController.getAuth);
   weconnectServer.post('/apis/v1/google-create-user', googleApiController.googleCreateUserAccount);
