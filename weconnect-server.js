@@ -142,7 +142,7 @@ weconnectServer.use(async (req, res, next) => {
       const personId = await getPersonIdBySessionId(req.sessionID || 0);
       const apiPieces = url.split('/');
       const api = apiPieces[3];
-      if (personId === 0 && !['get-auth', 'send-email-code', 'logout', 'login'].includes(api)) {
+      if (personId === 0 && !['get-auth', 'send-email-code', 'logout', 'login', 'person-retrieve-by-email', 'verify-email-code'].includes(api)) {
         is403 = true;
         console.log(`${method} ${url} 403 (Not authorized)`);  // DO NOT DELETE!:  This will be the only url logging in the console in this case
       } else {
