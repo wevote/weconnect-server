@@ -41,19 +41,19 @@ const backupTheDatabase = async () => {
     console.log('RESPONSE', dateStr);
     let priorFastLoadDate = new DateTime(dateStr);
 
-    if (priorFastLoadDate.plus({minutes: 5}) < DateTime.now() )
-    console.log('RESPONSE', priorFastLoadDate);
-
-    /*
--rw-r--r--@   1 stevepodell  wheel       0 May 20 16:29 TeamToTeamRoleLink
-*/
-    let date = DateTime.now().toISO();    // WeConnectDBdumpfile2025-05-20T16:07:06.075-07:00
-    date = date.slice(0, -10);
-    const file = `WeConnectDBdumpfile.${date}.sql`;
-    command = `pg_dump WeConnectDB > ${file}`;
-    console.log(command);
-    await exec(command);
-    return true;
+    //   -rw-r--r--@   1 stevepodell  wheel       0 May 20 16:29 TeamToTeamRoleLink
+    // Don't backup local db if the last {table}.sql was written to /tmp within 5 minutes
+    if (priorFastLoadDate.plus({ minutes: 5 }) < DateTime.now()) {
+      console.log('RESPONSE', priorFastLoadDate);
+      let date = DateTime.now()
+        .toISO();    // WeConnectDBdumpfile2025-05-20T16:07:06.075-07:00
+      date = date.slice(0, -10);
+      const file = `WeConnectDBdumpfile.${date}.sql`;
+      command = `pg_dump WeConnectDB > ${file}`;
+      console.log(command);
+      await exec(command);
+      return true;
+    }
   } catch (error) {
     console.log({ error });
     return false;
