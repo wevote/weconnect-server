@@ -111,7 +111,7 @@ exports.localReplaceTable = async (req, res) => {
   let didEmpty = false;
   let error = '';
 
-  // If localReplaceTable was somehow successfully run on the production server
+  // If localReplaceTable was somehow run successfully on the production server
   // it would wipe out the production database, so being very careful here
   const local = await isLocal(req);
   if (local) {

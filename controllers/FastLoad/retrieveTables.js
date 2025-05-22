@@ -179,6 +179,12 @@ const anonymizeTempTable = async (tempTableName) => {
         sql = `${sql}"${field}" = '${newLastCapitalized}', `;
       });
 
+      // linkedinUrl
+      if (person.linkedInUrl && person.linkedInUrl.length) {
+        const anon = `http://www.linkedin.com/in/${newFirstName}-${newLastName}`.toLowerCase();
+        sql = `${sql}"linkedInUrl" = '${anon}', `;
+      }
+
       emailFields.forEach((field) => {
         let newEmail = '';
         if (person[field]) {
