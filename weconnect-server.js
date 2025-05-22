@@ -35,6 +35,9 @@ dotenvExpand.expand(dotenv.config());
  */
 const secureTransfer = (process.env.BASE_URL.startsWith('https'));
 
+const ACCESS_PATHS_ALLOWED_PRE_AUTH = ['/', '/favicon.ico', '/health', '/healthapis/v1/versions', '/we-vote-logo-wordmark-vertical-color-on-white-256x256.png'];
+const ACCESS_APIS_ALLOWED_PRE_AUTH = ['answer-list-save', 'get-auth', 'logout', 'login', 'person-retrieve-by-email', 'question-list-retrieve', 'questionnaire-list-retrieve', 'save-password', 'send-email-code', 'task-definition-list-retrieve', 'task-group-list-retrieve', 'task-group-team-link-list-retrieve', 'verify-email-code'];
+
 // Consider adding a proxy such as cloudflare for production.
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -138,17 +141,19 @@ weconnectServer.use(async (req, res, next) => {
   const { cookies, method, sessionID, url } = req;
   let is403 = true;
   try {
-    if (url === '/' || url === '/health') {
+    const apiPieces = url.split('/');
+    const api = apiPieces[3];
+    if (ACCESS_PATHS_ALLOWED_PRE_AUTH.includes(url)) {
+      is403 = false;
+    } else if (api && api.length > 0 && ACCESS_APIS_ALLOWED_PRE_AUTH.includes(api)) {
       is403 = false;
     } else if (cookies && cookies?.WeConnectSession && sessionID) {
       const personId = await getPersonIdBySessionId(req.sessionID || 0);
       // console.log('url:', url);
-      const apiPieces = url.split('/');
-      const api = apiPieces[3];
       // console.log('auth check api', api, ', apiPieces:', apiPieces);
       if (api && api.length === 0) {
         is403 = false;
-      } else if (personId === 0 && !['get-auth', 'logout', 'login', 'person-retrieve-by-email', 'save-password', 'send-email-code', 'verify-email-code'].includes(api)) {
+      } else if (personId === 0 && !ACCESS_APIS_ALLOWED_PRE_AUTH.includes(api)) {
         is403 = true;
         console.log(`${method} ${url} 403 (Not authorized)`);  // DO NOT DELETE!:  This will be the only url logging in the console in this case
       } else {
