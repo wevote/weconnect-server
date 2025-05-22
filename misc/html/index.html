@@ -23,7 +23,7 @@
       if (key === 'git_commit_hash') {
         const lastIndex = response.data[key].lastIndexOf("/");
         const hash = response.data[key].substring(lastIndex + 1);
-        html += `<span>Git Committ Hash</span>
+        html += `<span>Git Commit Hash</span>
                  <span>
                     <a href="${response.data[key]}">${hash}</a>
                  </span>`;

@@ -18,6 +18,7 @@ const contactController = require('../controllers/contact');
  */
 module.exports = function (weconnectServer) {
   weconnectServer.get('/', homeController.index);
+  weconnectServer.get('/health', homeController.index);
   // weconnectServer.get('/login', prismaUserController.getLogin);
   // weconnectServer.post('/login', prismaUserController.login);
   weconnectServer.get('/logout', prismaUserController.logout);
