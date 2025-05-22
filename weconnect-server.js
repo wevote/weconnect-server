@@ -138,13 +138,15 @@ weconnectServer.use(async (req, res, next) => {
   const { cookies, method, sessionID, url } = req;
   let is403 = true;
   try {
-    if (cookies && cookies?.WeConnectSession && sessionID) {
+    if (url === '/' || url === '/health') {
+      is403 = false;
+    } else if (cookies && cookies?.WeConnectSession && sessionID) {
       const personId = await getPersonIdBySessionId(req.sessionID || 0);
       // console.log('url:', url);
       const apiPieces = url.split('/');
       const api = apiPieces[3];
       // console.log('auth check api', api, ', apiPieces:', apiPieces);
-      if (url === '/' || url === '/health' || (api && api.length === 0)) {
+      if (api && api.length === 0) {
         is403 = false;
       } else if (personId === 0 && !['get-auth', 'logout', 'login', 'person-retrieve-by-email', 'save-password', 'send-email-code', 'verify-email-code'].includes(api)) {
         is403 = true;
