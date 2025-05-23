@@ -19,6 +19,7 @@ phases:
     on-failure: ABORT
     commands:
       - echo Build started at $(date)
+      - echo $CODEBUILD_RESOLVED_SOURCE_VERSION > git_commit_hash
       - docker build -f docker/Dockerfile.prod -t $IMAGE_NAME .
   post_build:
     on-failure: ABORT
