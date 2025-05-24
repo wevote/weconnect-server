@@ -47,37 +47,29 @@ const isLocal = async (req) => {
   return true;
 };
 
-const backupTheDatabase = async () => {
-  let priorFastLoadDate =  DateTime.now();  // skip the pg_dump if TeamToTeamRoleLink.tsv does not exist
-  // Since the db files are backed up one-by-one, we want to run the full WeConnectDB backup less often
-  // Find the date of one of the last in the set of temp files
-  let command = 'ls -lat /tmp/ | grep -m1 TeamToTeamRoleLink.tsv';
+const previousBackupTime = async (fileNamePath) => {
   try {
-    try {
-      const resp = await exec(command);
-      // TODO: confirm that the AWS shell has the same ls output.  This logging will do it.
-      console.log('ls of /tmp: ', resp?.stdout);
-      const dateSplit = resp?.stdout.split(' ');
-      const dateStr = `${dateSplit[13]} ${dateSplit[14]} ${dateSplit[15]}`;
-      console.log('ls of /tmp date:', dateStr);
-      priorFastLoadDate = new DateTime(dateStr);
-    } catch (err) {
-      console.log('failed: ', command);
-    }
-
-    if (priorFastLoadDate.plus({ minutes: 5 }) < DateTime.now()) {
-      // console.log('RESPONSE', priorFastLoadDate);
-      let date = DateTime.now().toISO();
-      date = date.slice(0, -10);
-      const file = `WeConnectDBdumpfile.${date}.sql`;  // example: WeConnectDBdumpfile.2025-05-20T16:27:27.sql
-      command = `pg_dump WeConnectDB > ${file}`;
-      console.log(command);
-      await exec(command);
-      return true;
-    }
+    const stats = await fs.statSync(fileNamePath);
+    console.log(stats);
+    return new DateTime(stats.ctime / 1000);
   } catch (error) {
-    console.log({ error });
-    return false;
+    console.log(`Did not find ${error} ${fileNamePath} so do a backup`);
+    return DateTime().minus({ year: 1 });   // set some fake old time
+  }
+};
+
+const backupTheDatabase = async () => {
+  // Since the db files are backed up one-by-one, we want to run the full WeConnectDB backup less often
+  // Find the date of one of the temp files
+  const priorFastLoadDate = await previousBackupTime('/tmp/TeamMember.tsv');
+  if (priorFastLoadDate.plus({ minutes: 5 }) < DateTime.now()) {
+    let date = DateTime.now().toISO();
+    date = date.slice(0, -10);
+    const file = `WeConnectDBdumpfile.${date}.sql`;  // example: WeConnectDBdumpfile.2025-05-20T16:27:27.sql
+    const command = `pg_dump WeConnectDB > ${file}`;
+    console.log(command);
+    await exec(command);
+    return true;
   }
   return false;
 };
