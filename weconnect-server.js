@@ -36,10 +36,8 @@ dotenvExpand.expand(dotenv.config());
 const secureTransfer = (process.env.BASE_URL.startsWith('https'));
 
 const ACCESS_PATHS_ALLOWED_PRE_AUTH = ['/', '/favicon.ico', '/health', '/healthapis/v1/versions', '/we-vote-logo-wordmark-vertical-color-on-white-256x256.png'];
-const ACCESS_APIS_ALLOWED_PRE_AUTH = ['get-auth', 'logout', 'login', 'signup', 'save-password', 'send-email-code', 'verify-email-code', 'person-retrieve-by-email'];
-// This change 5/23/25 will respond with initial 304s to the following APIs:
-//   'answer-list-save', 'question-list-retrieve', 'questionnaire-list-retrieve', 'task-definition-list-retrieve', 'task-group-list-retrieve', 'task-group-team-link-list-retrieve' ];
-// The app still works with these initial 304s, but it would be more elegant if we did not send the requests before the users was authenticated
+const ACCESS_APIS_ALLOWED_PRE_AUTH = ['get-auth', 'logout', 'login', 'signup', 'save-password', 'send-email-code', 'verify-email-code', 'person-retrieve-by-email',
+  'answer-list-save', 'question-list-retrieve', 'questionnaire-list-retrieve', 'task-definition-list-retrieve', 'task-group-list-retrieve', 'task-group-team-link-list-retrieve'];
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

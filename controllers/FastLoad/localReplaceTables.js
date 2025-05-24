@@ -31,7 +31,7 @@ const isLocal = async (req) => {
     // eslint-disable-next-line prefer-destructuring
     const host = req.host;
     // console.log('req.host: ', stdout);
-    if (host.startsWith('teamapi.wevote.org')) {
+    if (host.includes('wevote.org') || host.includes('wevote.us')) {
       console.error('Attempted to run localReplaceTable on host teamapi.wevote.org!');
       return false;
     }
@@ -47,21 +47,32 @@ const isLocal = async (req) => {
   return true;
 };
 
-const previousBackupTime = async (fileNamePath) => {
-  try {
-    const stats = await fs.statSync(fileNamePath);
-    console.log(stats);
-    return new DateTime(stats.ctime / 1000);
-  } catch (error) {
-    console.log(`Did not find ${error} ${fileNamePath} so do a backup`);
-    return DateTime().minus({ year: 1 });   // set some fake old time
+function getMostRecentDumpFileCreationTime () {
+  const files = fs.readdirSync('./');
+
+  if (files.length > 0) {
+    const dumpFiles = [];
+    files.forEach((file) => {
+      if (file.startsWith('WeConnectDBdumpfile')) {
+        dumpFiles.push(file);
+      }
+    });
+
+    if (dumpFiles.length > 0) {
+
+      const sortedFiles = dumpFiles.map((file) => ({
+        name: file,
+        time: fs.statSync(`./${file}`).mtime.getTime(),
+      })).sort((a, b) => b.time - a.time);
+      return new DateTime(sortedFiles[0].time);
+    }
   }
-};
+  return new DateTime().minus({ year: 1 });  // pretend year ago date, so we will do a backup
+}
 
 const backupTheDatabase = async () => {
   // Since the db files are backed up one-by-one, we want to run the full WeConnectDB backup less often
-  // Find the date of one of the temp files
-  const priorFastLoadDate = await previousBackupTime('/tmp/TeamMember.tsv');
+  const priorFastLoadDate = await getMostRecentDumpFileCreationTime();
   if (priorFastLoadDate.plus({ minutes: 5 }) < DateTime.now()) {
     let date = DateTime.now().toISO();
     date = date.slice(0, -10);
