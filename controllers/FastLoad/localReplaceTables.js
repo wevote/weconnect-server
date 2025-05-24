@@ -5,7 +5,7 @@ const fs = require('fs');
 const { DateTime } = require('luxon');
 
 /*
-While debugging this, you can restore the database to where you were before starting this
+While debugging this feature, you can restore the database to where you were before starting the debug run
 We dump the db into a text file in the root of the project
      `pg_dump WeConnectDB > ${file}`
 Use pgAdmin 4 to drop the database Servers/WeVoteServer/Databases/WeConnectDB  -- right click on it and choose 'Delete (Force)'
