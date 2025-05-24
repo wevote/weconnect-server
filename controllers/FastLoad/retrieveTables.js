@@ -205,6 +205,7 @@ const anonymizeTempTable = async (tempTableName) => {
       });
 
       sql = sql.slice(0, -2);
+      sql = sql.replace('\n', '');
       sql += ` WHERE id = '${id}';`;
       // console.log(sql);
       try {

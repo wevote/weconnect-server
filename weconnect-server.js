@@ -36,10 +36,10 @@ dotenvExpand.expand(dotenv.config());
 const secureTransfer = (process.env.BASE_URL.startsWith('https'));
 
 const ACCESS_PATHS_ALLOWED_PRE_AUTH = ['/', '/favicon.ico', '/health', '/healthapis/v1/versions', '/we-vote-logo-wordmark-vertical-color-on-white-256x256.png'];
-const ACCESS_APIS_ALLOWED_PRE_AUTH = ['get-auth', 'logout', 'login', 'signup', 'save-password', 'send-email-code', 'verify-email-code'];
+const ACCESS_APIS_ALLOWED_PRE_AUTH = ['get-auth', 'logout', 'login', 'signup', 'save-password', 'send-email-code', 'verify-email-code', 'person-retrieve-by-email'];
 // The best solution to wanting these apis to be allowed in without authentication, is to not send them until the user is authenticated
 // also if they are sent before authentication, and they get an initial 304, but they get the data without code changes after authentication, those 304s can be ignored.
-//   'answer-list-save', 'person-retrieve-by-email', 'question-list-retrieve', 'questionnaire-list-retrieve', 'task-definition-list-retrieve', 'task-group-list-retrieve', 'task-group-team-link-list-retrieve' ];
+//   'answer-list-save', 'question-list-retrieve', 'questionnaire-list-retrieve', 'task-definition-list-retrieve', 'task-group-list-retrieve', 'task-group-team-link-list-retrieve' ];
 
 // Consider adding a proxy such as cloudflare for production.
 const limiter = rateLimit({
