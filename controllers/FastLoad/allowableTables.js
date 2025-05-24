@@ -28,7 +28,7 @@ exports.allowableTables = [
   'TeamRole',
   'TeamRoleToPersonLink',
   'TeamToTeamRoleLink',
-  'User',
+  // 'User',
   // '_prisma_migrations',
   // 'session',
 ];

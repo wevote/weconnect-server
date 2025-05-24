@@ -382,8 +382,7 @@ const personObjTemplate = {
 
 async function createPerson (updateDict) {
   // eslint-disable-next-line prefer-object-spread
-  const mergedPerson = Object.assign({}, personObjTemplate, updateDict);
-  const person = await prisma.person.create({ data: mergedPerson });
+  const person = await prisma.person.create({ data: updateDict });
   return person;
 }
 
