@@ -37,11 +37,10 @@ const secureTransfer = (process.env.BASE_URL.startsWith('https'));
 
 const ACCESS_PATHS_ALLOWED_PRE_AUTH = ['/', '/favicon.ico', '/health', '/healthapis/v1/versions', '/we-vote-logo-wordmark-vertical-color-on-white-256x256.png'];
 const ACCESS_APIS_ALLOWED_PRE_AUTH = ['get-auth', 'logout', 'login', 'signup', 'save-password', 'send-email-code', 'verify-email-code', 'person-retrieve-by-email'];
-// The best solution to wanting these apis to be allowed in without authentication, is to not send them until the user is authenticated
-// also if they are sent before authentication, and they get an initial 304, but they get the data without code changes after authentication, those 304s can be ignored.
+// This change 5/23/25 will respond with initial 304s to the following APIs:
 //   'answer-list-save', 'question-list-retrieve', 'questionnaire-list-retrieve', 'task-definition-list-retrieve', 'task-group-list-retrieve', 'task-group-team-link-list-retrieve' ];
+// The app still works with these initial 304s, but it would be more elegant if we did not send the requests before the users was authenticated
 
-// Consider adding a proxy such as cloudflare for production.
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10000,               // Limit each IP to 10000 requests per `window` (here, per 15 minutes)
