@@ -435,7 +435,7 @@ const manuallyConfirmEmailUniqueness = async (email) => {
  * @param emailSubmitted
  * @returns {Promise<*>}
  */
-const getUniqueKeyEmail = async (emailSubmitted) => {
+const getUniqueKeyEmail = async (emailSubmitted, returnFullPerson = false) => {
   const emailSubmittedCleaned = validator.normalizeEmail(emailSubmitted, { gmail_remove_dots: false });
   let person = await findOnePerson({ emailPersonal: emailSubmittedCleaned });
   if (Object.keys(person).length === 0) {
@@ -456,7 +456,11 @@ const getUniqueKeyEmail = async (emailSubmitted) => {
     }
   }
   if (Object.keys(person).length > 1) {
-    return person.emailPersonal;
+    if (returnFullPerson) {
+      return person;
+    } else {
+      return person.emailPersonal;
+    }
   }
   // They sent in an invalid email, so fall through
   return emailSubmittedCleaned;

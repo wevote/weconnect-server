@@ -36,7 +36,7 @@ dotenvExpand.expand(dotenv.config());
 const secureTransfer = (process.env.BASE_URL.startsWith('https'));
 
 const ACCESS_PATHS_ALLOWED_PRE_AUTH = ['/', '/favicon.ico', '/health', '/healthapis/v1/versions', '/we-vote-logo-wordmark-vertical-color-on-white-256x256.png'];
-const ACCESS_APIS_ALLOWED_PRE_AUTH = ['get-auth', 'logout', 'login', 'signup', 'save-password', 'send-email-code', 'verify-email-code', 'person-retrieve-by-email',
+const ACCESS_APIS_ALLOWED_PRE_AUTH = ['get-auth', 'logout', 'login', 'signup', 'save-password', 'send-email-code', 'verify-email-code', 'person-id-retrieve-by-email',
   'answer-list-save', 'question-list-retrieve', 'questionnaire-list-retrieve', 'task-definition-list-retrieve', 'task-group-list-retrieve', 'task-group-team-link-list-retrieve'];
 
 const limiter = rateLimit({
@@ -166,8 +166,8 @@ weconnectServer.use(async (req, res, next) => {
     console.error('Exception while validating session for API request', error);
   }
   if (is403) {
-    // console.log('auth check 403 at bottom', url);
-    res.status(403).send('Forbidden, Not authorized');
+    console.log('auth check 403 at bottom', url);
+    res.status(403).send({ message: 'Forbidden, Not authorized', data: []});
   } else {
     // console.log('auth check url  NEXT', url);
     next();
