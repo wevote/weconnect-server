@@ -27,8 +27,9 @@
                  <span>
                     <a href="${response.data[key]}">${hash}</a>
                  </span>`;
+      } else if (key === 'git_committed_date') {
+        html += `<span>Git Committed Date</span><span>${response.data[key]}</span>`;
       } else {
-
         html += `<span>${key}</span><span>${response.data[key]}</span>`;
       }
     });
