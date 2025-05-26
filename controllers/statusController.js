@@ -5,27 +5,37 @@ const { DateTime } = require('luxon');
 
 exports.getStatus = async (req, res) => {
   const ret = {};
+  let hash = '';
+  let hashURL = '';
+  let text = '';
 
   try {
-    let hash = fs.readFileSync('./git_commit_hash', 'utf8');
+    hash = fs.readFileSync('./git_commit_hash', 'utf8');
     hash = hash.trim();
-    ret.git_commit_hash = `https://github.com/wevote/weconnect-server/commit/${hash}`;
+    hashURL = `https://github.com/wevote/weconnect-server/commit/${hash}`;
+    const response = await fetch(hashURL);
+    text = await response.text();
+  } catch (error) {
+    console.log(error);
+  }
+
+  try {
+    const pr = text.match(/"Merge pull request (.*?)wevote/);
+    ret.Pull_request = pr[1].slice(0, -2);
+    const dateStringResults = text.match(/"committedDate":"(.*?)"/);
+    console.log(dateStringResults[1]);
+    const date = new DateTime(dateStringResults[1]);
+    ret.Git_committed_date = date.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
+  } catch (error) {
+    console.log(error);
+  }
+
+  try {
+    ret.Git_commit_hash = `<a href="${hashURL}">${hash}</a>`;
   } catch (error) {
     ret.uname = 'uname error';
   }
 
-  try {
-    const response = await fetch(ret.git_commit_hash);
-    const text = await response.text();
-    const dateStringResults = text.match(/"committedDate":"(.*?)"/);
-    console.log(dateStringResults[1]);
-    const date = new DateTime(dateStringResults[1]);
-    ret.git_committed_date = date.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
-    const pr = text.match(/"Merge pull request (.*?)wevote/);
-    ret.PR = pr[1].slice(0, -2);
-  } catch (error) {
-    console.log(error);
-  }
 
   try {
     const { stdout: node } = await exec('node --version');
