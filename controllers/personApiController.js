@@ -244,6 +244,10 @@ exports.personIdRetrieveByEmail = async (request, response) => {
   response.json(jsonData);
 };
 
+/**
+ * GET /api/v1/person-retrieve
+ * Retrieve one person by id.
+ */
 exports.personRetrieve = async (request, response) => {
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
