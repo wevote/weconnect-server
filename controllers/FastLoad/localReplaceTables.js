@@ -124,16 +124,20 @@ const fillTheTable = async (tableName, tableJSON) => {
   } catch {
     console.log(`Did not find ${tableName} so an old copy was not removed.`);
   }
-  fs.writeFileSync(outTempFile, tableTSV);
-  const sql = `COPY "${tableName}" FROM '${outTempFile}';`;
-  const set = 'SET session_replication_role = \'replica\';';
-  const unset = 'SET session_replication_role = \'origin\';';
-  await prisma.$queryRawUnsafe(set);
-  console.log('fillTheTable queryRawUnsafe: ', sql);
-  await prisma.$queryRawUnsafe(sql);
-  console.log('fillTheTable queryRawUnsafe: ', set);
-  await prisma.$queryRawUnsafe(unset);
-  console.log('fillTheTable queryRawUnsafe: ', unset);
+  try {
+    fs.writeFileSync(outTempFile, tableTSV);
+    const sql = `COPY "${tableName}" FROM '${outTempFile}';`;
+    const set = 'SET session_replication_role = \'replica\';';
+    const unset = 'SET session_replication_role = \'origin\';';
+    await prisma.$queryRawUnsafe(set);
+    console.log('fillTheTable queryRawUnsafe: ', sql);
+    await prisma.$queryRawUnsafe(sql);
+    console.log('fillTheTable queryRawUnsafe: ', set);
+    await prisma.$queryRawUnsafe(unset);
+    console.log('fillTheTable queryRawUnsafe: ', unset);
+  } catch (err) {
+    console.error(`Error in writing ${tableName}: ${err}`);
+  }
 };
 
 // Some fields have '\n' in the strings, clean them out.  Ideally we would have never saved strings like this.

@@ -48,7 +48,7 @@ exports.makeTempTable = async (tableName, tempTableName) => {
  * @param tableName
  * @returns {Promise<number|*>} the number of rows
  */
-const getMaxId = async (tableName) => {
+exports.getMaxId = async (tableName) => {
   try {
     const query = `SELECT MAX(id) FROM "${tableName}";`;
     // const result = await prisma.$queryRaw{query}`;
@@ -107,7 +107,7 @@ const anonymizeTempTable = async (tempTableName) => {
   const lastNameFields = [];
   const emailFields = [];
 
-  const maxId = await getMaxId(tempTableName);
+  const maxId = await this.getMaxId(tempTableName);
 
   try {
     const query = `SELECT column_name

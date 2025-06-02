@@ -203,6 +203,48 @@ exports.personRetrieveByEmail = async (request, response) => {
 };
 
 /**
+ * GET /api/v1/person-id-retrieve-by-email
+ * Retrieve a safe subset of a person that can be accessed without authentication
+ */
+exports.personIdRetrieveByEmail = async (request, response) => {
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const params = new URLSearchParams(parsedUrl.search);
+  let emailSubmitted;
+  // eslint-disable-next-line no-restricted-syntax
+  for (const p of params) {
+    if (p[0] === 'email') {
+      emailSubmitted = p[1];
+    }
+  }
+
+  const jsonData = {
+    status: '',
+    success: false,
+    personFound: false,
+    emailPersonal: '',
+    emailOfficial: '',
+    id: -1,
+  };
+  try {
+    const person = await getUniqueKeyEmail(emailSubmitted, true);
+    if (Object.keys(person).length > 1) {
+      jsonData.emailOfficial = person.emailOfficial;
+      jsonData.emailPersonal = person.emailPersonal;
+      jsonData.id = person.id;
+      jsonData.success = true;
+      jsonData.personFound = true;
+      jsonData.status += 'PERSON_FOUND ';
+    } else {
+      jsonData.status += 'PERSON_NOT_FOUND ';
+      jsonData.error = person;
+    }
+  } catch (err) {
+    jsonData.status += err.message;
+  }
+  response.json(jsonData);
+};
+
+/**
  * GET /api/v1/person-retrieve
  * Retrieve one person by id.
  */
