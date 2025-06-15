@@ -59,7 +59,6 @@ function getMostRecentDumpFileCreationTime () {
     });
 
     if (dumpFiles.length > 0) {
-
       const sortedFiles = dumpFiles.map((file) => ({
         name: file,
         time: fs.statSync(`./${file}`).mtime.getTime(),
