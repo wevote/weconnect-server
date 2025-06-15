@@ -36,8 +36,12 @@ dotenvExpand.expand(dotenv.config());
 const secureTransfer = (process.env.BASE_URL.startsWith('https'));
 
 const ACCESS_PATHS_ALLOWED_PRE_AUTH = ['/', '/favicon.ico', '/health', '/healthapis/v1/versions', '/we-vote-logo-wordmark-vertical-color-on-white-256x256.png'];
-const ACCESS_APIS_ALLOWED_PRE_AUTH = ['get-auth', 'logout', 'login', 'signup', 'save-password', 'send-email-code', 'verify-email-code', 'person-id-retrieve-by-email',
-  'answer-list-save', 'question-list-retrieve', 'questionnaire-list-retrieve', 'task-definition-list-retrieve', 'task-group-list-retrieve', 'task-group-team-link-list-retrieve'];
+const ACCESS_APIS_ALLOWED_PRE_AUTH = [
+  'answer-list-save', 'get-auth', 'login', 'logout', 'person-id-retrieve-by-email',
+  'question-list-retrieve', 'questionnaire-list-retrieve', 'save-password', 'send-email-code', 'signup',
+  'task-definition-list-retrieve', 'task-group-list-retrieve', 'task-group-team-link-list-retrieve',
+  'verify-email-code', 'versions',
+];
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -206,7 +210,7 @@ weconnectServer.use('/webfonts', express.static(path.join(__dirname, 'node_modul
 // Middleware function to log HTTP requests
 weconnectServer.use((req, res, next) => {
   const start = Date.now();
-  let url = req.url;
+  let { url } = req;
   if (url.length > 100) {
     url = `${url.substring(0, 100)}...`;
   }

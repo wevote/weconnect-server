@@ -14,7 +14,8 @@
 <script>
   const now = new Date();
   const datetime = now.toLocaleString();
-  const url = `${window.location.href}apis/v1/versions`;
+  const url = `${window.location.href}apis/v1/versions`.replace('/healthapis', '');
+
   axios.get(url).then((response) => {
     const keys = Object.keys(response.data);
     let html = '<div style="padding: 10px; display: grid; grid-template-columns: 8% auto" >'
