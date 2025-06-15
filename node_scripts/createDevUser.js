@@ -35,7 +35,7 @@ const createDevUser = async (args) => {
     });
     console.log('person created id #', person.id);
   } catch (error) {
-    if (error.code === "P2002") {
+    if (error.code === 'P2002') {
       console.log(error.message);
       console.log('person creation error: The person already exists (unique email required)');
     } else {
