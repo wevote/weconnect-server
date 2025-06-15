@@ -83,6 +83,7 @@ const createPersonUpdateDict = (row, i) => {
     let cleaned = dashedParts.length > 1 ? dashedParts[0] : who;
     const nickName = cleaned.match(/.*?\((.*?)\).*?/);
     if (nickName && nickName[1]) {
+      // eslint-disable-next-line prefer-destructuring
       dict.firstNamePreferred = nickName[1];
       cleaned = cleaned.replace(/\((.*?)\)\s/, '');
     }

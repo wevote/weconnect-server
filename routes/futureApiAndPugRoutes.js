@@ -16,7 +16,7 @@ const contactController = require('../controllers/contact');
 /**
  * Primary app routes for server based example Pug UI.
  */
-module.exports = function (weconnectServer) {
+module.exports = function futureRoutes (weconnectServer) {
   weconnectServer.get('/', homeController.index);
   weconnectServer.get('/health', homeController.index);
   // weconnectServer.get('/login', prismaUserController.getLogin);
