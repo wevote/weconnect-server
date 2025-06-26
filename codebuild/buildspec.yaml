@@ -10,11 +10,8 @@ phases:
       - IMAGE_TAG=${COMMIT_HASH:=build}
       - ECR_LOGIN_HOST=$(echo $REPO_URI | sed 's#/.*##')
       - IMAGE_NAME="weconnect-server:latest"
-      - |
-        if [[ -z "$PR_BUILD" ]]; then
-          echo Logging into ECR
-          aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_LOGIN_HOST
-        fi
+      - echo Logging into ECR
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_LOGIN_HOST
   build:
     on-failure: ABORT
     commands:
@@ -24,15 +21,12 @@ phases:
   post_build:
     on-failure: ABORT
     commands:
-      - |
-        if [[ -z "$PR_BUILD" ]]; then
-          echo Tagging docker images
-          docker tag $IMAGE_NAME $REPO_URI:$IMAGE_TAG
-          docker tag $IMAGE_NAME $REPO_URI:latest
-          echo Pushing docker images to ECR
-          docker push $REPO_URI:$IMAGE_TAG
-          docker push $REPO_URI:latest
-        fi
+      - echo Tagging docker images
+      - docker tag $IMAGE_NAME $REPO_URI:$IMAGE_TAG
+      - docker tag $IMAGE_NAME $REPO_URI:latest
+      - echo Pushing docker images to ECR
+      - docker push $REPO_URI:$IMAGE_TAG
+      - docker push $REPO_URI:latest
       - echo Writing image definitions
       - printf "[{\"name\":\"$ECS_CONTAINER_NAME\",\"imageUri\":\"$REPO_URI:$IMAGE_TAG\"}]" > imagedefinitions.json
 artifacts:
