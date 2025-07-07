@@ -8,6 +8,7 @@ const homeController = require('../controllers/home');
 const prismaUserController = require('../controllers/userController');
 const apiController = require('../controllers/futureOptionsApiController');
 const contactController = require('../controllers/contact');
+const { getStatus } = require('../controllers/statusController');
 
 // const upload = multer({ dest: path.join(process.env.PATH_FOR_TEMP_FILES, 'uploads') });
 
@@ -19,6 +20,7 @@ const contactController = require('../controllers/contact');
 module.exports = function futureRoutes (weconnectServer) {
   weconnectServer.get('/', homeController.index);
   weconnectServer.get('/health', homeController.index);
+  weconnectServer.get('/healthapis/v1/versions', getStatus); // Replace with /apis/v1/versions?
   // weconnectServer.get('/login', prismaUserController.getLogin);
   // weconnectServer.post('/login', prismaUserController.login);
   weconnectServer.get('/logout', prismaUserController.logout);
