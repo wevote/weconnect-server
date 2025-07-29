@@ -1,4 +1,5 @@
 const { google } = require('googleapis');
+const { getGoogleAuth } = require('./googleAuth');
 
 // Key urls for admin, drive, datatransfer, & user apis
 // https://admin.google.com/u/6/ac/accountsettings
@@ -10,43 +11,6 @@ const { google } = require('googleapis');
 // https://developers.google.com/workspace/drive/api/reference/rest/v3/files/list?apix_params=%7B%22includeTeamDriveItems%22%3Atrue%2C%22supportsTeamDrives%22%3Atrue%7D
 // https://developers.google.com/oauthplayground/   to generate a bearer token for curl tests of apis
 
-const getAuth = async () => {
-  let auth;
-  // console.log('Getting auth process.env.GOOGLE_SUPER_ADMIN_EMAIL:', process.env.GOOGLE_SUPER_ADMIN_EMAIL);
-  // Note on scopes: Need to add new ones to https://admin.google.com/ac/owl/domainwidedelegation
-  // and (rarely needed) enable the API at https://console.cloud.google.com/apis/dashboard?invt=Abuqxg&project=weconnectserverapp
-  let keyFileJson;
-  try {
-    const keyFileJsonRaw = process.env.GOOGLEAPIS_JSON_WEB_TOKEN;
-    keyFileJson = JSON.parse(keyFileJsonRaw);
-  } catch (error) {
-    console.error('GOOGLEAPIS_JSON_WEB_TOKEN Missing');
-    keyFileJson = JSON.parse('{}'); // default to empty object if error
-  }
-  await google.auth.getClient({
-    credentials: keyFileJson,
-    scopes: [
-      'https://www.googleapis.com/auth/admin.directory.group',
-      'https://www.googleapis.com/auth/admin.directory.group.member',
-      'https://www.googleapis.com/auth/admin.directory.user',
-      'https://www.googleapis.com/auth/admin.directory.user.readonly',
-      'https://www.googleapis.com/auth/cloud-platform',
-      'https://www.googleapis.com/auth/drive',
-      'https://www.googleapis.com/auth/admin.datatransfer',
-      'https://www.googleapis.com/auth/drive.metadata.readonly',
-    ],
-    clientOptions: {
-      subject: process.env.GOOGLE_SUPER_ADMIN_EMAIL,
-    },
-  }).then(
-    (authReturned) => {
-      auth = authReturned;
-      // console.log('oAuth2 successful ');
-    },
-    (err) => { console.error('Error signing in', err); },
-  );
-  return auth;
-};
 
 /**
  * Get info about one user.
@@ -354,7 +318,8 @@ async function resetUserPassword (adminClient, primaryEmail, newPassword) {
  */
 exports.googleDriveTransferOwnership = async (request, response) => {
   const { oldOwnersEmail, newOwnersEmail } = request.body;
-  const auth = await getAuth();
+  const isWeVoteEducationC3 = true;  // Only operate on @wevoteeducation.org users
+  const auth = await getGoogleAuth(isWeVoteEducationC3);
   const adminClient = google.admin({ version: 'directory_v1', auth });
   const transferClient = google.admin({ version: 'datatransfer_v1', auth });
   let serverResponse = {};
@@ -415,9 +380,10 @@ exports.googleDriveTransferOwnership = async (request, response) => {
  * @param response
  * @returns {Promise<*>}
  */
-exports.googleRevokeShare = async (request, response) => {
+exports.googleDriveRevokeShare = async (request, response) => {
   const { ownersEmail } = request.body;
-  const auth = await getAuth();
+  const isWeVoteEducationC3 = true;  // Only operate on @wevoteeducation.org users
+  const auth = await getGoogleAuth(isWeVoteEducationC3);
   const driveClient = google.drive({ version: 'v3', auth });
   let pageToken = null;
   let filesRevoked = '';
@@ -490,7 +456,9 @@ exports.googleRevokeShare = async (request, response) => {
 exports.googleGetUserInfo = async (request, response) => {
   try {
     const { primaryEmail } = request.body;
-    const auth = await getAuth();
+    const isWeVoteEducationC3 = true;     // Only operate on @wevoteeducation.org users
+    const auth = await getGoogleAuth(isWeVoteEducationC3);
+
     const adminClient = google.admin({ version: 'directory_v1', auth });
     const user = await getOneUser(adminClient, primaryEmail);
     // console.log('primaryEmail:', primaryEmail, ', Google User:', user);
@@ -538,7 +506,8 @@ exports.googleGetUserInfo = async (request, response) => {
  * Use the Google Admin SDK Directory API to add a new user to the WeVote Google organization
  */
 exports.googleGetUserList = async (request, response) => {
-  const auth = await getAuth();
+  const isWeVoteEducationC3 = true;  // Only operate on @wevoteeducation.org users
+  const auth = await getGoogleAuth(isWeVoteEducationC3);
   const adminClient = google.admin({ version: 'directory_v1', auth });
   const users = await listUsers(adminClient);
 
@@ -551,7 +520,8 @@ exports.googleGetUserList = async (request, response) => {
  */
 exports.googleCreateUserAccount = async (request, response) => {
   const { personalEmail, primaryEmail, firstName, lastName, password, phoneNumber } = request.body;
-  const auth = await getAuth();
+  const isWeVoteEducationC3 = true;  // Only operate on @wevoteeducation.org users
+  const auth = await getGoogleAuth(isWeVoteEducationC3);
   const adminClient = google.admin({ version: 'directory_v1', auth });
   const ret = await createUser(adminClient, primaryEmail, personalEmail, firstName, lastName, password, phoneNumber);
 
@@ -564,7 +534,9 @@ exports.googleCreateUserAccount = async (request, response) => {
  */
 exports.googleDeleteUserAccount = async (request, response) => {
   const { primaryEmail } = request.body;
-  const auth = await getAuth();
+  const isWeVoteEducationC3 = true;  // Only operate on @wevoteeducation.org users
+  const auth = await getGoogleAuth(isWeVoteEducationC3);
+
   const adminClient = google.admin({ version: 'directory_v1', auth });
   const ret = await deleteUser(adminClient, primaryEmail);
 
@@ -577,7 +549,9 @@ exports.googleDeleteUserAccount = async (request, response) => {
  */
 exports.googleResetUserPassword = async (request, response) => {
   const { primaryEmail, newPassword } = request.body;
-  const auth = await getAuth();
+  const isWeVoteEducationC3 = true;  // Only operate on @wevoteeducation.org users
+  const auth = await getGoogleAuth(isWeVoteEducationC3);
+
   const adminClient = google.admin({ version: 'directory_v1', auth });
   const ret = await resetUserPassword(adminClient, primaryEmail, newPassword);
 
@@ -589,7 +563,8 @@ exports.googleResetUserPassword = async (request, response) => {
  * Use the Google Drive SDK Directory API to list the files in the drive
  */
 exports.googleDriveListFiles = async (request, response) => {
-  const auth = await getAuth();
+  const isWeVoteEducationC3 = true;  // might want to enhance someday
+  const auth = await getGoogleAuth(isWeVoteEducationC3);
   const driveClient = google.drive({ version: 'v3', auth });
   const filesToReturn = await listDriveFiles(driveClient);
   return response.json(filesToReturn);
@@ -600,18 +575,22 @@ exports.googleDriveListFiles = async (request, response) => {
  * Use the Google Drive SDK Directory API to grant access (share) directories in the drive
  */
 exports.googleShareDriveAccess = async (request, response) => {
-  const { primaryEmail, driveFolder, driveFolderId: driveFolderIdIncoming, role } = request.body;
+  const { primaryEmail, driveFolder, isWeVoteEducationC3, driveFolderId: driveFolderIdIncoming, role } = request.body;
   let status = '';
   let success = false;
-  let driveFolderId = '';
+  let driveFolderId;
   let error = '';
-  const auth = await getAuth();
+  const auth = await getGoogleAuth(isWeVoteEducationC3);
   const driveClient = google.drive({ version: 'v3', auth });
+  // console.log('isWeVoteEducationC3', isWeVoteEducationC3);
+  // console.log('google auth service account: ', driveClient?.context?._options?.auth?.email);
+  // console.log('google auth subject: ', driveClient?.context?._options?.auth?.subject);
+  // // console.log(JSON.stringify(driveClient));
   status += `primaryEmail: ${primaryEmail}, driveFolderIdIncoming: ${driveFolderIdIncoming} `;
   console.log(status);
   if (driveFolderIdIncoming) {
     driveFolderId = driveFolderIdIncoming;
-  } else if (driveFolder && driveFolder.length === 0) {
+  } else if (driveFolder && driveFolder.length) {
     driveFolderId = await driveIdForDirectory(driveClient, driveFolder);
   }
   if (!driveFolderId || !primaryEmail) {
@@ -628,7 +607,7 @@ exports.googleShareDriveAccess = async (request, response) => {
         fileId: driveFolderId,
         requestBody: {
           type: 'user',         // Or 'group'
-          role,                 // 'reader', 'commenter', 'writer', or 'owner'
+          role,                 // 'writer', 'reader', 'commenter', , or 'owner'
           emailAddress: primaryEmail,
         },
         fields: 'id',
