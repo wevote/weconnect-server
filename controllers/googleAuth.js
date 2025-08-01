@@ -1,5 +1,6 @@
 const { google } = require('googleapis');
 
+// eslint-disable-next-line no-unused-vars
 exports.getGoogleAuth = async (isWeVoteEducationC3) => {
   let auth;
   // console.log('Getting auth  process.env.GOOGLE_SUPER_ADMIN_EMAIL:', process.env.GOOGLE_SUPER_ADMIN_EMAIL);
@@ -7,7 +8,7 @@ exports.getGoogleAuth = async (isWeVoteEducationC3) => {
   // and (rarely needed) enable the API at https://console.cloud.google.com/apis/dashboard?invt=Abuqxg&project=weconnectserverapp
   let keyFileJson;
   try {
-    const keyFileJsonRaw = isWeVoteEducationC3 ? process.env.GOOGLEAPIS_JSON_WEB_TOKEN : process.env.GOOGLEAPIS_JSON_WEB_TOKEN;
+    const keyFileJsonRaw = process.env.GOOGLEAPIS_JSON_WEB_TOKEN;  // doesn't matter, relies on api.superadminuser@wevoteeducation.org, not differing JWTs    isWeVoteEducationC3 ? process.env.GOOGLEAPIS_JSON_WEB_TOKEN : process.env.GOOGLEAPIS_JSON_WEB_TOKEN_C4;
     keyFileJson = JSON.parse(keyFileJsonRaw);
   } catch (error) {
     console.error('GOOGLEAPIS_JSON_WEB_TOKEN Missing');

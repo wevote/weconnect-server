@@ -318,7 +318,7 @@ async function resetUserPassword (adminClient, primaryEmail, newPassword) {
  */
 exports.googleDriveTransferOwnership = async (request, response) => {
   const { oldOwnersEmail, newOwnersEmail } = request.body;
-  const isWeVoteEducationC3 = true;  // Only operate on @wevoteeducation.org users
+  const isWeVoteEducationC3 = true;
   const auth = await getGoogleAuth(isWeVoteEducationC3);
   const adminClient = google.admin({ version: 'directory_v1', auth });
   const transferClient = google.admin({ version: 'datatransfer_v1', auth });
@@ -382,7 +382,7 @@ exports.googleDriveTransferOwnership = async (request, response) => {
  */
 exports.googleDriveRevokeShare = async (request, response) => {
   const { ownersEmail } = request.body;
-  const isWeVoteEducationC3 = true;  // Only operate on @wevoteeducation.org users
+  const isWeVoteEducationC3 = true;
   const auth = await getGoogleAuth(isWeVoteEducationC3);
   const driveClient = google.drive({ version: 'v3', auth });
   let pageToken = null;
@@ -563,7 +563,7 @@ exports.googleResetUserPassword = async (request, response) => {
  * Use the Google Drive SDK Directory API to list the files in the drive
  */
 exports.googleDriveListFiles = async (request, response) => {
-  const isWeVoteEducationC3 = true;  // might want to enhance someday
+  const isWeVoteEducationC3 = true;
   const auth = await getGoogleAuth(isWeVoteEducationC3);
   const driveClient = google.drive({ version: 'v3', auth });
   const filesToReturn = await listDriveFiles(driveClient);
@@ -585,7 +585,7 @@ exports.googleShareDriveAccess = async (request, response) => {
   // console.log('isWeVoteEducationC3', isWeVoteEducationC3);
   // console.log('google auth service account: ', driveClient?.context?._options?.auth?.email);
   // console.log('google auth subject: ', driveClient?.context?._options?.auth?.subject);
-  // // console.log(JSON.stringify(driveClient));
+  // console.log(JSON.stringify(driveClient));
   status += `primaryEmail: ${primaryEmail}, driveFolderIdIncoming: ${driveFolderIdIncoming} `;
   console.log(status);
   if (driveFolderIdIncoming) {
