@@ -56,8 +56,9 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.post('/apis/v1/google-get-user-info', googleApiController.googleGetUserInfo);
   weconnectServer.post('/apis/v1/google-get-user-list', googleApiController.googleGetUserList);
   weconnectServer.post('/apis/v1/google-reset-user-password', googleApiController.googleResetUserPassword);
-  weconnectServer.post('/apis/v1/google-revoke-sharing', googleApiController.googleRevokeShare);
+  weconnectServer.post('/apis/v1/google-revoke-sharing', googleApiController.googleDriveRevokeShare);
   weconnectServer.post('/apis/v1/google-share-drive-access', googleApiController.googleShareDriveAccess);
+  weconnectServer.post('/apis/v1/google-drive-list-files', googleApiController.googleDriveListFiles);
   weconnectServer.post('/apis/v1/google-transfer-drive-access', googleApiController.googleDriveTransferOwnership);
   weconnectServer.post('/apis/v1/jazz-get-applicants', jazzGetApplicants);
   weconnectServer.post('/apis/v1/jazz-get-users', jazzGetUsers);

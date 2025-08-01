@@ -20,7 +20,7 @@
 
   axios.get(url).then((response) => {
     const keys = Object.keys(response.data);
-    let html = '<div style="padding: 10px; display: grid; grid-template-columns: 8% auto" >'
+    let html = '<div style="padding: 10px; display: grid; grid-template-columns: 10% auto" >'
     // html += `<span>Date</span><span>${datetime}</span>`;
     keys.forEach((key) => {
       html += `<span>${key.replaceAll('_', ' ')}:</span><span>${response.data[key]}</span>`;
