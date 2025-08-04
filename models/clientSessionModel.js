@@ -42,6 +42,7 @@ async function getPersonIdBySessionId (sessionID) {
 async function createSessionRecord (personId, sessionID, userAgent) {
   try {
     const dateExpires = isoFutureDateDays(14);
+    // eslint-disable-next-line no-unused-vars
     const session = await prisma.clientSession.upsert({
       where: {
         personId,
@@ -57,7 +58,7 @@ async function createSessionRecord (personId, sessionID, userAgent) {
         dateExpires,
       },
     });
-    console.log('session added or updated: ', session.id, session.sessionID);
+    // console.log('creating session (or updating session): ', session.id, session.sessionID);
   } catch (e) {
     console.log('session NOT added: ', e);
   }
