@@ -143,6 +143,7 @@ weconnectServer.use((req, res, next) => {
 // Check for authenticated Person when handling API requests
 weconnectServer.use(async (req, res, next) => {
   const { cookies, method, sessionID, url } = req;
+  // console.log(`AUTH session: ${sessionID} cookies?.WeConnectSession: ${cookies?.WeConnectSession}`);
   let is403 = true;
   try {
     const apiPieces = url.split('/');

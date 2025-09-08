@@ -183,20 +183,28 @@ exports.personListRetrieve = async (request, response) => {
 exports.personRetrieveByEmail = async (request, response) => {
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
-  const emailPersonal = queryParams.get('emailPersonal');
+  const email = queryParams.get('email');
   let filteredPerson = {};
   try {
-    let person = await findOnePerson({ emailPersonal });
-    if (Object.keys(person).length === 0) {
-      // Fallback if they sent in emailOfficial instead of emailPersonal
-      const personList = await findPersonListByParams({ emailOfficial: emailPersonal }, true);
-      person = personList[0];   // It should not be possible to have multiple persons with the same emailOffical
+    const personList = await findPersonListByParams({ OR: [
+      { emailPersonal: email },
+      { emailOfficial: email },
+    ]});
+    const person = personList.length && personList[0];   // It should not be possible to have multiple persons with the same emailOffical
+    if (person === 0) {
+      filteredPerson.status = 'person not found';
+      filteredPerson.personFound = false;
+      filteredPerson.success = false;
+    } else {
+      filteredPerson = removeProtectedFieldsFromPerson(person);
+      filteredPerson.status = '';
+      filteredPerson.personFound = true;
+      filteredPerson.success = true;
     }
-    filteredPerson = removeProtectedFieldsFromPerson(person);
-    filteredPerson.status = '';
-    filteredPerson.success = true;
   } catch (err) {
+    // console.log('Error while saving person retrieveByEmail:', err);
     filteredPerson.status = err.message;
+    filteredPerson.personFound = false;
     filteredPerson.success = false;
   }
   response.json(filteredPerson);
@@ -647,7 +655,14 @@ exports.sendEmailCode = async (req, res) => {
     const { personId } = req.body;
 
     const person = await findPersonById(personId, true);
+    if (person.id === 0) {
+      return res.json({
+        personFound: false,
+      });
+    }
     const data = sendEmailValidationCode(person);
+    // console.log('sendEmailCode', data);
+    data.personFound = true;
     return res.json(data);
   } catch (error) {
     console.error('Error sending email code:', error);
