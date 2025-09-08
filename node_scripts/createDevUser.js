@@ -17,10 +17,7 @@ const createDevUser = async (args) => {
 
   try {
     const encryptedPwd = await bcrypt.hash(password, 10);
-    const maxId = await getMaxId('Person');
-    const id = parseInt(maxId, 10) + 1;
     const person = await createPerson({
-      id,
       firstName,
       lastName,
       location: 'Oakland, CA',
