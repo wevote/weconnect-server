@@ -373,7 +373,7 @@ stevepodell@Steves-MacBook-Air weconnect-server %
 ```
 <br><br>
 
-## Add `wevotedeveloper.com` to your /etc/hosts file
+## Mac/Linux users ONLY: Add `wevotedeveloper.com` to your /etc/hosts file
 
 Use a macOS command line text editor to edit the `/etc/hosts` file.   Edit the `/etc/hosts` file with nano (or vi or vim).
 
@@ -389,6 +389,39 @@ In the editor add `wevotedeveloper.com` at the end of the first line, so that yo
 127.0.0.1       localhost wevotedeveloper.com
 255.255.255.255 broadcasthost
 ::1             localhost
+```
+
+## Windows users ONLY:  Add `wevotedeveloper.com` to your /etc/hosts file
+
+Edit your hosts file at `C:\Windows\System32\drivers\etc\hosts`  with Notepad running with Admin privileges.
+Add this line at the end of the file
+```
+   127.0.0.1    localhost wevotedeveloper.com
+```
+Then save the hosts file.
+After the edit the file should (something) look like this:
+
+```
+   # Copyright (c) 1993-2009 Microsoft Corp.
+   #
+   # This is a sample HOSTS file used by Microsoft TCP/IP for Windows.
+   # This file contains the mappings of IP addresses to host names. Each
+   # entry should be kept on an individual line. The IP address should
+   # be placed in the first column followed by the corresponding host name.
+   # The IP address and the host name should be separated by at least one
+   # space.
+   #
+   # Additionally, comments (such as these) may be inserted on individual
+   # lines or following the machine name denoted by a '#' symbol.
+   #
+   # For example:
+   #
+   #      102.54.94.97     rhino.acme.com          # source server
+   #       38.25.63.10     x.acme.com              # x client host
+   # localhost name resolution is handled within DNS itself.
+   #	127.0.0.1       localhost
+   #	::1             localhost
+   127.0.0.1    localhost wevotedeveloper.com
 ```
 
 ## Start the app!

@@ -66,7 +66,8 @@ function getMostRecentDumpFileCreationTime () {
       return new DateTime(sortedFiles[0].time);
     }
   }
-  return new DateTime().minus({ year: 1 });  // pretend year ago date, so we will do a backup
+  const now = DateTime.now();
+  return now.minus({ year: 1 });  // pretend year ago date, so we will do a backup
 }
 
 const backupTheDatabase = async () => {

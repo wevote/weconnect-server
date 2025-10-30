@@ -85,6 +85,8 @@ const globalEmailSubstitutions = {};
 
 
 const getTempTableAsJSON = async (tempTableName) => {
+  console.log('getTempTableAsJSON: ', tempTableName);
+
   try {
     const orderBy = !['MeetingAttendee', 'QuestionAnswer', 'Task', 'TaskGroupTeamLink', 'TeamMember'].includes(tempTableName.replace('_temp', ''));
     const query = `SELECT * FROM "${tempTableName}" ${orderBy ? 'ORDER BY id' : ''}`;
@@ -106,6 +108,7 @@ const anonymizeTempTable = async (tempTableName) => {
   const firstNameFields = [];
   const lastNameFields = [];
   const emailFields = [];
+  console.log('tempTableName: ', tempTableName);
 
   const maxId = await this.getMaxId(tempTableName);
 
@@ -223,16 +226,16 @@ const anonymizeTempTable = async (tempTableName) => {
 /**
  * Make the temp file, and get its output as JSON
  * @param tableName
- * @param isAdminAndDoNotAnonymize
+ * @param anonymizeSensitiveData
  * @returns {Promise<string>}
  */
-exports.makeATempTableAndReturnJSON = async (tableName, isAdminAndDoNotAnonymize) => {
+exports.makeATempTableAndReturnJSON = async (tableName, anonymizeSensitiveData) => {
   const tempTableName = `${tableName}_temp`;
   await this.makeTempTable(tableName, tempTableName);
 
-  // Anonymize Person table, if getOneFastLoadTable received doNotAnonymize and person isAdmin
-  if (tableName === 'Person' && !isAdminAndDoNotAnonymize) {
-    await anonymizeTempTable(tempTableName);
+  // Anonymize Person table, if it is 'Person' we don't want sensitive Data sent
+  if (tableName === 'Person' && anonymizeSensitiveData) {
+    return anonymizeTempTable(tempTableName);
   }
 
   return getTempTableAsJSON(tempTableName);
@@ -240,10 +243,11 @@ exports.makeATempTableAndReturnJSON = async (tableName, isAdminAndDoNotAnonymize
 
 exports.getOneFastLoadTable = async (req, res) => {
   const { tableName, doNotAnonymize = false, email = '', password = '' } = req.body;
+  const anonymize = !doNotAnonymize;
+  const personIsAdmin = await doesPersonHaveIsAdmin(email, password);
+  const anonymizeSensitiveData = anonymize && personIsAdmin;
 
-  const isAdminAndDoNotAnonymize = doNotAnonymize && await doesPersonHaveIsAdmin(email, password);
-
-  const tableJSON = await this.makeATempTableAndReturnJSON(tableName, isAdminAndDoNotAnonymize);
+  const tableJSON = await this.makeATempTableAndReturnJSON(tableName, anonymizeSensitiveData);
 
   return res.json({
     tableName,
