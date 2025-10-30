@@ -214,7 +214,7 @@ const anonymizeTempTable = async (tempTableName) => {
       try {
         await prisma.$executeRawUnsafe(sql);
       } catch (error) {
-        console.error('Row UPDATE error', error);
+        console.error('Row UPDATE error', JSON.stringify(error));
       }
     } else {
       console.log(`No data for row ${id} in ${tempTableName}`);
