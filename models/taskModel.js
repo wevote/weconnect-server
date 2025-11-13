@@ -14,6 +14,7 @@ const TASK_DEFINITION_FIELDS_ACCEPTED = {
   questionnaireId: 'INTEGER',
   statusActive: 'BOOLEAN',
   statusOfferApproved: 'BOOLEAN',
+  statusOfferDecisionNeededSetFalse: 'BOOLEAN',
   statusOfferLetterCreated: 'BOOLEAN',
   statusOfferLetterSigned: 'BOOLEAN',
   statusOfferQuestionnaireAnswered: 'BOOLEAN',
@@ -28,6 +29,7 @@ const TASK_DEFINITION_FIELDS_ACCEPTED = {
 
 const TASK_DEFINITION_FIELDS_TO_MAP_TO_PERSON_FIELDS = {
   statusOfferApproved: 'statusOfferApproved',
+  statusOfferDecisionNeededSetFalse: 'statusOfferDecisionNeeded',
   statusOfferLetterCreated: 'statusOfferLetterCreated',
   statusOfferLetterSigned: 'statusOfferLetterSigned',
   statusOfferQuestionnaireAnswered: 'statusOfferQuestionnaireAnswered',

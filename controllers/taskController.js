@@ -233,6 +233,9 @@ exports.generateTasksForPerson = async (
         // Already exists, so we don't need to create a new one
         // console.log('Task already exists taskDefinition.id:', taskDefinition.id);
         return null;
+      } else if (person.statusOnLeave === true || person.statusResigned === true) {
+        // Person is on leave or resigned, so we don't create this task for this person
+        return null;
       } else if (taskDefinition.statusActive === false) {
         // Task is turned off, so we don't create this task for this person
         // console.log('Task is turned off taskDefinition.id:', taskDefinition.id);
