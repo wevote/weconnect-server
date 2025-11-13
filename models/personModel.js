@@ -276,6 +276,7 @@ const setStatusFieldsIfNotInitialized = (person) => {
   if (person.isTeamLead === null) person.isTeamLead = false;
   if (person.statusEmailCreated === null) person.statusEmailCreated = false;
   if (person.statusActive === null) person.statusActive = false;
+  if (person.statusOfferDecisionNeeded === null) person.statusOfferDecisionNeeded = true;
   if (person.statusOfferLetterCreated === null) person.statusOfferLetterCreated = false;
   if (person.statusOfferLetterSigned === null) person.statusOfferLetterSigned = false;
   if (person.statusOnLeave === null) person.statusOnLeave = false;
@@ -478,14 +479,14 @@ const doesPersonHaveIsAdmin = async (email, password) => {
 
   let isAdmin = false;
 
-  if (Object.keys(person).length > 0) {
+  if (person && Object.keys(person).length > 0) {
     isAdmin = person.isAdmin;
   } else {
     const personList = await findPersonListByParams({ emailOfficial: emailSubmittedCleaned }, true);
-    if (personList.length === 1) {
+    if (personList && personList.length === 1) {
       person = personList[0];
       isAdmin = person.isAdmin;
-    } else if (personList.length > 1) {
+    } else if (personList && personList.length > 1) {
       console.error(`doesPersonHaveIsAdmin found more than one matching emailOfficial '${emailSubmittedCleaned}' rows, this is a data corruption error`);
       isAdmin = false;
     }
