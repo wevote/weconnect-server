@@ -478,7 +478,7 @@ const doesPersonHaveIsAdmin = async (email, password) => {
 
   let isAdmin = false;
 
-  if (Object.keys(person).length > 0) {
+  if (person && Object.keys(person).length > 0) {
     isAdmin = person.isAdmin;
   } else {
     const personList = await findPersonListByParams({ emailOfficial: emailSubmittedCleaned }, true);
