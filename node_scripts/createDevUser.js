@@ -1,7 +1,6 @@
 const bcrypt = require('@node-rs/bcrypt');
 const dotenv = require('dotenv');
 const { createPerson } = require('../models/personModel');
-const { getMaxId } = require('../controllers/FastLoad/retrieveTables');
 
 dotenv.config({ path: '../.env' });   // use the weconnect-server's .env file
 const args = process.argv.slice(2);

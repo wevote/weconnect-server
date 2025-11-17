@@ -4,33 +4,33 @@
 // The fast load apis will only return the data from the following tables
 exports.allowableTables = [
   // 'ClientSession',
-  'Meeting',
-  'MeetingAttendee',
+  'Meeting',                        // Suspect that this table is empty and unused
+  'MeetingAttendee',                // Suspect that this table is empty and unused
   'Person',
   'PersonAway',
   'QuestionAnswer',
   'Questionnaire',
   'QuestionnaireQuestion',
-  'QuestionnaireQuestionFormer',
-  'RecurringMeeting',
+  // 'QuestionnaireQuestionFormer', // Not used, should be removed from DB
+  'RecurringMeeting',               // Suspect that this table is empty and unused
   'Task',
-  'TaskChangeLog',
+  // 'TaskChangeLog',               // Not used, should be removed from DB
   'TaskDefinition',
-  'TaskDependency',
+  'TaskDependency',                 // Suspect that this table is empty
   'TaskGroup',
   'TaskGroupTeamLink',
   'Team',
-  'TeamChangeLog',
-  'TeamGroup',
+  // 'TeamChangeLog',               // Not used, should be removed from DB
+  // 'TeamGroup',                   // Not used, should be removed from DB
   'TeamMember',
-  'TeamMemberAway',
-  'TeamMemberFormer',
-  'TeamRole',
-  'TeamRoleToPersonLink',
-  'TeamToTeamRoleLink',
-  // 'User',
-  // '_prisma_migrations',
-  // 'session',
+  // 'TeamMemberAway',              // Not used, should be removed from DB
+  // 'TeamMemberFormer',            // Not used, should be removed from DB
+  // 'TeamRole',                    // Not used, should be removed from DB
+  // 'TeamRoleToPersonLink',        // Not used, should be removed from DB
+  // 'TeamToTeamRoleLink',          // Not used, should be removed from DB
+  // 'User',                        // Not used, should be surgically removed
+  // '_prisma_migrations',          // no need to copy
+  // 'session',                     // no value in copying the sessions table
 ];
 
 exports.getAllowableTables = async (req, res) => res.json({

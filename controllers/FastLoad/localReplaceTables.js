@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+const { Prisma, PrismaClient } = require('@prisma/client');
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
 const fs = require('fs');
@@ -100,6 +100,7 @@ const emptyTheTable = async (tableName) => {
 const fillTheTable = async (tableName, tableJSON) => {
   const outTempFile = `/tmp/${tableName}.tsv`;
   let tableTSV = '';
+  let error;
   tableJSON.forEach((element) => {
     // console.log(element);
     // const keys = Object.keys(element);
@@ -123,6 +124,7 @@ const fillTheTable = async (tableName, tableJSON) => {
     fs.unlinkSync(outTempFile);
   } catch {
     console.log(`Did not find ${tableName} so an old copy was not removed.`);
+    error = `Did not find ${tableName} so an old copy was not removed.`;
   }
   try {
     fs.writeFileSync(outTempFile, tableTSV);
@@ -137,7 +139,9 @@ const fillTheTable = async (tableName, tableJSON) => {
     console.log('fillTheTable queryRawUnsafe: ', unset);
   } catch (err) {
     console.error(`Error in writing ${tableName}: ${err}`);
+    error += ` -- Error in writing ${tableName}: ${err}`;
   }
+  return error;
 };
 
 // Some fields have '\n' in the strings, clean them out.  Ideally we would have never saved strings like this.
@@ -159,9 +163,8 @@ exports.localReplaceTable = async (req, res) => {
   const { tablePacket: { tableName, tableJSON } } = req.body;
   console.log('localReplaceTable for table: ', tableName);
   let success = true;
-  let didFill = false;
   let didEmpty = false;
-  let error = '';
+  let error;
 
   // If localReplaceTable was somehow run successfully on the production server
   // it would wipe out the production database, so being very careful here
@@ -172,9 +175,19 @@ exports.localReplaceTable = async (req, res) => {
     if (tableJSON?.length) {
       didEmpty = await emptyTheTable(tableName);
       cleanNewLinesOutOfJSON(tableJSON);
-      didFill = await fillTheTable(tableName, tableJSON);
+      error = await fillTheTable(tableName, tableJSON);
+      // console.log(Prisma.dmmf.datamodel.models[0].fields);
+      const table = await Prisma.dmmf.datamodel.models.find((m) => m.name === tableName);
+      if (table.fields.some((field) => field.name === 'id')) {
+        // Coalesce the ids, so auto increment works on the copied table
+        const coalesceSQLCmd =
+          `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), coalesce(max(id)+1, 1), false) FROM "${tableName}"`;
+        const idsCount = await prisma.$queryRawUnsafe(coalesceSQLCmd);
+        const count = idsCount && idsCount.length && idsCount[0] && idsCount[0].setval;
+        console.log(`Coalesce ${tableName} after fillTheTable, ids coalesced: ${count}`);
+      }
     } else {
-      error = `Received no data for table: ${tableName}`;
+      error = 'Empty table';
     }
   } else {
     success = false;
@@ -185,7 +198,6 @@ exports.localReplaceTable = async (req, res) => {
     success,
     error,
     didEmpty,
-    didFill,
     isLocal: local,
   });
 };
