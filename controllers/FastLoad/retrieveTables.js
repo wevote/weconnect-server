@@ -242,11 +242,11 @@ exports.makeATempTableAndReturnJSON = async (tableName, anonymizeSensitiveData) 
 };
 
 exports.getOneFastLoadTable = async (req, res) => {
-  if (process.env.SERVER_IS_SOURCE_OF_TRUTH) {
+  if (process.env.SERVER_IS_SOURCE_OF_TRUTH == true) {
     console.log('getOneFastLoadTable: weconnect-server environment variable SERVER_IS_SOURCE_OF_TRUTH is true, returning null');
     return null;
   }
-  
+
   const { tableName, doNotAnonymize = false, email = '', password = '' } = req.body;
   const anonymize = !doNotAnonymize;
   const personIsAdmin = await doesPersonHaveIsAdmin(email, password);
