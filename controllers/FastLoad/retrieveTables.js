@@ -108,7 +108,7 @@ const anonymizeTempTable = async (tempTableName) => {
   const firstNameFields = [];
   const lastNameFields = [];
   const emailFields = [];
-  console.log('tempTableName: ', tempTableName);
+  console.log('anonymizeTempTable tempTableName: ', tempTableName);
 
   const maxId = await this.getMaxId(tempTableName);
 
@@ -234,6 +234,7 @@ exports.makeATempTableAndReturnJSON = async (tableName, anonymizeSensitiveData) 
   await this.makeTempTable(tableName, tempTableName);
 
   // Anonymize Person table, if it is 'Person' we don't want sensitive Data sent
+  console.log(`makeATempTableAndReturnJSON tableName: ${tableName}, anonymizeSensitiveData: ${anonymizeSensitiveData}`);
   if (tableName === 'Person' && anonymizeSensitiveData) {
     return anonymizeTempTable(tempTableName);
   }
@@ -251,6 +252,7 @@ exports.getOneFastLoadTable = async (req, res) => {
   const anonymize = !doNotAnonymize;
   const personIsAdmin = await doesPersonHaveIsAdmin(email, password);
   const anonymizeSensitiveData = anonymize && personIsAdmin;
+  console.log(`getOneFastLoadTable email: ${email}, doNotAnonymize: ${doNotAnonymize}, anonymize: ${anonymize}, personIsAdmin: ${personIsAdmin}, anonymizeSensitiveData: ${anonymizeSensitiveData}`);
 
   const tableJSON = await this.makeATempTableAndReturnJSON(tableName, anonymizeSensitiveData);
 
