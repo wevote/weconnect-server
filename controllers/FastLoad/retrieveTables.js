@@ -243,7 +243,9 @@ exports.makeATempTableAndReturnJSON = async (tableName, anonymizeSensitiveData) 
 };
 
 exports.getOneFastLoadTable = async (req, res) => {
-  return res.json({});
+  return res.json({ 
+    "message": "Hit getOneFastLoadTable endpoint",
+  });
 
   if (process.env.SERVER_IS_SOURCE_OF_TRUTH == true) {
     console.log('getOneFastLoadTable: weconnect-server environment variable SERVER_IS_SOURCE_OF_TRUTH is true, returning null');
