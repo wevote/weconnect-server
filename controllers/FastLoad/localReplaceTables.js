@@ -160,6 +160,8 @@ const cleanNewLinesOutOfJSON = (tableJSON) => {
 
 
 exports.localReplaceTable = async (req, res) => {
+  return res.json({})
+  
   if (process.env.SERVER_IS_SOURCE_OF_TRUTH == true) {
     console.log('localReplaceTable: weconnect-server environment variable SERVER_IS_SOURCE_OF_TRUTH is true, returning null');
     return null;
