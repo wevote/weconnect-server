@@ -11,6 +11,8 @@ model Team {
   /// This is a team that is active
   statusActive Boolean      @default(true)
   TeamMember   TeamMember[]
+  isC3Nonprofit              Boolean @default(false)
+  isC4Nonprofit              Boolean @default(false)
 }
 
 /// Examples: New team member, project manager, etc. added to the team
