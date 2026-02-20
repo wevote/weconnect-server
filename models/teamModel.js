@@ -16,6 +16,8 @@ const TEAM_FIELDS_ACCEPTED = [
   'meetingTime',
   'statusActive',
   'teamName',
+  'isC3Nonprofit',
+  'isC4Nonprofit',
 ];
 
 const TEAM_MEMBER_FIELDS_ACCEPTED = {
