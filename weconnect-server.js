@@ -76,7 +76,7 @@ const corsConfig = {
   origin: true,
 };
 weconnectServer.use(cors(corsConfig));
-// if disableLogColors is set, we use a different log format with colors, suitable for production
+// if disableLogColors is set, we use a different log format without colors, suitable for production
 weconnectServer.use(disableLogColors ? logger('combined') : logger('dev'));
 // weconnectServer.use(express.bodyParser({limit: '10mb'}));
 weconnectServer.use(bodyParser.json({ limit: '10mb' }));
