@@ -18,7 +18,7 @@ const TEAM_FIELDS_ACCEPTED = [
   'teamName',
   'isC3Nonprofit',
   'isC4Nonprofit',
-  'departments',
+  'departments'
 ];
 
 const TEAM_MEMBER_FIELDS_ACCEPTED = {

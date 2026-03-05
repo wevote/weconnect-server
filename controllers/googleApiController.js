@@ -275,12 +275,9 @@ async function resetUserPassword (adminClient, primaryEmail, newPassword) {
 
   // Construct request
   const requestBody = {
-    userKey: primaryEmail,
-    requestBody: {
-      password: newPassword,
-      passwordResetType: 'ADMIN_INITIATED',
-      // forcePasswordChange: true, // Optional: Force the user to change the password on next login
-    },
+    password: newPassword,
+    passwordResetType: 'ADMIN_INITIATED',
+    // forcePasswordChange: true, // Optional: Force the user to change the password on next login,
   };
 
   // Run request
@@ -291,18 +288,38 @@ async function resetUserPassword (adminClient, primaryEmail, newPassword) {
     });
     console.log('User password updated:', res.data);
     console.log(res);
-    ret.primaryEmail = primaryEmail;
-    ret.success = true;
+    ret.apiReqBody = res.config.body;
+    ret.apiUrl = res.config.url;
+    ret.changePasswordAtNextLogin = res.config.changePasswordAtNextLogin;
+    ret.creationTime = res.data.creationTime;
     ret.error = '';
     ret.errorCode = '';
     ret.errors = '';
+    ret.fullName = res.data.fullName;
+    ret.httpStatus = res.status;
+    ret.kind = res.data.kind;
+    ret.lastLoginTime = res.data.lastLoginTime;
+    ret.primaryEmail = primaryEmail;
+    ret.statusText = res.data.statusText;
+    ret.success = true;
+    ret.thumbnailPhotoUrl = res.data.thumbnailPhotoUrl;
   } catch (err) {
     ret.success = false;
-    ret.primaryEmail = primaryEmail;
+    ret.apiReqBody = '';
+    ret.apiUrl = '';
+    ret.changePasswordAtNextLogin = '';
+    ret.creationTime = '';
     ret.error = err.message;
     ret.error = err.message;
     ret.errorCode = err.code;
     ret.errors = JSON.stringify(err.errors);
+    ret.fullName = '';
+    ret.httpStatus = '';
+    ret.kind = '';
+    ret.lastLoginTime = '';
+    ret.primaryEmail = primaryEmail;
+    ret.statusText = '';
+    ret.thumbnailPhotoUrl = '';
     console.error(err);
   }
   return ret;

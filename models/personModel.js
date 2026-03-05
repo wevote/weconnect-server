@@ -226,8 +226,27 @@ async function findPersonListByIdList (idList, includeAllData = false) {
 }
 
 async function findPersonListByParams (params = {}, includeAllData = false) {
+  // Recursively make only email fields case-insensitive
+  const makeEmailsInsensitive = (obj) => {
+    if (Array.isArray(obj)) return obj.map(makeEmailsInsensitive);
+    if (obj && typeof obj === 'object') {
+      return Object.fromEntries(Object.entries(obj).map(([key, value]) => {
+        // Only modify if key contains 'email' AND value is a string
+        if (typeof value === 'string' && key.toLowerCase().includes('email')) {
+          return [key, { equals: value, mode: 'insensitive' }];
+        }
+        return [key, makeEmailsInsensitive(value)];
+      }));
+    }
+    return obj;
+  };
+
+  // Only modify params if it contains an email field
+  const hasEmailField = JSON.stringify(params).toLowerCase().includes('email');
+  const finalParams = hasEmailField ? makeEmailsInsensitive(params) : params;
+
   const personList = await prisma.person.findMany({
-    where: params,
+    where: finalParams,
   });
   let modifiedPerson = {};
   let modifiedPersonList = [];
