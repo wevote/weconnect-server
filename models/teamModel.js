@@ -18,6 +18,7 @@ const TEAM_FIELDS_ACCEPTED = [
   'teamName',
   'isC3Nonprofit',
   'isC4Nonprofit',
+  'departments'
 ];
 
 const TEAM_MEMBER_FIELDS_ACCEPTED = {
@@ -102,14 +103,64 @@ async function deleteOneTeamMember (personId, teamId) {
   });
 }
 
+function normalizeTeamPayload (teamPayload = {}) {
+  const normalized = { ...teamPayload };
+
+  if ('departments' in normalized) {
+    if (Array.isArray(normalized.departments)) {
+      normalized.departments = normalized.departments
+        .map((department) => (typeof department === 'string' ? department.trim() : department))
+        .filter((department) => typeof department === 'string' && department !== '');
+    } else if (typeof normalized.departments === 'string') {
+      const trimmedDepartment = normalized.departments.trim();
+      if (!trimmedDepartment) {
+        normalized.departments = [];
+      } else if (trimmedDepartment.startsWith('[') && trimmedDepartment.endsWith(']')) {
+        try {
+          const parsedDepartments = JSON.parse(trimmedDepartment);
+          if (Array.isArray(parsedDepartments)) {
+            normalized.departments = parsedDepartments
+              .map((department) => (typeof department === 'string' ? department.trim() : department))
+              .filter((department) => typeof department === 'string' && department !== '');
+          } else {
+            normalized.departments = [trimmedDepartment];
+          }
+        } catch (error) {
+          normalized.departments = trimmedDepartment
+            .split(',')
+            .map((department) => department.trim())
+            .filter((department) => department !== '');
+        }
+      } else if (trimmedDepartment.includes(',')) {
+        normalized.departments = trimmedDepartment
+          .split(',')
+          .map((department) => department.trim())
+          .filter((department) => department !== '');
+      } else {
+        normalized.departments = [trimmedDepartment];
+      }
+    } else if (normalized.departments === null || normalized.departments === undefined) {
+      normalized.departments = [];
+    }
+  }
+
+  return normalized;
+}
+
 async function saveTeam (team) {
+  const normalizedTeam = normalizeTeamPayload(team);
+  const { id, ...teamData } = normalizedTeam;
+  if ('departments' in teamData) {
+    teamData.departments = { set: teamData.departments };
+  }
   const updateTeam = await prisma.team.update({
     where: {
-      id: team.id,
+      id,
     },
-    data: team,
+    data: teamData,
   });
   console.log(updateTeam);
+  return updateTeam;
 }
 
 // For required fields that we want to include, even if not passed from the interface.
@@ -119,7 +170,7 @@ const teamObjTemplate = {
 
 async function createTeam (updateDict) {
   // eslint-disable-next-line prefer-object-spread
-  const mergedTeam = Object.assign({}, teamObjTemplate, updateDict);
+  const mergedTeam = Object.assign({}, teamObjTemplate, normalizeTeamPayload(updateDict));
   return prisma.team.create({ data: mergedTeam });
 }
 
