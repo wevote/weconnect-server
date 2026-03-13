@@ -9,11 +9,11 @@ model Team {
   // TODO: how is this stored to be time zone independent?
   meetingTime   String?
   /// This is a team that is active
-  statusActive Boolean      @default(true)
-  TeamMember   TeamMember[]
-  isC3Nonprofit              Boolean @default(false)
-  isC4Nonprofit              Boolean @default(false)
-  departments  String[]
+  statusActive  Boolean      @default(true)
+  TeamMember    TeamMember[]
+  isC3Nonprofit Boolean      @default(false)
+  isC4Nonprofit Boolean      @default(false)
+  departments   String[]
 }
 
 /// Examples: New team member, project manager, etc. added to the team
