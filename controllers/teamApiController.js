@@ -17,17 +17,20 @@ const { TEAM_MEMBER_FIELDS_ACCEPTED } = require('../models/teamModel');
 exports.addPersonToTeam = async (request, response) => {
   let shouldAddPersonToTeam = false;
 
-  // const results = await getAllAccessRightsForPerson(request);
-  // const { accessRights, personIdsByTeam, teamAccessRights } = results;
 
-  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
-  const queryParams = new URLSearchParams(parsedUrl.search);
-  const personId = convertToInteger(queryParams.get('personId'));
-  const teamId = convertToInteger(queryParams.get('teamId'));
-  const teamMemberUpdateDict = extractVariablesToChangeFromIncomingParams(
-    queryParams,
-    TEAM_MEMBER_FIELDS_ACCEPTED,
-  );
+  const queryString = request.url.split('?')[1];
+  const queryParams = new URLSearchParams(queryString);
+  const paramsObject = Object.fromEntries(queryParams.entries());
+  const personId = convertToInteger(paramsObject.personId);
+  const teamId = convertToInteger(paramsObject.teamId);
+  const teamMemberUpdateDict = {};
+  Object.keys(paramsObject).forEach((key) => {
+    const value = paramsObject[key];
+    if (key in TEAM_MEMBER_FIELDS_ACCEPTED) {
+      teamMemberUpdateDict[key] = value;
+    }
+  });
+
   // Set up the default JSON response.
   const jsonData = {
     addPersonToTeamSuccessful: false,
@@ -62,6 +65,7 @@ exports.addPersonToTeam = async (request, response) => {
 
     if (shouldAddPersonToTeam) {
       // Note: This doesn't return a teamMember object
+      // const ret =
       await updateOrCreateTeamMember(personId, teamId, teamMemberUpdateDict);
       jsonData.addPersonToTeamSuccessful = true;
       jsonData.personId = personId;
