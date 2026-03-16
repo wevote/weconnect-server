@@ -10,6 +10,7 @@ const { extractVariablesToChangeFromIncomingParams } = require('./dataTransforma
 const { convertToInteger } = require('../utils/convertToInteger');
 const { savePerson } = require('../models/personModel');
 
+
 /**
  * GET /api/v1/task-definition-list-retrieve
  * Retrieve a list of TaskDefinitions for one TaskGroup.
@@ -121,16 +122,15 @@ exports.taskGroupListRetrieve = async (request, response) => {
 };
 
 /**
- * GET /api/v1/task-status-list-retrieve
+ * POST /api/v1/task-status-list-retrieve
  * Retrieve a list of tasks and the supporting data.
  */
 exports.taskStatusListRetrieve = async (request, response) => {
-  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
-  const queryParams = new URLSearchParams(parsedUrl.search);
-  // console.log('queryParams:', queryParams);
-  const personIdListIncoming = queryParams.getAll('personIdList[]');
+  const personIdListIncoming = request.body.personIdList || [];
+  // console.log('~~~~~~ taskStatusListRetrieve request.body', request.body);
+  // console.log('~~~~~~ taskStatusListRetrieve personIdListIncoming', JSON.stringify(request.body.personIdList) || '');
+
   const personIdList = personIdListIncoming.map(convertToInteger);
-  // console.log('taskStatusListRetrieve personIdList:', personIdList);
 
   const jsonData = {
     isSearching: false,
@@ -143,7 +143,6 @@ exports.taskStatusListRetrieve = async (request, response) => {
   try {
     // console.log('taskStatusListRetrieve personIdList:', personIdList);
     const results = await retrieveTaskStatusListByPersonIdList(personIdList);
-    // const results = {};
     // console.log('results:', results);
     jsonData.success = true;
     jsonData.taskList = results.taskList;
@@ -153,7 +152,7 @@ exports.taskStatusListRetrieve = async (request, response) => {
   } catch (err) {
     console.log('taskStatusListRetrieve err:', err);
     jsonData.status += err.message;
-    jsonData.success = false;
+    jsonData.success += `personIdListIncoming.length=${personIdListIncoming.length}`;
   }
   response.json(jsonData);
 };

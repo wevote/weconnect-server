@@ -242,8 +242,27 @@ exports.makeATempTableAndReturnJSON = async (tableName, anonymizeSensitiveData) 
   return getTempTableAsJSON(tempTableName);
 };
 
+// See https://wevoteusa.atlassian.net/browse/WV-2669
+exports.convertTeamDepartmentsToPostgresAcceptableFormat = async () => {
+  console.log('App is converting old format Team department strings');
+
+  const from = ['{Engineering}', '{Analytics}', '{"Donations"}'];
+  const to = ['{"Engineering Team"}', '{"Analytics Team"}', '{"Donations Team"}'];
+  for (let i = 0; i < from.length; i++) {
+    const fromString = from[i];
+    const toString = to[i];
+    try {
+      const query = `UPDATE public."Team" SET departments = '${toString}' WHERE departments = '${fromString}'`;
+      const resp = await prisma.$executeRawUnsafe(query);
+      console.log(`updatedDept (${fromString}): ${JSON.stringify(resp)}`);
+    } catch (error) {
+      console.log(`ERROR updatedDept: ${JSON.stringify(error)}`);
+    }
+  }
+};
+
 exports.getOneFastLoadTable = async (req, res) => {
-  if (process.env.SERVER_IS_SOURCE_OF_TRUTH == true) {
+  if (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) {
     console.log('getOneFastLoadTable: weconnect-server environment variable SERVER_IS_SOURCE_OF_TRUTH is true, returning null');
     return null;
   }
