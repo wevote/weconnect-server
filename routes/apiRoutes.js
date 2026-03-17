@@ -19,7 +19,6 @@ const { localReplaceTable } = require('../controllers/FastLoad/localReplaceTable
  */
 module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/add-person-to-team', teamApiController.addPersonToTeam);
-  weconnectServer.get('/apis/v1/answer-list-save', questionnaireApiController.answerListSave);
   weconnectServer.get('/apis/v1/meeting-save', meetingApiController.meetingSave);
   weconnectServer.get('/apis/v1/person-away-save', personApiController.personAwaySave);
   weconnectServer.get('/apis/v1/person-id-retrieve-by-email', personApiController.personIdRetrieveByEmail);
@@ -48,6 +47,7 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
   weconnectServer.get('/apis/v1/versions', getStatus);
 
+  weconnectServer.post('/apis/v1/answer-list-save', questionnaireApiController.answerListSave);
   weconnectServer.post('/apis/v1/fast-load-get-allowable-tables', getAllowableTables);
   weconnectServer.post('/apis/v1/fast-load-local-table-replace', localReplaceTable);
   weconnectServer.post('/apis/v1/fast-load-table-retrieve', getOneFastLoadTable);
