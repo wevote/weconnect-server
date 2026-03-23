@@ -194,7 +194,7 @@ exports.slackAddPersonImages = async (request, response) => {
           }
         }
         if (!personSaved) {
-          console.log('membersNotMatched: ', member);
+          // console.log('membersNotMatched: ', member);
           membersNotMatched.push(`slackHandle: ${slackHandle}, name: ${name}, real_name: ${real_name}, email: ${email}`);
         }
       }
@@ -269,7 +269,7 @@ exports.slackListUsers = async (request, response) => {
       // console.log(result);
     }
 
-    console.log('Members skipped: ', membersSkipped);
+    // console.log('Members skipped: ', membersSkipped);
     success = true;
   } catch (error) {
     console.error(error);
