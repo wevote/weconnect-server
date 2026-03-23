@@ -109,6 +109,10 @@ const fillTheTable = async (tableName, tableJSON) => {
     values.forEach((val) => {
       if (val === 'null' || val === null) {
         line += '\\N\t';
+      } else if (Array.isArray(val)) {
+        let arrayLiteralString = JSON.stringify(val);
+        arrayLiteralString = arrayLiteralString.replace('[', '{').replace(']', '}');
+        line += `${arrayLiteralString}\t`;
       } else {
         line += `${val}\t`;
       }
@@ -160,7 +164,7 @@ const cleanNewLinesOutOfJSON = (tableJSON) => {
 
 
 exports.localReplaceTable = async (req, res) => {
-  if (process.env.SERVER_IS_SOURCE_OF_TRUTH == true) {
+  if (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) {
     console.log('localReplaceTable: weconnect-server environment variable SERVER_IS_SOURCE_OF_TRUTH is true, returning null');
     return null;
   }

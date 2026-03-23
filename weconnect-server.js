@@ -35,7 +35,7 @@ dotenvExpand.expand(dotenv.config());
  * Set config values
  */
 const secureTransfer = (process.env.BASE_URL.startsWith('https'));
-const disableLogColors = (process.env.NO_COLOR || '0') === '1'
+const disableLogColors = (process.env.NO_COLOR || '0') === '1';
 
 const ACCESS_PATHS_ALLOWED_PRE_AUTH = ['/', '/favicon.ico', '/health', '/healthapis/v1/versions', '/we-vote-logo-wordmark-vertical-color-on-white-256x256.png'];
 const ACCESS_APIS_ALLOWED_PRE_AUTH = [

@@ -6,7 +6,8 @@ const { taskGroupTeamLinkDelete, taskDefinitionSave, taskStatusListRetrieve, tas
   taskGroupTeamLinkListRetrieve, taskGroupTeamLinkSave, taskGroupListRetrieve, taskGroupSave, taskSave,
 } = require('../controllers/taskApiController');
 const teamApiController = require('../controllers/teamApiController');
-const { slackChannelInvite, slackGetPresence, slackSendMessage, slackListUsers, slackChannelMembers } = require('../controllers/slackApiController');
+const { slackChannelInvite, slackGetPresence, slackSendMessage, slackListUsers, slackChannelMembers,
+  slackAddPersonImages } = require('../controllers/slackApiController');
 const { updateDbFromCsv } = require('../controllers/updateSqlFromCsvController');
 const { jazzGetApplicants, jazzGetUsers } = require('../controllers/jazzHrController');
 const { getStatus } = require('../controllers/statusController');
@@ -68,6 +69,7 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.post('/apis/v1/save-password', personApiController.savePassword);
   weconnectServer.post('/apis/v1/send-email-code', personApiController.sendEmailCode);
   weconnectServer.post('/apis/v1/signup', personApiController.signup);
+  weconnectServer.post('/apis/v1/slack-add-person-images', slackAddPersonImages);
   weconnectServer.post('/apis/v1/slack-channel-invite', slackChannelInvite);
   weconnectServer.post('/apis/v1/slack-channel-members', slackChannelMembers);
   weconnectServer.post('/apis/v1/slack-get-presence', slackGetPresence);
