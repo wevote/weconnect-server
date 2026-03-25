@@ -99,6 +99,7 @@ model Person {
   nonAuthoritativeImport            Boolean   @default(false)
 
   slackImage48                      String?
+  isMonthlyDonor                    Boolean   @default(false)
 
   QuestionAnswer QuestionAnswer[]
   TeamMember     TeamMember[]

@@ -101,7 +101,7 @@ exports.slackAddPersonImages = async (request, response) => {
 
   const personsUpdated = [];
   const singlePersonUpdated = [];
-  const membersNotMatched = [];
+  let membersNotMatched = [];
   let errors = '';
   let success = false;
   let nextCursor = '';
@@ -112,7 +112,7 @@ exports.slackAddPersonImages = async (request, response) => {
   let incomingPersonIdInt = 0;
   let matchOnePerson = false;
   if (incomingPersonId !== undefined) {
-    incomingPersonIdInt = incomingPersonId;
+    incomingPersonIdInt = parseInt(incomingPersonId);
     matchOnePerson = incomingPersonIdInt > 0;
   }
 
@@ -173,7 +173,7 @@ exports.slackAddPersonImages = async (request, response) => {
             // eslint-disable-next-line no-await-in-loop
             await savePerson({ id: person.id, slackHandle, slackImage48 });
             const abbreviatedPerson = `id: ${person.id}, ${name}, slackHandle: ${slackHandle}`;
-            console.log('saving updated person with slack id and image', abbreviatedPerson);
+            // console.log('saving updated person with slack id and image', abbreviatedPerson);
             personsUpdated.push(abbreviatedPerson);
             personSaved = true;
             if (matchOnePerson && thisIsMatchingPerson) {
@@ -205,6 +205,11 @@ exports.slackAddPersonImages = async (request, response) => {
     success = false;
     console.error(error);
   }
+
+  if (personsUpdated.length === 1) {
+    membersNotMatched = {};
+  }
+
   return response.json({
     success,
     incomingPersonId: incomingPersonId || 0,

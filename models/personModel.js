@@ -287,6 +287,7 @@ async function deleteOne (id) {
   });
 }
 
+// eslint-disable-next-line no-unused-vars
 const setStatusFieldsIfNotInitialized = (person) => {
   /* eslint-disable no-param-reassign */
   if (person.isAdmin === null) person.isAdmin = false;
@@ -359,6 +360,7 @@ function isoFutureDateDays (days) {
 }
 
 // For required fields that we want to include, even if not passed from the interface.
+/*
 const personObjTemplate = {
   // birthdayMonthAndDay: '',
   // emailOfficial: '',
@@ -399,7 +401,7 @@ const personObjTemplate = {
   // twitterHandle: '',
   // websiteUrl: '',
 };
-
+*/
 async function createPerson (updateDict) {
   // eslint-disable-next-line prefer-object-spread
   const person = await prisma.person.create({ data: updateDict });
@@ -519,7 +521,41 @@ const doesPersonHaveIsAdmin = async (email, password) => {
   return verified;
 };
 
+const updatePersonWhoAreNotActiveDonors = async (donorsArray) => {
+  let personsRemovedAsDonors = {};
 
+  if (!donorsArray || !donorsArray.length) {
+    console.log('updatePersonWhoAreNotActiveDonors donorsArray length is 0');
+  } else {
+    personsRemovedAsDonors = await prisma.person.findMany({
+      where: {
+        isMonthlyDonor: true,
+        NOT: {
+          id: {
+            in: donorsArray,
+          },
+        }, // Condition: id is not in the list of people we just marked
+      },
+    });
+
+    // const ret =
+    await prisma.person.updateMany({
+      where: {
+        isMonthlyDonor: true,
+        NOT: {
+          id: {
+            in: donorsArray,
+          },
+        }, // Condition: id is not in the list of people we just marked
+      },
+      data: {
+        isMonthlyDonor: false, // Set new value
+      },
+    });
+    // console.log('updatePersonWhoAreNotActiveDonors: ', ret);
+  }
+  return personsRemovedAsDonors;
+};
 
 module.exports = {
   comparePassword,
@@ -546,4 +582,5 @@ module.exports = {
   savePersonAway,
   SITE_SUPER_USERS,
   updatePersonByPersonId,
+  updatePersonWhoAreNotActiveDonors,
 }; // Export the functions

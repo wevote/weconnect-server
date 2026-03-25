@@ -49,6 +49,7 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/versions', getStatus);
 
   weconnectServer.post('/apis/v1/answer-list-save', questionnaireApiController.answerListSave);
+  weconnectServer.post('/apis/v1/donations-add-status', personApiController.donationsAddStatus);
   weconnectServer.post('/apis/v1/fast-load-get-allowable-tables', getAllowableTables);
   weconnectServer.post('/apis/v1/fast-load-local-table-replace', localReplaceTable);
   weconnectServer.post('/apis/v1/fast-load-table-retrieve', getOneFastLoadTable);
