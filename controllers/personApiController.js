@@ -10,6 +10,7 @@ const {
   findOnePerson, findPersonById, savePerson, savePersonAway,
   SITE_SUPER_USERS, getUniqueKeyEmail,
   manuallyConfirmEmailUniqueness,
+  updatePersonWhoAreNotActiveDonors,
 } = require('../models/personModel');
 
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
@@ -778,4 +779,79 @@ exports.getAuth = async (req, res) => {
     personId,
     teamAccessRights,
   });
+};
+
+exports.donationsAddStatus = async (request, response) => {
+  const { jsonObj } = request.body;
+  // console.log(jsonObj);
+  const donorsNotMatched = [];
+  const donorsMarkedAsActive = [];
+  const donorsMarkedAsActiveIds = [];
+  const donorsReceivedAsCancelled = [];
+  const donorsMarkedAsInactive = [];
+  let success = false;
+  let errors = '';
+
+  // eslint-disable-next-line no-restricted-syntax
+  for (const arrayItem of jsonObj) {
+    if (arrayItem.Status === 'cancelled') {
+      donorsReceivedAsCancelled.push(JSON.stringify(arrayItem).replaceAll('"', ''));
+    } else if (arrayItem.Id.length === 0) {
+      console.log(`donationsAddStatus: skipped junk row ${JSON.stringify(arrayItem).replaceAll('"', '')}`);
+    } else {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        let personList = await findPersonListByParams({ OR: [
+          { emailPersonal: arrayItem.Email },
+          { emailOfficial: arrayItem.Email },
+        ]});
+        if (personList.length === 0) {  // Try match on name as a fallback
+          // eslint-disable-next-line no-await-in-loop
+          personList = await findPersonListByParams({
+            statusActive: true,
+            OR: [
+              { firstName: arrayItem['First Name'] },
+              { lastName: arrayItem['Last Name'] },
+            ],
+          });
+        }
+
+        const person = personList.length && personList[0];   // It should not be possible to have multiple persons with the same emailOffical
+        if (person === 0) {
+          donorsNotMatched.push(JSON.stringify(arrayItem).replaceAll('"', ''));
+          // console.log(`donorsNotMatched: ${donorsNotMatched}`);
+        } else {
+          donorsMarkedAsActive.push([arrayItem.Email, `person.id: ${person.id}`, person.personalEmail, person.emailOfficial].join(' - '));
+          donorsMarkedAsActiveIds.push(person.id);
+          // console.log(`donorsMarkedAsActiveIds ${donorsMarkedAsActiveIds}`);
+          success = true;
+          // eslint-disable-next-line no-await-in-loop,no-unused-vars
+          const personUpdated = await savePerson({ id: person.id, isMonthlyDonor: true });
+          // console.log(`donationsAddStatus personId: ${person.id} name: ${person.firstName} ${person.lastName} ${person.emailPersonal} was marked as isMonthlyDonor`);
+        }
+      } catch (err) {
+        // console.log('Error while saving person retrieveByEmail:', err);
+        errors += err.message;
+      }
+    }
+  }
+
+  // Unmark anyone who was not marked by prior code in this function
+  // eslint-disable-next-line no-await-in-loop
+  const personsRemovedAsDonorsRaw = await updatePersonWhoAreNotActiveDonors(donorsMarkedAsActiveIds);
+  // eslint-disable-next-line no-restricted-syntax
+  for (const eXdonor of personsRemovedAsDonorsRaw) {
+    donorsMarkedAsInactive.push(JSON.stringify(eXdonor).replaceAll('"', ''));
+  }
+
+  const jsonData = {
+    success,
+    errors,
+    donorsMarkedAsActive,
+    donorsNotMatched,
+    donorsMarkedAsInactive,
+    donorsReceivedAsCancelled,
+  };
+  // console.log('jsonData: ', jsonData);
+  response.json(jsonData);
 };
