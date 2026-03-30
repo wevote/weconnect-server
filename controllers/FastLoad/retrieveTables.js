@@ -270,10 +270,16 @@ exports.getOneFastLoadTable = async (req, res) => {
   // }
 
   const { tableName, doNotAnonymize = false, email = '', password = '' } = req.body;
-  const anonymize = !doNotAnonymize;
-  const personIsAdmin = await doesPersonHaveIsAdmin(email, password);
-  const anonymizeSensitiveData = anonymize && personIsAdmin;
-  console.log(`getOneFastLoadTable email: ${email}, doNotAnonymize: ${doNotAnonymize}, anonymize: ${anonymize}, personIsAdmin: ${personIsAdmin}, anonymizeSensitiveData: ${anonymizeSensitiveData}`);
+  // const anonymize = !doNotAnonymize;
+  let anonymizeSensitiveData = true;  // the default case
+  let personIsAdmin = false;
+  if (password.length && !doNotAnonymize) {
+    personIsAdmin = await doesPersonHaveIsAdmin(email, password);
+    if (personIsAdmin) {
+      anonymizeSensitiveData = false;
+    }
+  }
+  console.log(`getOneFastLoadTable email: ${email}, doNotAnonymize: ${doNotAnonymize}, anonymizeSensitiveData: ${anonymizeSensitiveData}, personIsAdmin: ${personIsAdmin}, anonymizeSensitiveData: ${anonymizeSensitiveData}`);
 
   const tableJSON = await this.makeATempTableAndReturnJSON(tableName, anonymizeSensitiveData);
 
