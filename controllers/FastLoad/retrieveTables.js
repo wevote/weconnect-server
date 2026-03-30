@@ -22,6 +22,7 @@ exports.makeTempTable = async (tableName, tempTableName) => {
     return false;
   }
   // This is a security measure to prevent dropping a table that is in the allowableTables list
+  // with a second security measure that only allows dropping tables whose name ends with '_temp'
   if (allowableTables.includes(tempTableName) || !tempTableName.includes('_temp')) {
     console.log(`makeTempTable: Table ${tempTableName} is required for the operation of weconnect. Not allowed to drop.`);
     return false;
@@ -262,16 +263,24 @@ exports.convertTeamDepartmentsToPostgresAcceptableFormat = async () => {
 };
 
 exports.getOneFastLoadTable = async (req, res) => {
-  if (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) {
-    console.log('getOneFastLoadTable: weconnect-server environment variable SERVER_IS_SOURCE_OF_TRUTH is true, returning null');
+  // This function gets a table's content and sends it to the client, so it HAS TO be able to be run on the production server
+  const isOnSourceOfTruthServer = (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) || (process.env.SERVER_IS_SOURCE_OF_TRUTH === 'true');
+  if (!isOnSourceOfTruthServer) {
+    console.log('getOneFastLoadTable: On client site since weconnect-server environment variable SERVER_IS_SOURCE_OF_TRUTH is false, returning null');
     return null;
   }
 
   const { tableName, doNotAnonymize = false, email = '', password = '' } = req.body;
-  const anonymize = !doNotAnonymize;
-  const personIsAdmin = await doesPersonHaveIsAdmin(email, password);
-  const anonymizeSensitiveData = anonymize && personIsAdmin;
-  console.log(`getOneFastLoadTable email: ${email}, doNotAnonymize: ${doNotAnonymize}, anonymize: ${anonymize}, personIsAdmin: ${personIsAdmin}, anonymizeSensitiveData: ${anonymizeSensitiveData}`);
+  // const anonymize = !doNotAnonymize;
+  let anonymizeSensitiveData = true;  // the default case
+  let personIsAdmin = false;
+  if (password.length && !doNotAnonymize) {
+    personIsAdmin = await doesPersonHaveIsAdmin(email, password);
+    if (personIsAdmin) {
+      anonymizeSensitiveData = false;
+    }
+  }
+  console.log(`getOneFastLoadTable email: ${email}, doNotAnonymize: ${doNotAnonymize}, anonymizeSensitiveData: ${anonymizeSensitiveData}, personIsAdmin: ${personIsAdmin}, anonymizeSensitiveData: ${anonymizeSensitiveData}`);
 
   const tableJSON = await this.makeATempTableAndReturnJSON(tableName, anonymizeSensitiveData);
 
