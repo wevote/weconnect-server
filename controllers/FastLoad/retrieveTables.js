@@ -264,10 +264,11 @@ exports.convertTeamDepartmentsToPostgresAcceptableFormat = async () => {
 
 exports.getOneFastLoadTable = async (req, res) => {
   // This function gets a table's content and sends it to the client, so it HAS TO be able to be run on the production server
-  // if (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) {
-  //   console.log('getOneFastLoadTable: weconnect-server environment variable SERVER_IS_SOURCE_OF_TRUTH is true, returning null');
-  //   return null;
-  // }
+  const isOnSourceOfTruthServer = (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) || (process.env.SERVER_IS_SOURCE_OF_TRUTH === 'true');
+  if (!isOnSourceOfTruthServer) {
+    console.log('getOneFastLoadTable: On client site since weconnect-server environment variable SERVER_IS_SOURCE_OF_TRUTH is false, returning null');
+    return null;
+  }
 
   const { tableName, doNotAnonymize = false, email = '', password = '' } = req.body;
   // const anonymize = !doNotAnonymize;
