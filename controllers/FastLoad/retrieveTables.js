@@ -22,6 +22,7 @@ exports.makeTempTable = async (tableName, tempTableName) => {
     return false;
   }
   // This is a security measure to prevent dropping a table that is in the allowableTables list
+  // with a second security measure that only allows dropping tables whose name ends with '_temp'
   if (allowableTables.includes(tempTableName) || !tempTableName.includes('_temp')) {
     console.log(`makeTempTable: Table ${tempTableName} is required for the operation of weconnect. Not allowed to drop.`);
     return false;
@@ -262,10 +263,11 @@ exports.convertTeamDepartmentsToPostgresAcceptableFormat = async () => {
 };
 
 exports.getOneFastLoadTable = async (req, res) => {
-  if (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) {
-    console.log('getOneFastLoadTable: weconnect-server environment variable SERVER_IS_SOURCE_OF_TRUTH is true, returning null');
-    return null;
-  }
+  // This function gets a table's content and sends it to the client, so it HAS TO be able to be run on the production server
+  // if (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) {
+  //   console.log('getOneFastLoadTable: weconnect-server environment variable SERVER_IS_SOURCE_OF_TRUTH is true, returning null');
+  //   return null;
+  // }
 
   const { tableName, doNotAnonymize = false, email = '', password = '' } = req.body;
   const anonymize = !doNotAnonymize;
