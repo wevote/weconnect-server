@@ -58,6 +58,7 @@ const PERSON_FIELDS_ACCEPTED_ADMIN = {
   isHRGeneralist2: 'BOOLEAN',
   isHiringManager: 'BOOLEAN',
   isIntern: 'BOOLEAN',
+  isMonthlyDonor: 'BOOLEAN',
   isTeamLead: 'BOOLEAN',
   jazzHrUrl: 'STRING',
   jobTitle: 'STRING',
