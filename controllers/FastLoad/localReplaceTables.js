@@ -28,10 +28,11 @@ const isLocal = async (req) => {
       console.error('Attempted to run localReplaceTable on an AWS instance!');
       return false;
     }
-    // eslint-disable-next-line prefer-destructuring
-    const host = req.host;
+    const isOnSourceOfTruthServer = (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) || (process.env.SERVER_IS_SOURCE_OF_TRUTH === 'true');
+    const { host } = req;
     // console.log('req.host: ', stdout);
-    if (host.includes('wevote.org') || host.includes('wevote.us')) {
+    const isOnWeVoteMasterURL = host.toLowerCase().includes('wevote.org') || host.toLowerCase().includes('wevote.us');
+    if (isOnWeVoteMasterURL || isOnSourceOfTruthServer) {
       console.error('Attempted to run localReplaceTable on host teamapi.wevote.org!');
       return false;
     }
@@ -164,7 +165,10 @@ const cleanNewLinesOutOfJSON = (tableJSON) => {
 
 
 exports.localReplaceTable = async (req, res) => {
-  if (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) {
+  const isOnSourceOfTruthServer = (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) || (process.env.SERVER_IS_SOURCE_OF_TRUTH === 'true');
+  const { host }  = req;
+  const isOnWeVoteMasterURL = host.toLowerCase().includes('wevote.org') || host.toLowerCase().includes('wevote.us');
+  if (isOnWeVoteMasterURL || isOnSourceOfTruthServer) {
     console.log('localReplaceTable: weconnect-server environment variable SERVER_IS_SOURCE_OF_TRUTH is true, returning null');
     return null;
   }
