@@ -165,7 +165,7 @@ exports.teamListRetrieve = async (request, response) => {
     const teamList = await findTeamListByParams({}, false);
     jsonData.success = true;
     if (teamList && teamList.length > 0) {
-      const teamListModified = await Promise.all(teamList.map(async (team) => {
+      jsonData.teamList = await Promise.all(teamList.map(async (team) => {
         const teamModified = { ...team };
         try {
           const results = await retrieveTeamMemberList(team.id);
@@ -179,7 +179,6 @@ exports.teamListRetrieve = async (request, response) => {
         }
         return teamModified;
       }));
-      jsonData.teamList = teamListModified;
       jsonData.status += 'TEAMS_FOUND ';
     } else {
       jsonData.status += 'TEAMS_NOT_FOUND ';
@@ -255,8 +254,8 @@ exports.teamSave = async (request, response) => {
   const teamId = convertToInteger(queryParams.get('teamId'));
   const changeDict = extractVariablesToChangeFromIncomingParams(queryParams, TEAM_FIELDS_ACCEPTED);
   const departmentsChanged =
-    queryParams.get('departmentsChanged') === 'true'
-    || queryParams.get('departmentsToBeSavedChanged') === 'true';
+    queryParams.get('departmentsChanged') === 'true' ||
+    queryParams.get('departmentsToBeSavedChanged') === 'true';
   if (departmentsChanged) {
     const departmentsFromRepeatedParams = [
       ...queryParams.getAll('departments'),
