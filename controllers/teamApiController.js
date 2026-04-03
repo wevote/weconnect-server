@@ -17,19 +17,25 @@ const { TEAM_MEMBER_FIELDS_ACCEPTED } = require('../models/teamModel');
 exports.addPersonToTeam = async (request, response) => {
   let shouldAddPersonToTeam = false;
 
-
   const queryString = request.url.split('?')[1];
   const queryParams = new URLSearchParams(queryString);
   const paramsObject = Object.fromEntries(queryParams.entries());
   const personId = convertToInteger(paramsObject.personId);
   const teamId = convertToInteger(paramsObject.teamId);
-  const teamMemberUpdateDict = {};
-  Object.keys(paramsObject).forEach((key) => {
-    const value = paramsObject[key];
-    if (key in TEAM_MEMBER_FIELDS_ACCEPTED) {
-      teamMemberUpdateDict[key] = value;
-    }
-  });
+  // 2026-April-3 In this pull request: https://github.com/wevote/weconnect-server/pull/124/changes
+  //  the following lines replaced the call to extractVariablesToChangeFromIncomingParams, but broke the ability to
+  //  add a team lead. Rolling back.
+  // const teamMemberUpdateDict = {};
+  // Object.keys(paramsObject).forEach((key) => {
+  //   const value = paramsObject[key];
+  //   if (key in TEAM_MEMBER_FIELDS_ACCEPTED) {
+  //     teamMemberUpdateDict[key] = value;
+  //   }
+  // });
+  const teamMemberUpdateDict = extractVariablesToChangeFromIncomingParams(
+    queryParams,
+    TEAM_MEMBER_FIELDS_ACCEPTED,
+  );
 
   // Set up the default JSON response.
   const jsonData = {
@@ -159,7 +165,7 @@ exports.teamListRetrieve = async (request, response) => {
     const teamList = await findTeamListByParams({}, false);
     jsonData.success = true;
     if (teamList && teamList.length > 0) {
-      const teamListModified = await Promise.all(teamList.map(async (team) => {
+      jsonData.teamList = await Promise.all(teamList.map(async (team) => {
         const teamModified = { ...team };
         try {
           const results = await retrieveTeamMemberList(team.id);
@@ -173,7 +179,6 @@ exports.teamListRetrieve = async (request, response) => {
         }
         return teamModified;
       }));
-      jsonData.teamList = teamListModified;
       jsonData.status += 'TEAMS_FOUND ';
     } else {
       jsonData.status += 'TEAMS_NOT_FOUND ';
@@ -249,8 +254,8 @@ exports.teamSave = async (request, response) => {
   const teamId = convertToInteger(queryParams.get('teamId'));
   const changeDict = extractVariablesToChangeFromIncomingParams(queryParams, TEAM_FIELDS_ACCEPTED);
   const departmentsChanged =
-    queryParams.get('departmentsChanged') === 'true'
-    || queryParams.get('departmentsToBeSavedChanged') === 'true';
+    queryParams.get('departmentsChanged') === 'true' ||
+    queryParams.get('departmentsToBeSavedChanged') === 'true';
   if (departmentsChanged) {
     const departmentsFromRepeatedParams = [
       ...queryParams.getAll('departments'),
