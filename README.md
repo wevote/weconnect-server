@@ -13,10 +13,10 @@ This **weconnect-server** git repository contains the code for WeVote's Node Jav
 
 Interested in [volunteering or applying for an internship](https://wevote.applytojob.com/apply)? [Starting presentation here](https://prezi.com/p/6iu9aks7zqvs/?present=1).
 Please also [read about our values](https://docs.google.com/document/d/12qBXevI3mVKUsGmXL8mrDMPnWJ1SYw9zX9LGW5cozgg/edit) and
-[see our Code of Conduct](CODE_OF_CONDUCT.md)
+[see our Code of Conduct](https://github.com/wevote/WebApp/blob/435304bc1edd7a8d4d0abdae8c46a533a0ecf52c/CODE_OF_CONDUCT.md)
 To join us, please [review our openings here](https://wevote.applytojob.com/apply), and apply for a volunteer position through that page.
 
-Our current version of our public facing web app is here [https://WeVote.US](https://WeVote.US) and we are working on a new version now!
+Our current version of our public facing web app is here [https://WeVote.US](https://WeVote.US), and we are working on a new version now!
 
 # Installing the weconnect-server
 
@@ -486,6 +486,27 @@ After editing or creating your schema/?.prisma file
 
 run `prisma migrate dev`
 
+### Rare need: bypassing FastBack by copying the DB without using the app, requires access to the production pgAdmin4
+
+In `https://pg.admin.wevote.us/browser/` select the `weconnect` database, and right-click and select "Backup", set a 
+file name like "backupApr1-431pm", and select the 'Custom' options, and then press the Backup button.
+
+When the backup completes on the "Tools" menu, click "Storage Manager", then select your newly created file, and press the download icon.  
+
+The file is now in your browser's download directory, on your personal computer.
+
+Then on your machine, use pgAdmin to "Drop (force)" the local database.
+
+Then recreate the "WeConnectDB" with pgAdmin.
+
+The backup file "backupApr1-431pm" (for example), was created on the production server from an Amazon RDS Postgres instance 
+which includes an internal administrative "rdsadmin" role, which does not exist on your local setup. So restore the database 
+with no roles as follows:
+
+    stevepodell@Steves-MBP-M1-Dec2021 weconnect-server % pg_restore --no-owner --no-privileges -d WeConnectDB backupApr1-431pm
+    stevepodell@Steves-MBP-M1-Dec2021 weconnect-server %
+
+ 
 ### Credits &amp; Thanks
 ---------------
 
