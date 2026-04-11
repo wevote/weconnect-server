@@ -18,27 +18,28 @@ const prisma = new PrismaClient();
 exports.makeTempTable = async (tableName, tempTableName) => {
   if (!tempTableName || tempTableName.length === 0) {
     // Prevent an attempt to drop a non-existent tempTableName
-    console.log('makeTempTable: No temp table name provided');
+    console.log('FastLoad: makeTempTable: No temp table name provided');
     return false;
   }
   // This is a security measure to prevent dropping a table that is in the allowableTables list
   // with a second security measure that only allows dropping tables whose name ends with '_temp'
   if (allowableTables.includes(tempTableName) || !tempTableName.includes('_temp')) {
-    console.log(`makeTempTable: Table ${tempTableName} is required for the operation of weconnect. Not allowed to drop.`);
+    console.log(`FastLoad: makeTempTable: Table ${tempTableName} is required for the operation of weconnect. Not allowed to drop.`);
     return false;
   }
   let query = `DROP TABLE "${tempTableName}";`;
   try {
     try {
       await prisma.$queryRawUnsafe(query);
+      console.log(`FastLoad: Table ${tempTableName} was dropped`);
     } catch (error) {
-      console.log(`Table ${tempTableName} was not dropped since it did not exist`);
+      console.log(`FastLoad: Table ${tempTableName} was not dropped since it did not exist (not a problem!)`);
     }
     query = `CREATE TEMP TABLE "${tempTableName}" AS TABLE "${tableName}";`;
     await prisma.$queryRawUnsafe(query);
     return true;
   } catch (error) {
-    console.error('makeTempTable', error);
+    console.error('FastLoad: makeTempTable', error);
     return false;
   }
 };
@@ -58,9 +59,9 @@ exports.getMaxId = async (tableName) => {
     return max;
   } catch (error) {
     if (error.meta.code === '42703') { // column "id" does not exist for tables with @@unique composite id and no data
-      console.log(`getMaxId for table ${tableName}, "id" does not exist for tables with @@unique composite id and no data`);
+      console.log(`FastLoad: getMaxId for table ${tableName}, "id" does not exist for tables with @@unique composite id and no data`);
     } else {
-      console.error(error);
+      console.error('FastLoad: ', error);
     }
     return 0;
   }
@@ -73,7 +74,7 @@ exports.getTotalRowCount = async () => {
     const tableName = allowableTables[i];
     // eslint-disable-next-line no-await-in-loop
     rows += await this.getMaxId(tableName);
-    console.log(`rows count after ${tableName} --- ${rows}`);
+    console.log(`FastLoad: rows count after ${tableName} --- ${rows}`);
   }
   return rows;
 };
@@ -83,18 +84,30 @@ exports.getTotalRowCount = async () => {
 const globalFirstNameSubstitutions = {};
 const globalLastNameSubstitutions = {};
 const globalEmailSubstitutions = {};
+const globalFirstNamesUsed = [];  // so we don't get duplicate (but randomly selected) emailPersonal primary keys
 
 
 const getTempTableAsJSON = async (tempTableName) => {
-  console.log('getTempTableAsJSON: ', tempTableName);
+  console.log('FastLoad: getTempTableAsJSON: ', tempTableName);
 
   try {
     const orderBy = !['MeetingAttendee', 'QuestionAnswer', 'Task', 'TaskGroupTeamLink', 'TeamMember'].includes(tempTableName.replace('_temp', ''));
-    const query = `SELECT * FROM "${tempTableName}" ${orderBy ? 'ORDER BY id' : ''}`;
-    console.log(`dumpDatabaseTableToTmp: ${query}`);
-    return await prisma.$queryRawUnsafe(query);
+    let query = `SELECT * FROM "${tempTableName}"`;
+    if (orderBy) {
+      query += ' ORDER BY id';
+    }
+    // test stuff
+    if (tempTableName.includes('TeamMember')) {
+      const results =  await prisma.$queryRawUnsafe('SELECT * FROM "TeamMember"');
+      console.log(`FastLoad: dumpDatabaseTableToTmp TeamMember dumped ${results.length} rows`);
+    }
+
+    console.log(`FastLoad: dumpDatabaseTableToTmp query: ${query}`);
+    const results =  await prisma.$queryRawUnsafe(query);
+    console.log(`FastLoad: dumpDatabaseTableToTmp ${tempTableName} dumped ${results.length} rows`);
+    return results;
   } catch (error) {
-    console.error('getTempTableAsJSON: ', error);
+    console.error('FastLoad: getTempTableAsJSON: ', error);
     return undefined;
   }
 };
@@ -109,7 +122,7 @@ const anonymizeTempTable = async (tempTableName) => {
   const firstNameFields = [];
   const lastNameFields = [];
   const emailFields = [];
-  console.log('anonymizeTempTable tempTableName: ', tempTableName);
+  console.log('FastLoad: anonymizeTempTable tempTableName: ', tempTableName);
 
   const maxId = await this.getMaxId(tempTableName);
 
@@ -122,9 +135,9 @@ const anonymizeTempTable = async (tempTableName) => {
     colNamesObjs.forEach((obj) => {
       colNames.push(obj.column_name);
     });
-    // console.log('getAnonymizedTable select column_name', colNames);
+    // console.log('FastLoad: getAnonymizedTable select column_name', colNames);
   } catch (error) {
-    console.error(error);
+    console.error('FastLoad: ', error);
   }
 
   colNames.forEach((colName) => {
@@ -147,13 +160,37 @@ const anonymizeTempTable = async (tempTableName) => {
     }
   });
 
+  const skipTokens = ['deprecate', 'do-not-reply', 'donotreply', 'delete'];
+
   /* eslint-disable no-await-in-loop */
   for (let id = 1; id <= maxId; id++) {
     // find them in the live table
     const person = await prisma.person.findUnique({ where: { id } });
 
-    if (person && !(person.emailPersonal === '' && person.emailOfficial === '')) {
-      // console.log('anonymizeTempTable', person);
+    // Many 'junky' or test rows have non-unique fields that lead to primary key insertion errors after anonymizing them
+    // So do not anonymize these junky rows that contain any of the skipTokens in names or email addresses
+    let anonymizeThisRow = true;
+    skipTokens.forEach((token) => {
+      if ((person?.firstName || '').toLowerCase().includes(token)) {
+        anonymizeThisRow = false;
+      }
+      if ((person?.lastName || '').toLowerCase().includes(token)) {
+        anonymizeThisRow = false;
+      }
+      emailFields.forEach((field) => {
+        if (((person && (person[field])) || '').toLowerCase().includes(token)) {
+          anonymizeThisRow = false;
+        }
+      });
+    });
+    if (anonymizeThisRow === false) {
+      console.log(`FastLoad: skipping row ${person.id} ${person?.firstName} ${person.lastName} ${person.emailPersonal}`);
+    }
+
+    const personEmailPersonal = person?.emailPersonal  || '';
+
+    if (anonymizeThisRow && person && personEmailPersonal.length) {
+      // console.log('FastLoad: anonymizeTempTable', person);
       let sql = `UPDATE "${tempTableName}"
                  SET `;
       let newFirstName = '';
@@ -161,8 +198,13 @@ const anonymizeTempTable = async (tempTableName) => {
         newFirstName = globalFirstNameSubstitutions[person.firstName];
       } else if (person?.firstName) {
         newFirstName = uniqueNamesGenerator({ dictionaries: [names]});
+        if (globalFirstNamesUsed.includes(newFirstName)) {
+          newFirstName += 'z';
+        }
+        globalFirstNamesUsed.push(newFirstName);
         globalFirstNameSubstitutions[person.firstName] = newFirstName;
       }
+
       if (newFirstName) {
         firstNameFields.forEach((field) => {
           sql = `${sql} "${field}" = '${newFirstName}', `;
@@ -179,6 +221,7 @@ const anonymizeTempTable = async (tempTableName) => {
       let newLastCapitalized = newLastName.slice(1);
       newLastCapitalized = newLastName.charAt(0).toUpperCase() + newLastName.slice(1); // Capitalize first letter and add the rest
 
+      // eslint-disable-next-line no-loop-func
       lastNameFields.forEach((field) => {
         sql = `${sql}"${field}" = '${newLastCapitalized}', `;
       });
@@ -189,6 +232,7 @@ const anonymizeTempTable = async (tempTableName) => {
         sql = `${sql}"linkedInUrl" = '${anon}', `;
       }
 
+      // eslint-disable-next-line no-loop-func
       emailFields.forEach((field) => {
         let newEmail = '';
         if (person[field]) {
@@ -198,7 +242,7 @@ const anonymizeTempTable = async (tempTableName) => {
             const email = person[field];
             const index = email.indexOf('@');
             if (index < 2) {
-              console.log(`email problem for ${field} with value ${email}, skipping field`);
+              // console.log(`FastLoad: email problem for ${field} with value ${email}, skipping field`);
             }
             newEmail = `${newFirstName}.${newLastName}${email.substring(index)})`;
             newEmail = newEmail.replace(')', '').toLowerCase();
@@ -210,15 +254,16 @@ const anonymizeTempTable = async (tempTableName) => {
 
       sql = sql.slice(0, -2);
       sql = sql.replace('\n', '');
-      sql += ` WHERE id = '${id}';`;
+      sql += `, "phoneNumber" = '14155551212', "birthdayMonthAndDay" = 'April 1' WHERE id = '${id}';`;
+
       // console.log(sql);
       try {
         await prisma.$executeRawUnsafe(sql);
       } catch (error) {
-        console.error('Row UPDATE error', JSON.stringify(error));
+        console.error('FastLoad: Row UPDATE error', JSON.stringify(error));
       }
-    } else {
-      console.log(`No data for row ${id} in ${tempTableName}`);
+    } else if (personEmailPersonal.length === 0) {
+      console.log(`FastLoad: No data for row ${id} in ${tempTableName}`);
     }
   }
   return true;
@@ -232,12 +277,13 @@ const anonymizeTempTable = async (tempTableName) => {
  */
 exports.makeATempTableAndReturnJSON = async (tableName, anonymizeSensitiveData) => {
   const tempTableName = `${tableName}_temp`;
-  await this.makeTempTable(tableName, tempTableName);
+  const make = await this.makeTempTable(tableName, tempTableName);
+  console.log(`FastLoad: makeATempTableAndReturnJSON created temp table ${tempTableName} success = ${make}`);
 
   // Anonymize Person table, if it is 'Person' we don't want sensitive Data sent
-  console.log(`makeATempTableAndReturnJSON tableName: ${tableName}, anonymizeSensitiveData: ${anonymizeSensitiveData}`);
+  console.log(`FastLoad: makeATempTableAndReturnJSON tableName: ${tableName}, anonymizeSensitiveData: ${anonymizeSensitiveData}`);
   if (tableName === 'Person' && anonymizeSensitiveData) {
-    return anonymizeTempTable(tempTableName);
+    await anonymizeTempTable(tempTableName);
   }
 
   return getTempTableAsJSON(tempTableName);
@@ -272,22 +318,15 @@ exports.getOneFastLoadTable = async (req, res) => {
     return null;
   }
 
-  const { tableName, doNotAnonymize = false, email = '', password = '' } = req.body;
-  // const anonymize = !doNotAnonymize;
-  let anonymizeSensitiveData = true;  // the default case
-  let personIsAdmin = false;
-  if (password.length && !doNotAnonymize) {
-    personIsAdmin = await doesPersonHaveIsAdmin(email, password);
-    if (personIsAdmin) {
-      anonymizeSensitiveData = false;
-    }
-  }
-  console.log(`getOneFastLoadTable email: ${email}, doNotAnonymize: ${doNotAnonymize}, anonymizeSensitiveData: ${anonymizeSensitiveData}, personIsAdmin: ${personIsAdmin}, anonymizeSensitiveData: ${anonymizeSensitiveData}`);
-
+  const { tableName, email = '', password = '' } = req.body;
+  const personIsAdmin = email.length ? await doesPersonHaveIsAdmin(email, password) : false;
+  const anonymizeSensitiveData = !personIsAdmin;
+  console.log(`FastLoad: getOneFastLoadTable tableName: '${tableName}' email: '${email}', personIsAdmin: ${personIsAdmin}, anonymize: ${anonymizeSensitiveData}`);
   const tableJSON = await this.makeATempTableAndReturnJSON(tableName, anonymizeSensitiveData);
 
   return res.json({
     tableName,
     tableJSON,
+    anonymizeSensitiveData,
   });
 };

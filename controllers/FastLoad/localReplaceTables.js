@@ -193,8 +193,10 @@ exports.localReplaceTable = async (req, res) => {
       const table = await Prisma.dmmf.datamodel.models.find((m) => m.name === tableName);
       if (table.fields.some((field) => field.name === 'id')) {
         // Coalesce the ids, so auto increment works on the copied table
+        // 4/6/26:  This should only act on the current table!  https://stackoverflow.com/questions/9108833/postgres-autoincrement-not-updated-on-explicit-id-inserts
         const coalesceSQLCmd =
           `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), coalesce(max(id)+1, 1), false) FROM "${tableName}"`;
+        console.log('FastLoad local: localReplaceTable sql: ', coalesceSQLCmd);
         const idsCount = await prisma.$queryRawUnsafe(coalesceSQLCmd);
         const count = idsCount && idsCount.length && idsCount[0] && idsCount[0].setval;
         console.log(`Coalesce ${tableName} after fillTheTable, ids coalesced: ${count}`);
