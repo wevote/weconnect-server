@@ -169,21 +169,6 @@ stevepodell@Steves-MacBook-Air weconnect-server % npm install
 You can run this command as often as you want, and it will cause no harm.
 <br><br>
 
-## Make a live copy of .env-template to the .env file
-
-Right-click on the `.env-template` file in Webstorm, and paste it as `.env`
-
-<img src="docs/images/WebstormPasteConfig.png" alt="Alt Text" width="1200" >
-
-Open `.env` in WebStorm by double-clicking on it
-
-<img src="docs/images/EnvConfigEditing.png" alt="Alt Text" width="1200" >
-
-Modify the `DEVELOPER_NAME` and `DEVELOPER_PWD` lines by substituting the username and password that you created when you
-setup postgres.
-<br><br>
-
-
 ## Add a Run Configuration in WebStorm to start the weconnect-server
 
 Open the pull-down that initially says "Current File", and select Edit Configurations
@@ -327,12 +312,23 @@ Your database is now registered with pgAdmin 4!
 (If you already had Postgres installed, you will have other databases on the Databases list, this is not a problem, just continue
 with this step to create a new one for the weconnect-server.)
 
-NOTE 4/25/25:  This instruction is not necessary, since the later 'prisma migrate' command automatically creates the DB:  ~~On the left pane "Object Explorer" right click on "Databases" and add the "WeConnectDB".  An empty "WeConnectDB" has been created.~~
+## Make a live copy of .env-template to the .env file
+
+Back in Webstorm, right-click on the `.env-template` file and paste it as `.env`
+
+<img src="docs/images/WebstormPasteConfig.png" alt="Alt Text" width="1200" >
+
+Open `.env` in WebStorm by double-clicking on it
+
+<img src="docs/images/EnvConfigEditing.png" alt="Alt Text" width="1200" >
+
+Modify the `DEVELOPER_NAME` and `DEVELOPER_PWD` lines by substituting the username and password that you created when you
+setup postgres (this must be a user that has `Create DB` permissions).
+<br><br>
 
 Continue on to setup the Prisma ORM.
 
 ## Use the Prisma ORM to migrate the weconnect-server table definitions to the WeConnectDB database
-(This is the next step after getting postgres and pgAdmin 4 installed and running)
 
 Generate the schema from prisma/schema.prisma to node_modules. Note that if `prisma generate` doesn't work, try `npx prisma generate` as well as `npx prisma migrate dev --name init`.
 ```
@@ -371,9 +367,10 @@ Your database is now in sync with your schema.
 stevepodell@Steves-MacBook-Air weconnect-server %  
 
 ```
-<br><br>
 
-## Mac/Linux users ONLY: Add `wevotedeveloper.com` to your /etc/hosts file
+## Add `wevotedeveloper.com` to your /etc/hosts file
+
+### Mac/Linux users ONLY:
 
 Use a macOS command line text editor to edit the `/etc/hosts` file.   Edit the `/etc/hosts` file with nano (or vi or vim).
 
@@ -391,7 +388,7 @@ In the editor add `wevotedeveloper.com` at the end of the first line, so that yo
 ::1             localhost
 ```
 
-## Windows users ONLY:  Add `wevotedeveloper.com` to your /etc/hosts file
+### Windows users ONLY:
 
 Edit your hosts file at `C:\Windows\System32\drivers\etc\hosts`  with Notepad running with Admin privileges.
 Add this line at the end of the file
@@ -428,7 +425,7 @@ After the edit the file should (something) look like this:
 
 Prior to starting the app, you need to get the SSL certificates that allow the server to run in 'https' mode.
 We don't want to publish these certificates in our git repository, but you can get them from anyone on your team or from Dale.
-The file names are `wevotedeveloper.com.crt` and `wevotedeveloper.com_key.txt` -- put them in the weconnect-server/cert directory.
+The file names are `wevotedeveloper.com.crt` and `wevotedeveloper.com_key.txt` -- put them in the `weconnect-server/cert` directory (you will need to create the `cert` directory).
 
 Postgres should be running, due to your earlier steps, if it is not running all API queries from weconnect-client will fail.
 
@@ -501,4 +498,3 @@ Forked from Hackathon Starter Copyright (c) 2024 Sahat Yalkabov
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
