@@ -24,8 +24,8 @@ const isLocal = async (req) => {
   try {
     const { stdout } = await exec('uname -a ');
     if (stdout.startsWith('Linux') || stdout.endsWith('x86_64 GNU/Linux') || stdout.includes('.amzn2.')) {
-      console.log('uname: ', stdout);
-      console.error('Attempted to run localReplaceTable on an AWS instance!');
+      console.log('FastLoad local: uname: ', stdout);
+      console.error('FastLoad local: Attempted to run localReplaceTable on an AWS instance!');
       return false;
     }
     const isOnSourceOfTruthServer = (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) || (process.env.SERVER_IS_SOURCE_OF_TRUTH === 'true');
@@ -33,16 +33,16 @@ const isLocal = async (req) => {
     // console.log('req.host: ', stdout);
     const isOnWeVoteMasterURL = host.toLowerCase().includes('wevote.org') || host.toLowerCase().includes('wevote.us');
     if (isOnWeVoteMasterURL || isOnSourceOfTruthServer) {
-      console.error('Attempted to run localReplaceTable on host teamapi.wevote.org!');
+      console.error('FastLoad local: Attempted to run localReplaceTable on host teamapi.wevote.org!');
       return false;
     }
     if (!host.startsWith('wevotedeveloper.com')) {
-      console.log('req.host: ', stdout);
-      console.error('Attempted to run localReplaceTable on a host other than wevotedeveloper.com!');
+      console.log('FastLoad local: req.host: ', stdout);
+      console.error('FastLoad local: Attempted to run localReplaceTable on a host other than wevotedeveloper.com!');
       return false;
     }
   } catch (error) {
-    console.error('uname error', error);
+    console.error('FastLoad local: uname error', error);
     return false;
   }
   return true;
@@ -79,7 +79,7 @@ const backupTheDatabase = async () => {
     date = date.slice(0, -10);
     const file = `WeConnectDBdumpfile.${date}.sql`;  // example: WeConnectDBdumpfile.2025-05-20T16:27:27.sql
     const command = `pg_dump WeConnectDB > ${file}`;
-    console.log(command);
+    console.log('FastLoad local: ', command);
     await exec(command);
     return true;
   }
@@ -88,12 +88,12 @@ const backupTheDatabase = async () => {
 
 const emptyTheTable = async (tableName) => {
   const command = `TRUNCATE TABLE "${tableName}"  RESTART IDENTITY CASCADE;`;
-  console.log(command);
+  console.log('FastLoad local: ', command);
   try {
     await prisma.$executeRawUnsafe(command);
     return true;
   } catch (error) {
-    console.log(error);
+    console.log('FastLoad local: ', error);
     return false;
   }
 };
@@ -128,7 +128,7 @@ const fillTheTable = async (tableName, tableJSON) => {
   try {
     fs.unlinkSync(outTempFile);
   } catch {
-    console.log(`Did not find ${tableName} so an old copy was not removed.`);
+    console.log(`FastLoad local: Did not find ${tableName} so an old copy was not removed.`);
     error = `Did not find ${tableName} so an old copy was not removed.`;
   }
   try {
@@ -137,13 +137,13 @@ const fillTheTable = async (tableName, tableJSON) => {
     const set = 'SET session_replication_role = \'replica\';';
     const unset = 'SET session_replication_role = \'origin\';';
     await prisma.$queryRawUnsafe(set);
-    console.log('fillTheTable queryRawUnsafe: ', sql);
+    console.log('FastLoad local: fillTheTable queryRawUnsafe: ', sql);
     await prisma.$queryRawUnsafe(sql);
-    console.log('fillTheTable queryRawUnsafe: ', set);
+    console.log('FastLoad local: fillTheTable queryRawUnsafe: ', set);
     await prisma.$queryRawUnsafe(unset);
-    console.log('fillTheTable queryRawUnsafe: ', unset);
+    console.log('FastLoad local: fillTheTable queryRawUnsafe: ', unset);
   } catch (err) {
-    console.error(`Error in writing ${tableName}: ${err}`);
+    console.error(`FastLoad local: Error in writing ${tableName}: ${err}`);
     error += ` -- Error in writing ${tableName}: ${err}`;
   }
   return error;
@@ -174,7 +174,7 @@ exports.localReplaceTable = async (req, res) => {
   }
 
   const { tablePacket: { tableName, tableJSON } } = req.body;
-  console.log('localReplaceTable for table: ', tableName);
+  console.log('FastLoad local: ReplaceTable for table: ', tableName);
   let success = true;
   let didEmpty = false;
   let error;
@@ -193,13 +193,11 @@ exports.localReplaceTable = async (req, res) => {
       const table = await Prisma.dmmf.datamodel.models.find((m) => m.name === tableName);
       if (table.fields.some((field) => field.name === 'id')) {
         // Coalesce the ids, so auto increment works on the copied table
-        // 4/6/26:  This should only act on the current table!  https://stackoverflow.com/questions/9108833/postgres-autoincrement-not-updated-on-explicit-id-inserts
         const coalesceSQLCmd =
           `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), coalesce(max(id)+1, 1), false) FROM "${tableName}"`;
-        console.log('FastLoad local: localReplaceTable sql: ', coalesceSQLCmd);
         const idsCount = await prisma.$queryRawUnsafe(coalesceSQLCmd);
         const count = idsCount && idsCount.length && idsCount[0] && idsCount[0].setval;
-        console.log(`Coalesce ${tableName} after fillTheTable, ids coalesced: ${count}`);
+        console.log(`FastLoad local: Coalesce ${tableName} after fillTheTable, ids coalesced: ${count}`);
       }
     } else {
       error = 'Empty table';

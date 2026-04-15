@@ -13,10 +13,10 @@ This **weconnect-server** git repository contains the code for WeVote's Node Jav
 
 Interested in [volunteering or applying for an internship](https://wevote.applytojob.com/apply)? [Starting presentation here](https://prezi.com/p/6iu9aks7zqvs/?present=1).
 Please also [read about our values](https://docs.google.com/document/d/12qBXevI3mVKUsGmXL8mrDMPnWJ1SYw9zX9LGW5cozgg/edit) and
-[see our Code of Conduct](CODE_OF_CONDUCT.md)
+[see our Code of Conduct](https://github.com/wevote/WebApp/blob/435304bc1edd7a8d4d0abdae8c46a533a0ecf52c/CODE_OF_CONDUCT.md)
 To join us, please [review our openings here](https://wevote.applytojob.com/apply), and apply for a volunteer position through that page.
 
-Our current version of our public facing web app is here [https://WeVote.US](https://WeVote.US) and we are working on a new version now!
+Our current version of our public facing web app is here [https://WeVote.US](https://WeVote.US), and we are working on a new version now!
 
 # Installing the weconnect-server
 
@@ -169,6 +169,21 @@ stevepodell@Steves-MacBook-Air weconnect-server % npm install
 You can run this command as often as you want, and it will cause no harm.
 <br><br>
 
+## Make a live copy of .env-template to the .env file
+
+Right-click on the `.env-template` file in Webstorm, and paste it as `.env`
+
+<img src="docs/images/WebstormPasteConfig.png" alt="Alt Text" width="1200" >
+
+Open `.env` in WebStorm by double-clicking on it
+
+<img src="docs/images/EnvConfigEditing.png" alt="Alt Text" width="1200" >
+
+Modify the `DEVELOPER_NAME` and `DEVELOPER_PWD` lines by substituting the username and password that you created when you
+setup postgres.
+<br><br>
+
+
 ## Add a Run Configuration in WebStorm to start the weconnect-server
 
 Open the pull-down that initially says "Current File", and select Edit Configurations
@@ -312,23 +327,12 @@ Your database is now registered with pgAdmin 4!
 (If you already had Postgres installed, you will have other databases on the Databases list, this is not a problem, just continue
 with this step to create a new one for the weconnect-server.)
 
-## Make a live copy of .env-template to the .env file
-
-Back in Webstorm, right-click on the `.env-template` file and paste it as `.env`
-
-<img src="docs/images/WebstormPasteConfig.png" alt="Alt Text" width="1200" >
-
-Open `.env` in WebStorm by double-clicking on it
-
-<img src="docs/images/EnvConfigEditing.png" alt="Alt Text" width="1200" >
-
-Modify the `DEVELOPER_NAME` and `DEVELOPER_PWD` lines by substituting the username and password that you created when you
-setup postgres (this must be a user that has `Create DB` permissions).
-<br><br>
+NOTE 4/25/25:  This instruction is not necessary, since the later 'prisma migrate' command automatically creates the DB:  ~~On the left pane "Object Explorer" right click on "Databases" and add the "WeConnectDB".  An empty "WeConnectDB" has been created.~~
 
 Continue on to setup the Prisma ORM.
 
 ## Use the Prisma ORM to migrate the weconnect-server table definitions to the WeConnectDB database
+(This is the next step after getting postgres and pgAdmin 4 installed and running)
 
 Generate the schema from prisma/schema.prisma to node_modules. Note that if `prisma generate` doesn't work, try `npx prisma generate` as well as `npx prisma migrate dev --name init`.
 ```
@@ -367,10 +371,9 @@ Your database is now in sync with your schema.
 stevepodell@Steves-MacBook-Air weconnect-server %  
 
 ```
+<br><br>
 
-## Add `wevotedeveloper.com` to your /etc/hosts file
-
-### Mac/Linux users ONLY:
+## Mac/Linux users ONLY: Add `wevotedeveloper.com` to your /etc/hosts file
 
 Use a macOS command line text editor to edit the `/etc/hosts` file.   Edit the `/etc/hosts` file with nano (or vi or vim).
 
@@ -388,7 +391,7 @@ In the editor add `wevotedeveloper.com` at the end of the first line, so that yo
 ::1             localhost
 ```
 
-### Windows users ONLY:
+## Windows users ONLY:  Add `wevotedeveloper.com` to your /etc/hosts file
 
 Edit your hosts file at `C:\Windows\System32\drivers\etc\hosts`  with Notepad running with Admin privileges.
 Add this line at the end of the file
@@ -425,7 +428,7 @@ After the edit the file should (something) look like this:
 
 Prior to starting the app, you need to get the SSL certificates that allow the server to run in 'https' mode.
 We don't want to publish these certificates in our git repository, but you can get them from anyone on your team or from Dale.
-The file names are `wevotedeveloper.com.crt` and `wevotedeveloper.com_key.txt` -- put them in the `weconnect-server/cert` directory (you will need to create the `cert` directory).
+The file names are `wevotedeveloper.com.crt` and `wevotedeveloper.com_key.txt` -- put them in the weconnect-server/cert directory.
 
 Postgres should be running, due to your earlier steps, if it is not running all API queries from weconnect-client will fail.
 
@@ -483,6 +486,27 @@ After editing or creating your schema/?.prisma file
 
 run `prisma migrate dev`
 
+### Rare need: bypassing FastBack by copying the DB without using the app, requires access to the production pgAdmin4
+
+In `https://pg.admin.wevote.us/browser/` select the `weconnect` database, and right-click and select "Backup", set a 
+file name like "backupApr1-431pm", and select the 'Custom' options, and then press the Backup button.
+
+When the backup completes on the "Tools" menu, click "Storage Manager", then select your newly created file, and press the download icon.  
+
+The file is now in your browser's download directory, on your personal computer.
+
+Then on your machine, use pgAdmin to "Drop (force)" the local database.
+
+Then recreate the "WeConnectDB" with pgAdmin.
+
+The backup file "backupApr1-431pm" (for example), was created on the production server from an Amazon RDS Postgres instance 
+which includes an internal administrative "rdsadmin" role, which does not exist on your local setup. So restore the database 
+with no roles as follows:
+
+    stevepodell@Steves-MBP-M1-Dec2021 weconnect-server % pg_restore --no-owner --no-privileges -d WeConnectDB backupApr1-431pm
+    stevepodell@Steves-MBP-M1-Dec2021 weconnect-server %
+
+ 
 ### Credits &amp; Thanks
 ---------------
 
@@ -498,3 +522,4 @@ Forked from Hackathon Starter Copyright (c) 2024 Sahat Yalkabov
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
