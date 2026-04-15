@@ -2,63 +2,88 @@ const util = require('util');
 const fs = require('node:fs');
 const exec = util.promisify(require('child_process').exec);
 const { DateTime } = require('luxon');
+const { execSync } = require('child_process');
 
 exports.getStatus = async (req, res) => {
-  const ret = {};
-  let hash = '';
-  let hashURL = '';
-  let text = '';
-
+  const stats = {};
   try {
-    hash = fs.readFileSync('./git_commit_hash', 'utf8');
+    stats.nodeVersion = execSync('node --version').toString().trim();
+    stats.npmVersion = execSync('npm --version').toString().trim();
+  } catch (error) {
+    console.log('ERROR in getGitValues node/npm: ', error);
+  }
+  try {
+    console.log('Working Directory: ', __dirname);
+    let hash = fs.readFileSync('./git_commit_hash', 'utf8');
     hash = hash.trim();
-    hashURL = `https://github.com/wevote/weconnect-server/commit/${hash}`;
-    const response = await fetch(hashURL);
-    text = await response.text();
-  } catch (error) {
-    console.log(error);
-  }
+    console.log('Hash: ', hash);
+    const hashURL = `https://github.com/wevote/weconnect-client/commit/${hash}`;
+    console.log('hashURL: ', hashURL);
 
-  try {
-    const pr = text.match(/"Merge pull request (.*?)wevote/);
-    ret.Pull_request = pr[1].slice(0, -2);
-    const dateStringResults = text.match(/"committedDate":"(.*?)"/);
-    console.log(dateStringResults[1]);
-    const date = new DateTime(dateStringResults[1]);
-    ret.Git_committed_date = date.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
-  } catch (error) {
-    console.log(error);
-  }
+    // Use the GitHub REST API instead of scraping HTML — works for all commit types
+    const apiHeaders = { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'weconnect-client-build' };
 
-  try {
-    ret.Git_commit_hash = `<a href="${hashURL}">${hash}</a>`;
-  } catch (error) {
-    ret.uname = 'uname error';
-  }
+    // Get commit details (date)
+    const commitResponse = await fetch(`https://api.github.com/repos/wevote/weconnect-client/commits/${hash}`, { headers: apiHeaders });
+    if (!commitResponse.ok) {
+      throw new Error(`GitHub API returned ${commitResponse.status} for commit ${hash}`);
+    }
+    const commitData = await commitResponse.json();
+    let committedDate;
+    try {
+      committedDate = commitData.commit.committer.date || commitData.commit.author.date;
+    } catch (error) {
+      committedDate = commitData.commit.author.date;
+    }
+    console.log('committedDate: ', committedDate);
+    const date = new DateTime(committedDate);
+    stats.Git_committed_date = date.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
+    stats.Git_commit_hash = `<a href="${hashURL}">${hash}</a>`;
 
+    // Get associated pull request number
+    const prsResponse = await fetch(`https://api.github.com/repos/wevote/weconnect-client/commits/${hash}/pulls`, { headers: apiHeaders });
+    if (prsResponse.ok) {
+      const prs = await prsResponse.json();
+      if (prs.length > 0) {
+        stats.Pull_request = `#${prs[0].number}`;
+        console.log('Pull_request: ', stats.Pull_request);
+      } else {
+        stats.Pull_request = 'none';
+      }
+    } else {
+      stats.Pull_request = 'none';
+      stats.Git_committed_date = 'none';
+      stats.Git_commit_hash = 'Not Found';
+    }
+  } catch (error) {
+    console.log('Error in getStatusValues git: ', error);
+    stats.Pull_request = 'none';
+    stats.Git_committed_date = 'none';
+    stats.Git_commit_hash = 'none';
+  }
 
   try {
     const { stdout: node } = await exec('node --version');
-    ret.node = node.trim();
+    stats.node = node.trim();
   } catch (error) {
-    ret.node = 'node not found';
+    stats.node = 'node not found';
   }
 
   try {
     const { stdout: arch } = await exec('arch');
-    ret.arch = arch.trim();
+    stats.arch = arch.trim();
   } catch (error) {
-    ret.arch = 'arch error';
+    stats.arch = 'arch error';
   }
 
   try {
     const { stdout: uname } = await exec('uname -a ');
-    ret.uname = uname.trim();
+    stats.uname = uname.trim();
   } catch (error) {
-    ret.uname = 'uname error';
+    stats.uname = 'uname error';
   }
 
-  ret.host = req.host;
+  stats.host = req.host;
 
-  return res.json(ret);
+  return res.json(stats);
 };
