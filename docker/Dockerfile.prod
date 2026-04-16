@@ -1,4 +1,8 @@
 FROM public.ecr.aws/docker/library/node:22
+
+# install postgresql-client for database health checks and debugging
+RUN apt-get update && apt-get install -y postgresql-client && rm -rf /var/lib/apt/lists/*
+
 ENV NODE_ENV=production
 WORKDIR /app
 COPY . .
