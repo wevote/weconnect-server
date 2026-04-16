@@ -1,11 +1,13 @@
 // weconnect-server/controllers/taskApiController.js
 const { retrieveTaskStatusListByPersonIdList } =  require('./taskController');
-const { createTaskDefinition, createTaskGroup, deleteOneTaskGroupTeamLink, findTaskDefinitionById,
-  findTaskDefinitionListByParams, findTaskGroupById, findTaskGroupTeamLinkListByParams, findTaskGroupListByParams,
+const { createTaskDefinition, createTaskGroup, createTaskType, deleteOneTaskGroupTeamLink, deleteOneTaskType,
+  findTaskDefinitionById, findTaskDefinitionListByParams, findTaskGroupById, findTaskGroupTeamLinkListByParams,
+  findTaskGroupListByParams, findTaskTypeListByParams,
   TASK_DEFINITION_FIELDS_ACCEPTED, TASK_DEFINITION_FIELDS_TO_MAP_TO_PERSON_FIELDS,
-  TASK_FIELDS_ACCEPTED_DICT, TASK_GROUP_FIELDS_ACCEPTED,
+  TASK_FIELDS_ACCEPTED_DICT, TASK_GROUP_FIELDS_ACCEPTED, TASK_TYPE_FIELDS_ACCEPTED,
   removeProtectedFieldsFromTask, removeProtectedFieldsFromTaskDefinition, removeProtectedFieldsFromTaskGroup,
-  saveTaskDefinition, saveTaskGroup, updateOrCreateTask, updateOrCreateTaskGroupTeamLink } = require('../models/taskModel');
+  removeProtectedFieldsFromTaskType,
+  saveTaskDefinition, saveTaskGroup, saveTaskType, updateOrCreateTask, updateOrCreateTaskGroupTeamLink } = require('../models/taskModel');
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { convertToInteger } = require('../utils/convertToInteger');
 const { savePerson } = require('../models/personModel');
@@ -483,6 +485,120 @@ exports.taskGroupTeamLinkSave = async (request, response) => {
     jsonData.success = false;
   }
 
+  response.json(jsonData);
+};
+
+/**
+ * GET /api/v1/task-type-list-retrieve
+ * Retrieve a list of TaskTypes (categories).
+ */
+exports.taskTypeListRetrieve = async (request, response) => {
+  const jsonData = {
+    taskTypeList: [],
+    status: '',
+    success: true,
+  };
+  try {
+    const taskTypeList = await findTaskTypeListByParams({});
+    jsonData.taskTypeList = taskTypeList;
+    jsonData.status += 'TASK_TYPE_LIST_FOUND ';
+  } catch (err) {
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+  response.json(jsonData);
+};
+
+/**
+ * GET /api/v1/task-type-save
+ * Create or update a TaskType (category).
+ */
+exports.taskTypeSave = async (request, response) => {
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const queryParams = new URLSearchParams(parsedUrl.search);
+  const taskTypeId = convertToInteger(queryParams.get('taskTypeId'));
+  const taskTypeChangeDict = extractVariablesToChangeFromIncomingParams(queryParams, TASK_TYPE_FIELDS_ACCEPTED);
+
+  const jsonData = {
+    taskTypeCreated: false,
+    taskTypeId: -1,
+    taskTypeUpdated: false,
+    status: '',
+    success: true,
+    updateErrors: [],
+  };
+  try {
+    jsonData.taskTypeId = taskTypeId;
+    const keys = Object.keys(taskTypeChangeDict);
+    const values = Object.values(taskTypeChangeDict);
+    for (let i = 0; i < keys.length; i++) {
+      jsonData[keys[i]] = values[i];
+    }
+  } catch (err) {
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+
+  try {
+    if (taskTypeId >= 0) {
+      taskTypeChangeDict.id = taskTypeId;
+      const taskType = await saveTaskType(taskTypeChangeDict);
+      jsonData.taskTypeUpdated = true;
+      jsonData.taskTypeId = taskTypeId;
+      jsonData.status += 'TASK_TYPE_UPDATED ';
+      const modifiedTaskTypeDict = removeProtectedFieldsFromTaskType(taskType);
+      Object.entries(modifiedTaskTypeDict).forEach(([k, v]) => { jsonData[k] = v; });
+    } else {
+      if (!taskTypeChangeDict.taskTypeName || taskTypeChangeDict.taskTypeName.length === 0) {
+        jsonData.status += 'taskTypeName_MISSING ';
+        jsonData.success = false;
+      } else {
+        const taskType = await createTaskType(taskTypeChangeDict);
+        jsonData.taskTypeCreated = true;
+        jsonData.taskTypeId = taskType.id;
+        jsonData.status += 'TASK_TYPE_CREATED ';
+        const modifiedTaskTypeDict = removeProtectedFieldsFromTaskType(taskType);
+        Object.entries(modifiedTaskTypeDict).forEach(([k, v]) => { jsonData[k] = v; });
+      }
+    }
+  } catch (err) {
+    console.error('Error while saving taskType:', err);
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+
+  response.json(jsonData);
+};
+
+/**
+ * GET /api/v1/task-type-delete
+ * Delete a TaskType (category).
+ */
+exports.taskTypeDelete = async (request, response) => {
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const queryParams = new URLSearchParams(parsedUrl.search);
+  const taskTypeId = convertToInteger(queryParams.get('taskTypeId'));
+
+  const jsonData = {
+    taskTypeId,
+    taskTypeDeleted: false,
+    status: '',
+    success: true,
+  };
+  try {
+    if (taskTypeId >= 0) {
+      await deleteOneTaskType(taskTypeId);
+      jsonData.taskTypeDeleted = true;
+      jsonData.status += 'TASK_TYPE_DELETED ';
+    } else {
+      jsonData.status += 'taskTypeId_MISSING ';
+      jsonData.success = false;
+    }
+  } catch (err) {
+    console.error('Error while deleting taskType:', err);
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
   response.json(jsonData);
 };
 
