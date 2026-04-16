@@ -1,0 +1,23 @@
+FROM public.ecr.aws/docker/library/node:22
+
+# install postgresql-client for database health checks and debugging
+RUN apt-get update && apt-get install -y postgresql-client openssl && rm -rf /var/lib/apt/lists/*
+
+# install openssl and create SSL certificate
+ARG HTTPS_SSL_HOST
+RUN openssl req -x509 -newkey rsa:4096 -keyout /etc/ssl/private/key.pem -out /etc/ssl/certs/cert.pem -sha256 -days 365 -nodes -subj "/CN=${HTTPS_SSL_HOST}"
+
+# copy entrypoint script
+COPY docker/dev/entrypoint /usr/local/bin/docker-entrypoint
+RUN chmod +x /usr/local/bin/docker-entrypoint
+
+WORKDIR /app
+
+# install dependencies as root before switching user
+COPY package*.json ./
+RUN npm install
+
+EXPOSE 4500
+
+ENTRYPOINT ["docker-entrypoint"]
+CMD ["npm", "run", "start"]
