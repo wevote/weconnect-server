@@ -22,7 +22,7 @@ docker network create wevote
 Copy the template and fill in your values:
 
 ```sh
-cp .env-template-docker .env
+cp .env-template .env
 ```
 
 If you want to customize the database username and password used by weconnect-server, update the settings in the .env file:
@@ -42,7 +42,7 @@ docker compose up --build
 ```
 
 This will:
-1. Start a PostgreSQL 16 database
+1. Start a PostgreSQL database
 2. Wait for the database to be healthy
 3. Run `prisma generate` and `prisma migrate deploy` to apply all migrations
 4. Start the weconnect-server with nodemon (auto-reloads on file changes)
