@@ -160,36 +160,45 @@ const anonymizeTempTable = async (tempTableName) => {
     }
   });
 
-  const skipTokens = ['deprecate', 'do-not-reply', 'donotreply', 'delete'];
+  const junkDetectorTokens = ['deprecate', 'do-not-reply', 'donotreply', 'delete'];
+  let skipCounter = 0;
 
   /* eslint-disable no-await-in-loop */
   for (let id = 1; id <= maxId; id++) {
     // find them in the live table
-    const person = await prisma.person.findUnique({ where: { id } });
+    let person = await prisma.person.findUnique({ where: { id } });
+    const junkReplacementPerson = { ...person };
+    let dojunkReplacementPerson = false;
 
     // Many 'junky' or test rows have non-unique fields that lead to primary key insertion errors after anonymizing them
-    // So do not anonymize these junky rows that contain any of the skipTokens in names or email addresses
-    let anonymizeThisRow = true;
-    skipTokens.forEach((token) => {
+    // So do a super simple substitution for any rows that contain any of the junkDetectorTokens in names or email addresses
+    // eslint-disable-next-line no-loop-func
+    junkDetectorTokens.forEach((token) => {
       if ((person?.firstName || '').toLowerCase().includes(token)) {
-        anonymizeThisRow = false;
+        junkReplacementPerson.firstName = `Junk#${skipCounter++}`;
+        dojunkReplacementPerson = true;
       }
-      if ((person?.lastName || '').toLowerCase().includes(token)) {
-        anonymizeThisRow = false;
+      if (dojunkReplacementPerson || (person?.lastName || '').toLowerCase().includes(token)) {
+        junkReplacementPerson.lastName = 'JunkReplacementLastName';
+        dojunkReplacementPerson = true;
       }
       emailFields.forEach((field) => {
         if (((person && (person[field])) || '').toLowerCase().includes(token)) {
-          anonymizeThisRow = false;
+          dojunkReplacementPerson = true;
+          junkReplacementPerson[field] = `${junkReplacementPerson.firstName}.${junkReplacementPerson.lastName}@nonsense.com`;
         }
       });
     });
-    if (anonymizeThisRow === false) {
-      console.log(`FastLoad: skipping row ${person.id} ${person?.firstName} ${person.lastName} ${person.emailPersonal}`);
+    if (dojunkReplacementPerson === true) {
+      console.log(`FastLoad: replacing junky fields person ${person.id} ${person?.firstName} ${person.lastName} ${person.emailPersonal} with ${junkReplacementPerson.emailPersonal}`);
+      person = junkReplacementPerson;
     }
 
-    const personEmailPersonal = person?.emailPersonal  || '';
+    if (person && (person?.emailPersonal  || '').length === 0) {
+      person.emailPersonal = `${id}@nonsense.com`;
+    }
 
-    if (anonymizeThisRow && person && personEmailPersonal.length) {
+    if (person && person?.emailPersonal) {
       // console.log('FastLoad: anonymizeTempTable', person);
       let sql = `UPDATE "${tempTableName}"
                  SET `;
@@ -216,6 +225,9 @@ const anonymizeTempTable = async (tempTableName) => {
         newLastName = globalLastNameSubstitutions[person.lastName];
       } else if (person?.lastName) {
         newLastName = uniqueNamesGenerator({ dictionaries: [animals]});
+        if (['weasel', 'jackal', 'dog'].includes(newLastName)) {
+          newLastName = uniqueNamesGenerator({ dictionaries: [animals]});
+        }
         globalLastNameSubstitutions[person.lastName] = newLastName;
       }
       let newLastCapitalized = newLastName.slice(1);
@@ -262,8 +274,6 @@ const anonymizeTempTable = async (tempTableName) => {
       } catch (error) {
         console.error('FastLoad: Row UPDATE error', JSON.stringify(error));
       }
-    } else if (personEmailPersonal.length === 0) {
-      console.log(`FastLoad: No data for row ${id} in ${tempTableName}`);
     }
   }
   return true;

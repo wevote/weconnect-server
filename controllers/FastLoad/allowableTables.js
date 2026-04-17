@@ -2,32 +2,32 @@
 // Changing this table on local side by itself will not work
 
 // The fast load apis will only return the data from the following tables
-exports.allowableTables = [         // Row counts on 4/1/26
+exports.allowableTables = [         // Row counts in production DB on 4/17/26
   // 'ClientSession',               // 449, do not copy to developer's instance
-  'Meeting',                        // 0 Rows in production on 4/1/26
-  'MeetingAttendee',                // 0 Rows in production on 4/1/26
-  'Person',                         // 565
+  // 'Meeting',                     // 0
+  // 'MeetingAttendee',             // 0
+  'Person',                         // 588
   'PersonAway',                     // 2
-  'QuestionAnswer',                 // 4995
+  'QuestionAnswer',                 // 5407
   'Questionnaire',                  // 4
   'QuestionnaireQuestion',          // 40
-  // 'QuestionnaireQuestionFormer', // 0 Rows in production on 4/1/26
-  'RecurringMeeting',               // 0 Rows in production on 4/1/26
-  'Task',                           // 8405
-  // 'TaskChangeLog',               // 0 Rows in production on 4/1/26
+  // 'QuestionnaireQuestionFormer', // 0
+  // 'RecurringMeeting',            // 0
+  'Task',                           // 8992
+  // 'TaskChangeLog',               // 0
   'TaskDefinition',                 // 79
-  'TaskDependency',                 // 0 Rows in production on 4/1/26
+  // 'TaskDependency',              // 0
   'TaskGroup',                      // 50
-  'TaskGroupTeamLink',              // 209
-  'Team',                           // 44
-  // 'TeamChangeLog',               // 0 Rows in production on 4/1/26
-  // 'TeamGroup',                   // 0 Rows in production on 4/1/26
-  'TeamMember',                     // 702
-  // 'TeamMemberAway',              // 0 Rows in production on 4/1/26
-  // 'TeamMemberFormer',            // 0 Rows in production on 4/1/26
-  // 'TeamRole',                    // 0 Rows in production on 4/1/26
-  // 'TeamRoleToPersonLink',        // 0 Rows in production on 4/1/26
-  // 'TeamToTeamRoleLink',          // 0 Rows in production on 4/1/26
+  'TaskGroupTeamLink',              // 210
+  'Team',                           // 45
+  // 'TeamChangeLog',               // 0
+  // 'TeamGroup',                   // 0
+  'TeamMember',                     // 748
+  // 'TeamMemberAway',              // 0
+  // 'TeamMemberFormer',            // 0
+  // 'TeamRole',                    // 0
+  // 'TeamRoleToPersonLink',        // 0
+  // 'TeamToTeamRoleLink',          // 0
   // 'User',                        // Not used, should be surgically removed
   // '_prisma_migrations',          // no need to copy
   // 'session',                     // no value in copying the sessions table
