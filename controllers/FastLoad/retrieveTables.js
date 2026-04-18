@@ -81,11 +81,9 @@ exports.getTotalRowCount = async () => {
 
 // These global tables will be used, if we need to anonymise more than just the Person table, so
 // that the anonymised data will be consistent in the other tables.
-const globalFirstNameSubstitutions = {};
-const globalLastNameSubstitutions = {};
-const globalEmailSubstitutions = {};
-const globalFirstNamesUsed = [];  // so we don't get duplicate (but randomly selected) emailPersonal primary keys
-
+const globalSubstitutions = [];       // If we want to use these substiturions on the TeamMember table, this array might need to be persisted in a DB Table
+const globalEmailSubstitutions = [];  // So we can replace emails consistently
+const globalFirstNamesUsed = [];      // so we don't get duplicate (but randomly selected) emailPersonal primary keys
 
 const getTempTableAsJSON = async (tempTableName) => {
   console.log('FastLoad: getTempTableAsJSON: ', tempTableName);
@@ -110,6 +108,36 @@ const getTempTableAsJSON = async (tempTableName) => {
     console.error('FastLoad: getTempTableAsJSON: ', error);
     return undefined;
   }
+};
+
+const getUniqueFirstName = () => {
+  let newFirstName = uniqueNamesGenerator({ dictionaries: [names]});
+  while (globalFirstNamesUsed.includes(newFirstName)) {
+    newFirstName += 'z';
+  }
+  globalFirstNamesUsed.push(newFirstName);
+  return newFirstName;
+};
+
+const getSubstitution = (originalFirst, originalLast, originalPersonalEmail) => {
+  if (globalSubstitutions.length) {
+    const subEntry = globalSubstitutions.find((sub) => originalFirst === sub.originalFirst && originalLast === sub.originalLast);
+    if (subEntry) {
+      return subEntry;
+    }
+  }
+  const last =  uniqueNamesGenerator({ dictionaries: [animals]});
+  const lastName  = last.charAt(0).toUpperCase() + last.slice(1); // Capitalize first letter and add the rest
+  const newEntry = {
+    originalFirst,
+    originalLast,
+    originalPersonalEmail,
+    firstName: getUniqueFirstName(),
+    lastName,
+  };
+
+  globalSubstitutions.push(newEntry);
+  return newEntry;
 };
 
 /**
@@ -163,79 +191,57 @@ const anonymizeTempTable = async (tempTableName) => {
   const junkDetectorTokens = ['deprecate', 'do-not-reply', 'donotreply', 'delete'];
   let skipCounter = 0;
 
+  // Loop through the rows
   /* eslint-disable no-await-in-loop */
   for (let id = 1; id <= maxId; id++) {
     // find them in the live table
     let person = await prisma.person.findUnique({ where: { id } });
-    const junkReplacementPerson = { ...person };
-    let dojunkReplacementPerson = false;
+    const replacementPersonForJunkData = { ...person };
+    let handlePersonWithJunkData = false;
 
-    // Many 'junky' or test rows have non-unique fields that lead to primary key insertion errors after anonymizing them
-    // So do a super simple substitution for any rows that contain any of the junkDetectorTokens in names or email addresses
+    // Many "test" Person rows have non-unique fields that lead to primary key insertion errors after anonymizing them
+    // So do a super simple temporary substitution for any rows that contain any of the junkDetectorTokens in names or email addresses
     // eslint-disable-next-line no-loop-func
     junkDetectorTokens.forEach((token) => {
       if ((person?.firstName || '').toLowerCase().includes(token)) {
-        junkReplacementPerson.firstName = `Junk#${skipCounter++}`;
-        dojunkReplacementPerson = true;
+        replacementPersonForJunkData.firstName = `Junk#${skipCounter++}`;
+        handlePersonWithJunkData = true;
       }
-      if (dojunkReplacementPerson || (person?.lastName || '').toLowerCase().includes(token)) {
-        junkReplacementPerson.lastName = 'JunkReplacementLastName';
-        dojunkReplacementPerson = true;
+      if (handlePersonWithJunkData || (person?.lastName || '').toLowerCase().includes(token)) {
+        replacementPersonForJunkData.lastName = 'JunkReplacementLastName';
+        handlePersonWithJunkData = true;
       }
       emailFields.forEach((field) => {
         if (((person && (person[field])) || '').toLowerCase().includes(token)) {
-          dojunkReplacementPerson = true;
-          junkReplacementPerson[field] = `${junkReplacementPerson.firstName}.${junkReplacementPerson.lastName}@nonsense.com`;
+          handlePersonWithJunkData = true;
+          replacementPersonForJunkData[field] = `${replacementPersonForJunkData.firstName}.${replacementPersonForJunkData.lastName}@nonsense.com`;
         }
       });
     });
-    if (dojunkReplacementPerson === true) {
-      console.log(`FastLoad: replacing junky fields person ${person.id} ${person?.firstName} ${person.lastName} ${person.emailPersonal} with ${junkReplacementPerson.emailPersonal}`);
-      person = junkReplacementPerson;
+    if (handlePersonWithJunkData === true) {
+      console.log(`FastLoad: replacing junky fields person ${person.id} ${person?.firstName} ${person.lastName} ${person.emailPersonal} with ${replacementPersonForJunkData.emailPersonal}`);
+      person = replacementPersonForJunkData;
     }
 
-    if (person && (person?.emailPersonal  || '').length === 0) {
+    if (person && (person.emailPersonal  || '').length === 0) {
       person.emailPersonal = `${id}@nonsense.com`;
     }
 
-    if (person && person?.emailPersonal) {
+    if (person && person.emailPersonal) {
       // console.log('FastLoad: anonymizeTempTable', person);
       let sql = `UPDATE "${tempTableName}"
                  SET `;
-      let newFirstName = '';
-      if (globalFirstNameSubstitutions[person?.firstName]) {
-        newFirstName = globalFirstNameSubstitutions[person.firstName];
-      } else if (person?.firstName) {
-        newFirstName = uniqueNamesGenerator({ dictionaries: [names]});
-        if (globalFirstNamesUsed.includes(newFirstName)) {
-          newFirstName += 'z';
-        }
-        globalFirstNamesUsed.push(newFirstName);
-        globalFirstNameSubstitutions[person.firstName] = newFirstName;
-      }
+      const personFirst = (person.firstName).length ? person.firstName : (person.id).toString();
+      const personLast = (person.lastName).length ? person.lastName : (person.id).toString();
+      const { firstName: newFirstName, lastName: newLastName } = getSubstitution(personFirst, personLast, person.emailPersonal);
 
-      if (newFirstName) {
-        firstNameFields.forEach((field) => {
-          sql = `${sql} "${field}" = '${newFirstName}', `;
-        });
-      }
-
-      let newLastName = '';
-      if (globalLastNameSubstitutions[person?.lastName]) {
-        newLastName = globalLastNameSubstitutions[person.lastName];
-      } else if (person?.lastName) {
-        newLastName = uniqueNamesGenerator({ dictionaries: [animals]});
-        if (['weasel', 'jackal', 'dog'].includes(newLastName)) {
-          newLastName = uniqueNamesGenerator({ dictionaries: [animals]});
-        }
-        globalLastNameSubstitutions[person.lastName] = newLastName;
-      }
-      let newLastCapitalized = newLastName.slice(1);
-      newLastCapitalized = newLastName.charAt(0).toUpperCase() + newLastName.slice(1); // Capitalize first letter and add the rest
+      firstNameFields.forEach((field) => {
+        sql = `${sql} "${field}" = '${newFirstName}', `;
+      });
 
       // eslint-disable-next-line no-loop-func
       lastNameFields.forEach((field) => {
-        sql = `${sql}"${field}" = '${newLastCapitalized}', `;
+        sql = `${sql}"${field}" = '${newLastName}', `;
       });
 
       // linkedinUrl
@@ -276,6 +282,7 @@ const anonymizeTempTable = async (tempTableName) => {
       }
     }
   }
+  // console.log(JSON.stringify(globalSubstitutions));
   return true;
 };
 
