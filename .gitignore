@@ -37,6 +37,7 @@ prisma/migrations/*
 .env.config
 
 # Dependency directory
+git_commit_hash
 node_modules
 bower_components
 
