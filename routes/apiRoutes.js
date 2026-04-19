@@ -4,6 +4,7 @@ const googleApiController = require('../controllers/googleApiController');
 const questionnaireApiController = require('../controllers/questionnaireApiController');
 const { taskGroupTeamLinkDelete, taskDefinitionSave, taskStatusListRetrieve, taskDefinitionListRetrieve,
   taskGroupTeamLinkListRetrieve, taskGroupTeamLinkSave, taskGroupListRetrieve, taskGroupSave, taskSave,
+  taskTypeDelete, taskTypeListRetrieve, taskTypeSave,
 } = require('../controllers/taskApiController');
 const teamApiController = require('../controllers/teamApiController');
 const { slackChannelInvite, slackGetPresence, slackSendMessage, slackListUsers, slackChannelMembers,
@@ -42,6 +43,9 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/task-group-list-retrieve', taskGroupListRetrieve);
   weconnectServer.get('/apis/v1/task-group-save', taskGroupSave);
   weconnectServer.get('/apis/v1/task-save', taskSave);
+  weconnectServer.get('/apis/v1/task-type-delete', taskTypeDelete);
+  weconnectServer.get('/apis/v1/task-type-list-retrieve', taskTypeListRetrieve);
+  weconnectServer.get('/apis/v1/task-type-save', taskTypeSave);
   weconnectServer.get('/apis/v1/team-list-retrieve', teamApiController.teamListRetrieve);
   weconnectServer.get('/apis/v1/team-save', teamApiController.teamSave);
   weconnectServer.get('/apis/v1/team-delete', teamApiController.teamDelete);

@@ -17,6 +17,7 @@ model Task {
   taskDefinitionId      Int
   /// Id of the TaskGroup this stask is a part of
   taskGroupId           Int?
+  taskType              String?
 
   @@id(name: "taskDefinitionIdPersonId", [taskDefinitionId, personId])
 }
@@ -106,6 +107,14 @@ model TaskGroup {
   /// Only create tasks in this TaskGroup to a person if they are on a team using this TaskGroup
   taskGroupIsForTeam                 Boolean?
   taskGroupTeamId                    Int      @default(-1)
+}
+
+/// A category label for tasks, editable by admins (e.g. "Onboarding", "Compliance")
+model TaskType {
+  id                  Int     @id @default(autoincrement())
+  taskTypeName        String  @unique
+  taskTypeDescription String?
+  statusActive        Boolean @default(true)
 }
 
 /// Assign this TaskGroup to people who are members of this team
