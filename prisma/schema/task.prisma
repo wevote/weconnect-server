@@ -73,6 +73,7 @@ model TaskDefinition {
   taskActionUrl                     String?
   taskName                          String /// task name to show before it is done
   taskNameCompleted                 String? /// task name to show after done
+  taskType                          String?
   taskWhatToDo                      String?
   taskWhyWeDoIt                     String?
 }

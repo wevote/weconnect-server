@@ -23,6 +23,7 @@ const TASK_DEFINITION_FIELDS_ACCEPTED = {
   taskActionUrl: 'STRING',
   taskName: 'STRING',
   taskNameCompleted: 'STRING',
+  taskType: 'STRING',
   taskWhatToDo: 'STRING',
   taskWhyWeDoIt: 'STRING',
 };
