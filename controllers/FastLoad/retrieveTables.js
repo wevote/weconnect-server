@@ -277,10 +277,17 @@ const anonymizeTempTable = async (tempTableName) => {
       sql = sql.replace('\n', '');
       sql += `, "phoneNumber" = '14155551212', "birthdayMonthAndDay" = 'April 1' WHERE id = '${id}';`;
 
+      try {
+        const resp = await prisma.$executeRawUnsafe('SELECT table_name FROM information_schema.tables where table_name = \'Person_temp\'');
+        console.log('FastLoad: Check for Person_temp: ', resp);
+      } catch (error) {
+        console.error('FastLoad: Check for Person_temp error', JSON.stringify(error));
+      }
+
       // console.log(sql);
       try {
         await prisma.$executeRawUnsafe(sql);
-        console.error('FastLoad: Row UPDATE successful', sql);
+        console.log('FastLoad: Row UPDATE successful', sql);
       } catch (error) {
         console.error('FastLoad: Row UPDATE error', JSON.stringify(error), sql);    // add sql
       }
