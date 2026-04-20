@@ -74,4 +74,5 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.post('/apis/v1/slack-send-message', slackSendMessage);
   weconnectServer.post('/apis/v1/update-db-from-csv', updateDbFromCsv);
   weconnectServer.post('/apis/v1/verify-email-code', personApiController.verifyEmailCode);
+  weconnectServer.get('/apis/v1/profile-change-log-retrieve', personApiController.retrieveProfileChangeLog);
 };

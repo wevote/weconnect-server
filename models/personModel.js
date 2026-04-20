@@ -58,6 +58,7 @@ const PERSON_FIELDS_ACCEPTED_ADMIN = {
   isHRGeneralist2: 'BOOLEAN',
   isHiringManager: 'BOOLEAN',
   isIntern: 'BOOLEAN',
+  isMonthlyDonor: 'BOOLEAN',
   isTeamLead: 'BOOLEAN',
   jazzHrUrl: 'STRING',
   jobTitle: 'STRING',
@@ -287,6 +288,7 @@ async function deleteOne (id) {
   });
 }
 
+// eslint-disable-next-line no-unused-vars
 const setStatusFieldsIfNotInitialized = (person) => {
   /* eslint-disable no-param-reassign */
   if (person.isAdmin === null) person.isAdmin = false;
@@ -359,6 +361,7 @@ function isoFutureDateDays (days) {
 }
 
 // For required fields that we want to include, even if not passed from the interface.
+/*
 const personObjTemplate = {
   // birthdayMonthAndDay: '',
   // emailOfficial: '',
@@ -399,7 +402,7 @@ const personObjTemplate = {
   // twitterHandle: '',
   // websiteUrl: '',
 };
-
+*/
 async function createPerson (updateDict) {
   // eslint-disable-next-line prefer-object-spread
   const person = await prisma.person.create({ data: updateDict });
@@ -519,7 +522,112 @@ const doesPersonHaveIsAdmin = async (email, password) => {
   return verified;
 };
 
+const updatePersonWhoAreNotActiveDonors = async (donorsArray) => {
+  let personsRemovedAsDonors = {};
 
+  if (!donorsArray || !donorsArray.length) {
+    console.log('updatePersonWhoAreNotActiveDonors donorsArray length is 0');
+  } else {
+    personsRemovedAsDonors = await prisma.person.findMany({
+      where: {
+        isMonthlyDonor: true,
+        NOT: {
+          id: {
+            in: donorsArray,
+          },
+        }, // Condition: id is not in the list of people we just marked
+      },
+    });
+
+    // const ret =
+    await prisma.person.updateMany({
+      where: {
+        isMonthlyDonor: true,
+        NOT: {
+          id: {
+            in: donorsArray,
+          },
+        }, // Condition: id is not in the list of people we just marked
+      },
+      data: {
+        isMonthlyDonor: false, // Set new value
+      },
+    });
+    // console.log('updatePersonWhoAreNotActiveDonors: ', ret);
+  }
+  return personsRemovedAsDonors;
+};
+
+/**
+ * Create a single change log entry which contains a person (personId), an actor performing change (changeId), and
+ * change description (changeDescription)
+ */
+const createProfileChangeLogEntry = async ({ personId, changedById, changeDescription }) => {
+  try {
+    return await prisma.profileChangeLog.create({
+      data: {
+        personId: parseInt(personId),
+        changedById: parseInt(changedById),
+        changeDescription,
+        // dateCreated defaults to now() in Prisma schema
+      },
+    });
+  } catch (error) {
+    console.error('Error in createProfileChangeLogEntry:', error);
+    throw error;
+  }
+};
+
+/**
+ * Retrieve profile change log rows where the person is either the subject or the actor
+ */
+const retrieveProfileChangeLogsFromDb = async (personId) => {
+  try {
+    const id = parseInt(personId);
+    return await prisma.profileChangeLog.findMany({
+      where: {
+        OR: [
+          { personId: id },
+          { changedById: id },
+        ],
+      },
+      orderBy: {
+        dateCreated: 'desc',
+      },
+      include: {
+        // Person who made the change
+        changer: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error in retrieveProfileChangeLogsFromDb:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create multiple log entries at once
+ * @param {Array} logRows - Array of objects { personId, changedById, changeDescription }
+ */
+const createProfileChangeLogEntriesBulk = async (logRows) => {
+  try {
+    return await prisma.profileChangeLog.createMany({
+      data: logRows.map((row) => ({
+        personId: parseInt(row.personId),
+        changedById: parseInt(row.changedById),
+        changeDescription: row.changeDescription,
+      })),
+    });
+  } catch (error) {
+    console.error('Error in createProfileChangeLogEntriesBulk:', error);
+    throw error;
+  }
+};
 
 module.exports = {
   comparePassword,
@@ -546,4 +654,8 @@ module.exports = {
   savePersonAway,
   SITE_SUPER_USERS,
   updatePersonByPersonId,
+  updatePersonWhoAreNotActiveDonors,
+  createProfileChangeLogEntry,
+  retrieveProfileChangeLogsFromDb,
+  createProfileChangeLogEntriesBulk,
 }; // Export the functions

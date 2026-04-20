@@ -8,6 +8,7 @@ const {
 const { convertToInteger } = require('../utils/convertToInteger');
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { TEAM_MEMBER_FIELDS_ACCEPTED } = require('../models/teamModel');
+const { createProfileChangeLogEntry, findPersonById } = require('../models/personModel');
 // const { getAllAccessRightsForPerson } = require('./personController');
 
 /**
@@ -63,6 +64,30 @@ exports.addPersonToTeam = async (request, response) => {
     if (shouldAddPersonToTeam) {
       // Note: This doesn't return a teamMember object
       await updateOrCreateTeamMember(personId, teamId, teamMemberUpdateDict);
+
+      try {
+        // Fetch names for the log description
+        const targetPerson = await findPersonById(personId);
+        const actorId = request.user?.id || paramsObject.changedById || -1;
+        const actorPerson = await findPersonById(actorId);
+
+        const targetName = targetPerson ? `${targetPerson.firstName} ${targetPerson.lastName}` : `ID ${personId}`;
+        const actorName = actorPerson ? `${actorPerson.firstName} ${actorPerson.lastName}` : 'System/Admin';
+        const teamName = paramsObject.teamName || 'the team';
+
+        // Construct the hybrid description
+        // Format: "ADDED [Team]: {TeamName}. {Target} was added to {TeamName} by {Actor}"
+        const detailedDescription = `ADDED [Team]: ${teamName}. ${targetName} was added to team ${teamName} by ${actorName}`;
+
+        await createProfileChangeLogEntry({
+          personId,
+          changedById: actorId,
+          changeDescription: detailedDescription,
+        });
+      } catch (logErr) {
+        console.error('Change log failed but team update succeeded:', logErr);
+      }
+
       jsonData.addPersonToTeamSuccessful = true;
       jsonData.personId = personId;
       jsonData.status += 'PERSON_ADDED_TO_TEAM ';
@@ -125,6 +150,31 @@ exports.removePersonFromTeam = async (request, response) => {
     if (shouldRemovePersonFromTeam) {
       // Note: This doesn't return a teamMember object
       await deleteOneTeamMember(personId, teamId);
+
+      // Track the change
+      try {
+        // Fetch names for the log description
+        const targetPerson = await findPersonById(personId);
+        const actorId = request.user?.id || -1;
+        const actorPerson = await findPersonById(actorId);
+
+        const targetName = targetPerson ? `${targetPerson.firstName} ${targetPerson.lastName}` : `ID ${personId}`;
+        const actorName = actorPerson ? `${actorPerson.firstName} ${actorPerson.lastName}` : 'System/Admin';
+        const teamName = queryParams.get('teamName') || 'the team';
+
+        // Construct the hybrid description
+        // Format: "ADDED [Team]: {TeamName}. {Target} was added to {TeamName} by {Actor}"
+        const detailedDescription = `CLEARED [Team]: ${teamName}. ${targetName} was removed from team ${teamName} by ${actorName}`;
+
+        await createProfileChangeLogEntry({
+          personId,
+          changedById: actorId,
+          changeDescription: detailedDescription,
+        });
+      } catch (logErr) {
+        console.error('Change log failed but team update succeeded:', logErr);
+      }
+
       jsonData.removePersonFromTeamSuccessful = true;
       jsonData.personId = personId;
       jsonData.status += 'PERSON_REMOVED_FROM_TEAM ';
