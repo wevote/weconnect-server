@@ -190,7 +190,7 @@ const anonymizeTempTable = async (tempTableName) => {
 
   const junkDetectorTokens = ['deprecate', 'do-not-reply', 'donotreply', 'delete'];
   let skipCounter = 0;
-
+  const emailRegex = /[-\s&#=_'+,<>()/]/gm;
   // Loop through the rows
   /* eslint-disable no-await-in-loop */
   for (let id = 1; id <= maxId; id++) {
@@ -204,22 +204,25 @@ const anonymizeTempTable = async (tempTableName) => {
     // eslint-disable-next-line no-loop-func
     junkDetectorTokens.forEach((token) => {
       if ((person?.firstName || '').toLowerCase().includes(token)) {
-        replacementPersonForJunkData.firstName = `Junk#${skipCounter++}`;
+        replacementPersonForJunkData.firstName = `Junk${skipCounter++}`;
         handlePersonWithJunkData = true;
       }
       if (handlePersonWithJunkData || (person?.lastName || '').toLowerCase().includes(token)) {
         replacementPersonForJunkData.lastName = 'JunkReplacementLastName';
         handlePersonWithJunkData = true;
       }
+
       emailFields.forEach((field) => {
         if (((person && (person[field])) || '').toLowerCase().includes(token)) {
           handlePersonWithJunkData = true;
-          replacementPersonForJunkData[field] = `${replacementPersonForJunkData.firstName}.${replacementPersonForJunkData.lastName}@nonsense.com`;
+          const first = (replacementPersonForJunkData.firstName).replace(emailRegex, '');
+          const last = (replacementPersonForJunkData.lastName).replace(emailRegex, '');
+          replacementPersonForJunkData[field] = `${first}.${last}@nonsense.com`;
         }
       });
     });
     if (handlePersonWithJunkData === true) {
-      console.log(`FastLoad: replacing junky fields person ${person.id} ${person?.firstName} ${person.lastName} ${person.emailPersonal} with ${replacementPersonForJunkData.emailPersonal}`);
+      console.log(`FastLoad: replacing junky fields person: ${person.id}, first: ${person?.firstName}, last: ${person.lastName}, personal: ${person.emailPersonal} with: ${replacementPersonForJunkData.emailPersonal}`);
       person = replacementPersonForJunkData;
     }
 
@@ -277,6 +280,7 @@ const anonymizeTempTable = async (tempTableName) => {
       // console.log(sql);
       try {
         await prisma.$executeRawUnsafe(sql);
+        console.error('FastLoad: Row UPDATE successful', sql);
       } catch (error) {
         console.error('FastLoad: Row UPDATE error', JSON.stringify(error), sql);    // add sql
       }
