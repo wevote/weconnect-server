@@ -3,71 +3,73 @@ const fs = require('node:fs');
 const exec = util.promisify(require('child_process').exec);
 const { DateTime } = require('luxon');
 const { execSync } = require('child_process');
+const { PrismaClient } = require('@prisma/client');
 
 exports.getStatus = async (req, res) => {
   const stats = {};
-  try {
-    stats.nodeVersion = execSync('node --version').toString().trim();
-    stats.npmVersion = execSync('npm --version').toString().trim();
-  } catch (error) {
-    console.log('ERROR in getGitValues node/npm: ', error);
-  }
+  let hash = '';
+  const apiHeaders = {
+    Accept: 'application/vnd.github.v3+json',
+    'User-Agent': 'weconnect-client-build',
+  };
+
   try {
     console.log('Working Directory: ', __dirname);
-    let hash = fs.readFileSync('./git_commit_hash', 'utf8');
+    hash = fs.readFileSync('./git_commit_hash', 'utf8');
     hash = hash.trim();
     console.log('Hash: ', hash);
-    const hashURL = `https://github.com/wevote/weconnect-client/commit/${hash}`;
-    console.log('hashURL: ', hashURL);
 
     // Use the GitHub REST API instead of scraping HTML — works for all commit types
-    const apiHeaders = { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'weconnect-client-build' };
-
-    // Get commit details (date)
-    const commitResponse = await fetch(`https://api.github.com/repos/wevote/weconnect-client/commits/${hash}`, { headers: apiHeaders });
+    const commitResponse = await fetch(`https://api.github.com/repos/wevote/weconnect-server/commits/${hash}`, { headers: apiHeaders });
     if (!commitResponse.ok) {
       throw new Error(`GitHub API returned ${commitResponse.status} for commit ${hash}`);
     }
-    const commitData = await commitResponse.json();
-    let committedDate;
-    try {
-      committedDate = commitData.commit.committer.date || commitData.commit.author.date;
-    } catch (error) {
-      committedDate = commitData.commit.author.date;
-    }
-    console.log('committedDate: ', committedDate);
-    const date = new DateTime(committedDate);
-    stats.Git_committed_date = date.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
-    stats.Git_commit_hash = `<a href="${hashURL}">${hash}</a>`;
 
-    // Get associated pull request number
-    const prsResponse = await fetch(`https://api.github.com/repos/wevote/weconnect-client/commits/${hash}/pulls`, { headers: apiHeaders });
+    const commitData = await commitResponse.json();
+    const { sha, html_url: htmlURL, commit: { author: { name, date } } } = commitData;
+    console.log('committedDate: ', date);
+    const committedDate = new Date(date);
+    stats.Git_committed_date = committedDate.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
+    stats.Git_commit_author = name;
+    stats.Git_sha = `<a href="${htmlURL}">${sha}</a>`;
+  } catch (error) {
+    stats.Git_committed_date = 'Not Found';
+    stats.Git_commit_author = 'Not Found';
+    stats.Git_sha = 'Not Found';
+  }
+  // Get associated pull request number
+  try {
+    const prsResponse = await fetch(`https://api.github.com/repos/wevote/weconnect-server/commits/${hash}/pulls`, { headers: apiHeaders });
     if (prsResponse.ok) {
       const prs = await prsResponse.json();
       if (prs.length > 0) {
-        stats.Pull_request = `#${prs[0].number}`;
-        console.log('Pull_request: ', stats.Pull_request);
+        stats.Git_pull_request = `#${prs[0].number}`;
+        console.log('Pull_request: ', stats.Git_pull_request);
       } else {
-        stats.Pull_request = 'none';
+        stats.Pull_request = 'Not Found';
       }
-    } else {
-      stats.Pull_request = 'none';
-      stats.Git_committed_date = 'none';
-      stats.Git_commit_hash = 'Not Found';
     }
-  } catch (error) {
-    console.log('Error in getStatusValues git: ', error);
-    stats.Pull_request = 'none';
-    stats.Git_committed_date = 'none';
-    stats.Git_commit_hash = 'none';
+  } catch (err) {
+    stats.Pull_request = 'Not Found';
   }
 
   try {
-    const { stdout: node } = await exec('node --version');
-    stats.node = node.trim();
+    stats.node_version = execSync('node --version').toString().trim();
+    stats.npm_version = execSync('npm --version').toString().trim();
   } catch (error) {
+    console.log('ERROR in getGitValues node/npm: ', error);
     stats.node = 'node not found';
   }
+
+  try {
+    const prisma = new PrismaClient();
+    const version = await prisma.$queryRaw`SELECT version();`;
+    stats.Postgres_version = version[0].version;
+  } catch (error) {
+    stats.pgVersion = `SELECT version() error: ${error}`;
+  }
+
+  stats.host = req.host;
 
   try {
     const { stdout: arch } = await exec('arch');
@@ -82,8 +84,6 @@ exports.getStatus = async (req, res) => {
   } catch (error) {
     stats.uname = 'uname error';
   }
-
-  stats.host = req.host;
 
   return res.json(stats);
 };
