@@ -158,9 +158,14 @@ exports.removePersonFromTeam = async (request, response) => {
         const actorId = request.user?.id || -1;
         const actorPerson = await findPersonById(actorId);
 
+        // Fetch the team to get the name
+        const team = await findTeamById(teamId);
+
         const targetName = targetPerson ? `${targetPerson.firstName} ${targetPerson.lastName}` : `ID ${personId}`;
         const actorName = actorPerson ? `${actorPerson.firstName} ${actorPerson.lastName}` : 'System/Admin';
-        const teamName = queryParams.get('teamName') || 'the team';
+
+        // Use the name from the DB, fallback if team not found
+        const teamName = team ? team.teamName : 'the team';
 
         // Construct the hybrid description
         // Format: "ADDED [Team]: {TeamName}. {Target} was added to {TeamName} by {Actor}"
