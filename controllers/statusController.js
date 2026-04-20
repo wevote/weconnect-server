@@ -27,14 +27,14 @@ exports.getStatus = async (req, res) => {
 
     const commitData = await commitResponse.json();
     const { sha, html_url: htmlURL, commit: { author: { name, date } } } = commitData;
-    console.log('committedDate: ', date);
+    console.log('committedDate: ', date, name);
     const committedDate = new Date(date);
     stats.Git_committed_date = committedDate.toLocaleString(DateTime.DATETIME_MED_WITH_SECONDS);
-    stats.Git_commit_author = name;
+    // Always shows the person who merged as the committer, so skip it, stats.Git_commit_author = name;
     stats.Git_sha = `<a href="${htmlURL}">${sha}</a>`;
   } catch (error) {
     stats.Git_committed_date = 'Not Found';
-    stats.Git_commit_author = 'Not Found';
+    // stats.Git_commit_author = 'Not Found';
     stats.Git_sha = 'Not Found';
   }
   // Get associated pull request number
@@ -72,17 +72,18 @@ exports.getStatus = async (req, res) => {
   stats.host = req.host;
 
   try {
-    const { stdout: arch } = await exec('arch');
-    stats.arch = arch.trim();
-  } catch (error) {
-    stats.arch = 'arch error';
-  }
-
-  try {
     const { stdout: uname } = await exec('uname -a ');
     stats.uname = uname.trim();
   } catch (error) {
-    stats.uname = 'uname error';
+    try {
+      const { stdout } = await exec('ver');
+      if (stdout.contains('Microsoft Windows')) {
+        stats.uname = stdout.trim();
+        return true;
+      }
+    } catch (error2) {
+      console.log('FastLoad local: uname/ver error');
+    }
   }
 
   return res.json(stats);

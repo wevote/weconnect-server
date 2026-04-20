@@ -20,6 +20,15 @@ That's it, your data is restored.
 const prisma = new PrismaClient();
 
 const isLocal = async (req) => {
+  try {
+    const { stdout } = await exec('ver');
+    if (stdout.contains('Microsoft Windows')) {
+      console.log(`FastLoad local: is running on ${stdout}`);
+      return true;
+    }
+  } catch (error) {
+    console.log('FastLoad local: Not running on Microsoft Windows');
+  }
   // Linux ip-10-0-182-109.us-west-2.compute.internal 5.10.235-227.919.amzn2.x86_64 #1 SMP Sat Apr 5 16:59:05 UTC 2025 x86_64 GNU/Linux
   try {
     const { stdout } = await exec('uname -a ');
@@ -133,13 +142,13 @@ const fillTheTable = async (tableName, tableJSON) => {
   }
   try {
     fs.writeFileSync(outTempFile, tableTSV);
-    const sql = `COPY "${tableName}" FROM '${outTempFile}';`;
     const set = 'SET session_replication_role = \'replica\';';
+    const sql = `COPY "${tableName}" FROM '${outTempFile}';`;
     const unset = 'SET session_replication_role = \'origin\';';
     await prisma.$queryRawUnsafe(set);
-    console.log('FastLoad local: fillTheTable queryRawUnsafe: ', sql);
-    await prisma.$queryRawUnsafe(sql);
     console.log('FastLoad local: fillTheTable queryRawUnsafe: ', set);
+    await prisma.$queryRawUnsafe(sql);
+    console.log('FastLoad local: fillTheTable queryRawUnsafe: ', sql);
     await prisma.$queryRawUnsafe(unset);
     console.log('FastLoad local: fillTheTable queryRawUnsafe: ', unset);
   } catch (err) {
