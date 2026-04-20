@@ -280,6 +280,7 @@ const anonymizeTempTable = async (tempTableName) => {
       // console.log(sql);
       try {
         await prisma.$executeRawUnsafe(sql);
+        console.error('FastLoad: Row UPDATE successful', sql);
       } catch (error) {
         console.error('FastLoad: Row UPDATE error', JSON.stringify(error), sql);    // add sql
       }
