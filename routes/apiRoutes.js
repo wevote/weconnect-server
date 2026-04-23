@@ -13,7 +13,7 @@ const { updateDbFromCsv } = require('../controllers/updateSqlFromCsvController')
 const { jazzGetApplicants, jazzGetUsers } = require('../controllers/jazzHrController');
 const { getStatus } = require('../controllers/statusController');
 const { getAllowableTables } = require('../controllers/FastLoad/allowableTables');
-const { getOneFastLoadTable } = require('../controllers/FastLoad/retrieveTables');
+const { getOneFastLoadTable, getPostgresTableStatistics } = require('../controllers/FastLoad/retrieveTables');
 const { localReplaceTable } = require('../controllers/FastLoad/localReplaceTables');
 
 /**
@@ -57,6 +57,7 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.post('/apis/v1/fast-load-get-allowable-tables', getAllowableTables);
   weconnectServer.post('/apis/v1/fast-load-local-table-replace', localReplaceTable);
   weconnectServer.post('/apis/v1/fast-load-table-retrieve', getOneFastLoadTable);
+  weconnectServer.post('/apis/v1/fast-load-table-statistics', getPostgresTableStatistics);
   weconnectServer.post('/apis/v1/get-auth', personApiController.getAuth);
   weconnectServer.post('/apis/v1/google-create-user', googleApiController.googleCreateUserAccount);
   weconnectServer.post('/apis/v1/google-delete-user', googleApiController.googleDeleteUserAccount);
