@@ -336,6 +336,42 @@ exports.convertTeamDepartmentsToPostgresAcceptableFormat = async () => {
   }
 };
 
+exports.getPostgresTableStatistics = async (req, res) => {
+  const sqlTables = [];
+  try {
+    const sql = 'SELECT schemaname, relname AS table_name, n_live_tup AS estimated_row_count ' +
+      'FROM pg_stat_user_tables ' +
+      'ORDER BY n_live_tup DESC;';
+    const results = await prisma.$queryRawUnsafe(sql);
+    // eslint-disable-next-line guard-for-in,no-restricted-syntax
+    for (let i = 0; i < results.length; i++) {
+      const row = results[i];
+      if (!['session', '_prisma_migrations', 'User'].includes(row.table_name)) {
+        sqlTables.push([
+          row.table_name,
+          parseInt(row.estimated_row_count),
+        ]);
+      }
+    }
+    console.log('FastLoad: getPostgresTableStatistics', sqlTables);
+  } catch (error) {
+    console.error('FastLoad: getPostgresTableStatistics error', JSON.stringify(error));
+  }
+
+  return res.json({
+    sqlTables: JSON.stringify(sqlTables),
+  });
+};
+
+/*
+April 22, possible new way
+psql -U stevepodell -d WeConnectDB < steveWeconnectBackupPlainApr22
+Old way
+pg_restore --no-owner --no-privileges -d WeConnectDB steveLiveCustomApr20
+ */
+
+
+
 exports.getOneFastLoadTable = async (req, res) => {
   // This function gets a table's content and sends it to the client, so it HAS TO be able to be run on the production server
   const isOnSourceOfTruthServer = (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) || (process.env.SERVER_IS_SOURCE_OF_TRUTH === 'true');
