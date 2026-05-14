@@ -100,8 +100,6 @@ model Person {
 
   QuestionAnswer QuestionAnswer[]
   TeamMember     TeamMember[]
-  logsReceived  ProfileChangeLog[] @relation("PersonSubject")
-  logsCreated   ProfileChangeLog[] @relation("PersonChanger")
 }
 
 model PersonAway {
@@ -131,10 +129,5 @@ model ProfileChangeLog {
   changedById       Int      // The person who performed the action (Admin or Self)
   changeDescription String   // e.g., "ADDED [Team]: Ads Team"
   dateCreated       DateTime @default(now())
-
-  // The Person who IS being changed (the subject)
-  person            Person   @relation("PersonSubject", fields: [personId], references: [id])
-
-  // The Person who MADE the change (the actor/changer)
-  changer           Person   @relation("PersonChanger", fields: [changedById], references: [id])
+  teamName          String?   // Name of team if applicable
 }

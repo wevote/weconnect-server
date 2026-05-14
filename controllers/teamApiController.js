@@ -67,22 +67,17 @@ exports.addPersonToTeam = async (request, response) => {
 
       try {
         // Fetch names for the log description
-        const targetPerson = await findPersonById(personId);
         const actorId = request.user?.id || paramsObject.changedById || -1;
-        const actorPerson = await findPersonById(actorId);
-
-        const targetName = targetPerson ? `${targetPerson.firstName} ${targetPerson.lastName}` : `ID ${personId}`;
-        const actorName = actorPerson ? `${actorPerson.firstName} ${actorPerson.lastName}` : 'System/Admin';
         const teamName = paramsObject.teamName || 'the team';
 
         // Construct the hybrid description
-        // Format: "ADDED [Team]: {TeamName}. {Target} was added to {TeamName} by {Actor}"
-        const detailedDescription = `ADDED [Team]: ${teamName}. ${targetName} was added to team ${teamName} by ${actorName}`;
+        const detailedDescription = `ADDED [Team]: ${teamName}`;
 
         await createProfileChangeLogEntry({
           personId,
           changedById: actorId,
           changeDescription: detailedDescription,
+          teamName: teamName,
         });
       } catch (logErr) {
         console.error('Change log failed but team update succeeded:', logErr);
@@ -154,27 +149,22 @@ exports.removePersonFromTeam = async (request, response) => {
       // Track the change
       try {
         // Fetch names for the log description
-        const targetPerson = await findPersonById(personId);
         const actorId = request.user?.id || -1;
-        const actorPerson = await findPersonById(actorId);
 
         // Fetch the team to get the name
         const team = await findTeamById(teamId);
-
-        const targetName = targetPerson ? `${targetPerson.firstName} ${targetPerson.lastName}` : `ID ${personId}`;
-        const actorName = actorPerson ? `${actorPerson.firstName} ${actorPerson.lastName}` : 'System/Admin';
 
         // Use the name from the DB, fallback if team not found
         const teamName = team ? team.teamName : 'the team';
 
         // Construct the hybrid description
-        // Format: "ADDED [Team]: {TeamName}. {Target} was added to {TeamName} by {Actor}"
-        const detailedDescription = `CLEARED [Team]: ${teamName}. ${targetName} was removed from team ${teamName} by ${actorName}`;
+        const detailedDescription = `CLEARED [Team]: ${teamName}`;
 
         await createProfileChangeLogEntry({
           personId,
           changedById: actorId,
           changeDescription: detailedDescription,
+          teamName: teamName,
         });
       } catch (logErr) {
         console.error('Change log failed but team update succeeded:', logErr);

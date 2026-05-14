@@ -314,38 +314,25 @@ exports.answerListSave = async (request, response) => {
       // For Standard: personId and actorId are the same
       const actorId = request.user?.id || -1;
 
-      // get data for change logs
-      const [actorPerson, targetPerson] = await Promise.all([
-        findPersonById(actorId),
-        findPersonById(targetPersonIdForLog),
-      ]);
-
-      // get names and booleans
-      const actorName = actorPerson ? `${actorPerson.firstName} ${actorPerson.lastName}` : 'Unknown User';
-      const targetName = targetPerson ? `${targetPerson.firstName} ${targetPerson.lastName}` : 'New User';
+      // consider add/replaced scenarios
       const questionnaireName = questionnaire?.questionnaireName || 'Questionnaire';
 
       let prefix = 'REPLACED';
-      let actionWord = 'Updated';
-      let creationStatus = 'Updated';
 
       if (isCreatePersonQuestionnaire) {
         if (isNewPersonCreated) {
           prefix = 'ADDED';
-          actionWord = 'Submitted';
-          creationStatus = 'Created';
         }
       } else if (!alreadyAnsweredBeforeSave) {
         prefix = 'ADDED';
-        actionWord = 'Submitted';
       }
 
       // set final description for change log
       let finalDescription = '';
       if (isCreatePersonQuestionnaire) {
-        finalDescription = `${prefix} [QuestionnaireResponse]: ${questionnaireName}. Questionnaire Response ${actionWord} by ${actorName}, user ${targetName} was ${creationStatus}`;
+        finalDescription = `${prefix} [QuestionnaireResponse]: ${questionnaireName}`;
       } else {
-        finalDescription = `${prefix} [QuestionnaireResponse]: ${questionnaireName}. Questionnaire Response ${actionWord} by ${actorName} for user ${targetName}`;
+        finalDescription = `${prefix} [QuestionnaireResponse]: ${questionnaireName}`;
       }
 
       // create log entry

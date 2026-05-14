@@ -485,9 +485,6 @@ exports.personSave = async (request, response) => {
           const actorId = request.user?.id || -1;
           const logRows = [];
 
-          // get target name
-          const targetName = `${person.firstName} ${person.lastName}`;
-
           // Compare only fields that were actually passed in personUpdateDict
           Object.keys(personUpdateDict).forEach((field) => {
             if (field === 'id' || field === 'password') return; // Skip metadata
@@ -514,21 +511,21 @@ exports.personSave = async (request, response) => {
                 logRows.push({
                   personId,
                   changedById: actorId,
-                  changeDescription: `ADDED [${field}]: ${newValue} for user ${targetName}`,
+                  changeDescription: `ADDED [${field}]: ${newValue}`,
                 });
               } else if (prevValue && newValue) {
                 // Case 2b: replaced value
                 logRows.push({
                   personId,
                   changedById: actorId,
-                  changeDescription: `REPLACED [${field}]: Replaced ${prevValue} with ${newValue} for user ${targetName}`,
+                  changeDescription: `REPLACED [${field}]: ${prevValue}`,
                 });
               } else if (prevValue && !newValue) {
                 // Case 2c: Cleared value
                 logRows.push({
                   personId,
                   changedById: actorId,
-                  changeDescription: `CLEARED [${field}]: ${prevValue} for user ${targetName}`,
+                  changeDescription: `CLEARED [${field}]: ${prevValue}`,
                 });
               }
             }
@@ -613,11 +610,14 @@ exports.retrieveProfileChangeLog = async (request, response) => {
     jsonData.changeLogList = logs.map((log) => {
       const firstName = log.changer?.firstName || '';
       const lastName = log.changer?.lastName || '';
+      const targetName = `${log.person?.firstName || ''} ${log.person?.lastName || ''}`.trim();
 
       return {
         id: log.id,
         changeDescription: log.changeDescription,
         changedByPersonName: `${firstName} ${lastName}`.trim() || 'Unknown',
+        targetPersonName: targetName || 'Unknown',
+        teamName: log.teamName || null,
         dateCreatedFormatted: new Intl.DateTimeFormat('en-US', {
           month: 'long',
           day: 'numeric',
