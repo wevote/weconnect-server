@@ -18,17 +18,26 @@ const { createProfileChangeLogEntry, findPersonById } = require('../models/perso
 exports.addPersonToTeam = async (request, response) => {
   let shouldAddPersonToTeam = false;
 
-  // const results = await getAllAccessRightsForPerson(request);
-  // const { accessRights, personIdsByTeam, teamAccessRights } = results;
-
-  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
-  const queryParams = new URLSearchParams(parsedUrl.search);
-  const personId = convertToInteger(queryParams.get('personId'));
-  const teamId = convertToInteger(queryParams.get('teamId'));
+  const queryString = request.url.split('?')[1];
+  const queryParams = new URLSearchParams(queryString);
+  const paramsObject = Object.fromEntries(queryParams.entries());
+  const personId = convertToInteger(paramsObject.personId);
+  const teamId = convertToInteger(paramsObject.teamId);
+  // 2026-April-3 In this pull request: https://github.com/wevote/weconnect-server/pull/124/changes
+  //  the following lines replaced the call to extractVariablesToChangeFromIncomingParams, but broke the ability to
+  //  add a team lead. Rolling back.
+  // const teamMemberUpdateDict = {};
+  // Object.keys(paramsObject).forEach((key) => {
+  //   const value = paramsObject[key];
+  //   if (key in TEAM_MEMBER_FIELDS_ACCEPTED) {
+  //     teamMemberUpdateDict[key] = value;
+  //   }
+  // });
   const teamMemberUpdateDict = extractVariablesToChangeFromIncomingParams(
     queryParams,
     TEAM_MEMBER_FIELDS_ACCEPTED,
   );
+
   // Set up the default JSON response.
   const jsonData = {
     addPersonToTeamSuccessful: false,
@@ -63,6 +72,7 @@ exports.addPersonToTeam = async (request, response) => {
 
     if (shouldAddPersonToTeam) {
       // Note: This doesn't return a teamMember object
+      // const ret =
       await updateOrCreateTeamMember(personId, teamId, teamMemberUpdateDict);
 
       try {
@@ -200,7 +210,7 @@ exports.teamListRetrieve = async (request, response) => {
     const teamList = await findTeamListByParams({}, false);
     jsonData.success = true;
     if (teamList && teamList.length > 0) {
-      const teamListModified = await Promise.all(teamList.map(async (team) => {
+      jsonData.teamList = await Promise.all(teamList.map(async (team) => {
         const teamModified = { ...team };
         try {
           const results = await retrieveTeamMemberList(team.id);
@@ -214,7 +224,6 @@ exports.teamListRetrieve = async (request, response) => {
         }
         return teamModified;
       }));
-      jsonData.teamList = teamListModified;
       jsonData.status += 'TEAMS_FOUND ';
     } else {
       jsonData.status += 'TEAMS_NOT_FOUND ';
@@ -289,6 +298,49 @@ exports.teamSave = async (request, response) => {
   const queryParams = new URLSearchParams(parsedUrl.search);
   const teamId = convertToInteger(queryParams.get('teamId'));
   const changeDict = extractVariablesToChangeFromIncomingParams(queryParams, TEAM_FIELDS_ACCEPTED);
+  const departmentsChanged =
+    queryParams.get('departmentsChanged') === 'true' ||
+    queryParams.get('departmentsToBeSavedChanged') === 'true';
+  if (departmentsChanged) {
+    const departmentsFromRepeatedParams = [
+      ...queryParams.getAll('departments'),
+      ...queryParams.getAll('departmentsToBeSaved'),
+    ]
+      .map((department) => (typeof department === 'string' ? department.trim() : department))
+      .filter((department) => typeof department === 'string' && department !== '');
+
+    if (departmentsFromRepeatedParams.length > 1) {
+      changeDict.departments = departmentsFromRepeatedParams;
+    } else if (departmentsFromRepeatedParams.length === 1) {
+      const oneDepartment = departmentsFromRepeatedParams[0];
+      if (oneDepartment.startsWith('[') && oneDepartment.endsWith(']')) {
+        try {
+          const parsedDepartments = JSON.parse(oneDepartment);
+          if (Array.isArray(parsedDepartments)) {
+            changeDict.departments = parsedDepartments
+              .map((department) => (typeof department === 'string' ? department.trim() : department))
+              .filter((department) => typeof department === 'string' && department !== '');
+          } else {
+            changeDict.departments = [oneDepartment];
+          }
+        } catch (error) {
+          changeDict.departments = oneDepartment
+            .split(',')
+            .map((department) => department.trim())
+            .filter((department) => department !== '');
+        }
+      } else if (oneDepartment.includes(',')) {
+        changeDict.departments = oneDepartment
+          .split(',')
+          .map((department) => department.trim())
+          .filter((department) => department !== '');
+      } else {
+        changeDict.departments = [oneDepartment];
+      }
+    } else {
+      changeDict.departments = [];
+    }
+  }
   // Set up the default JSON response.
   const jsonData = {
     teamCreated: false,
@@ -334,12 +386,30 @@ exports.teamSave = async (request, response) => {
       }
     } else {
       const team = await findOneTeam({ id: teamId });
-      const updatedTeam = { ...team, ...changeDict };
-      await saveTeam(updatedTeam);
+      if (!team) {
+        jsonData.status += 'TEAM_NOT_FOUND ';
+        jsonData.success = false;
+        jsonData.updateErrors.push('Team not found');
+        response.json(jsonData);
+        return;
+      }
+
+      const changedFieldCount = Object.keys(changeDict).length;
+      if (changedFieldCount === 0) {
+        jsonData.status += 'NO_CHANGES_DETECTED ';
+      } else {
+        const savedTeam = await saveTeam({ id: teamId, ...changeDict });
+        const modifiedTeamDict = removeProtectedFieldsFromTeam(savedTeam);
+        const teamKeys = Object.keys(modifiedTeamDict);
+        const teamValues = Object.values(modifiedTeamDict);
+        for (let i = 0; i < teamKeys.length; i++) {
+          jsonData[teamKeys[i]] = teamValues[i];
+        }
+      }
       jsonData.teamCreated = false;
       jsonData.teamUpdated = true;
-      jsonData.teamId = team.id;
-      jsonData.status += 'TEAM_NAME_UPDATED ';
+      jsonData.teamId = teamId;
+      jsonData.status += 'TEAM_UPDATED ';
     }
   } catch (err) {
     console.error('Error while saving team:', err);

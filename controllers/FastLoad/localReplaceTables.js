@@ -20,28 +20,38 @@ That's it, your data is restored.
 const prisma = new PrismaClient();
 
 const isLocal = async (req) => {
+  try {
+    const { stdout } = await exec('ver');
+    if (stdout.includes('Microsoft Windows')) {
+      console.log(`FastLoad local: is running on ${stdout}`);
+      return true;
+    }
+  } catch (error) {
+    console.log('FastLoad local: Not running on Microsoft Windows');
+  }
   // Linux ip-10-0-182-109.us-west-2.compute.internal 5.10.235-227.919.amzn2.x86_64 #1 SMP Sat Apr 5 16:59:05 UTC 2025 x86_64 GNU/Linux
   try {
     const { stdout } = await exec('uname -a ');
     if (stdout.startsWith('Linux') || stdout.endsWith('x86_64 GNU/Linux') || stdout.includes('.amzn2.')) {
-      console.log('uname: ', stdout);
-      console.error('Attempted to run localReplaceTable on an AWS instance!');
+      console.log('FastLoad local: uname: ', stdout);
+      console.error('FastLoad local: Attempted to run localReplaceTable on an AWS instance!');
       return false;
     }
-    // eslint-disable-next-line prefer-destructuring
-    const host = req.host;
+    const isOnSourceOfTruthServer = (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) || (process.env.SERVER_IS_SOURCE_OF_TRUTH === 'true');
+    const { host } = req;
     // console.log('req.host: ', stdout);
-    if (host.includes('wevote.org') || host.includes('wevote.us')) {
-      console.error('Attempted to run localReplaceTable on host teamapi.wevote.org!');
+    const isOnWeVoteMasterURL = host.toLowerCase().includes('wevote.org') || host.toLowerCase().includes('wevote.us');
+    if (isOnWeVoteMasterURL || isOnSourceOfTruthServer) {
+      console.error('FastLoad local: Attempted to run localReplaceTable on host teamapi.wevote.org!');
       return false;
     }
     if (!host.startsWith('wevotedeveloper.com')) {
-      console.log('req.host: ', stdout);
-      console.error('Attempted to run localReplaceTable on a host other than wevotedeveloper.com!');
+      console.log('FastLoad local: req.host: ', stdout);
+      console.error('FastLoad local: Attempted to run localReplaceTable on a host other than wevotedeveloper.com!');
       return false;
     }
   } catch (error) {
-    console.error('uname error', error);
+    console.error('FastLoad local: uname error', error);
     return false;
   }
   return true;
@@ -78,7 +88,7 @@ const backupTheDatabase = async () => {
     date = date.slice(0, -10);
     const file = `WeConnectDBdumpfile.${date}.sql`;  // example: WeConnectDBdumpfile.2025-05-20T16:27:27.sql
     const command = `pg_dump WeConnectDB > ${file}`;
-    console.log(command);
+    console.log('FastLoad local: ', command);
     await exec(command);
     return true;
   }
@@ -87,12 +97,12 @@ const backupTheDatabase = async () => {
 
 const emptyTheTable = async (tableName) => {
   const command = `TRUNCATE TABLE "${tableName}"  RESTART IDENTITY CASCADE;`;
-  console.log(command);
+  console.log('FastLoad local: ', command);
   try {
     await prisma.$executeRawUnsafe(command);
     return true;
   } catch (error) {
-    console.log(error);
+    console.log('FastLoad local: ', error);
     return false;
   }
 };
@@ -109,6 +119,10 @@ const fillTheTable = async (tableName, tableJSON) => {
     values.forEach((val) => {
       if (val === 'null' || val === null) {
         line += '\\N\t';
+      } else if (Array.isArray(val)) {
+        let arrayLiteralString = JSON.stringify(val);
+        arrayLiteralString = arrayLiteralString.replace('[', '{').replace(']', '}');
+        line += `${arrayLiteralString}\t`;
       } else {
         line += `${val}\t`;
       }
@@ -123,22 +137,22 @@ const fillTheTable = async (tableName, tableJSON) => {
   try {
     fs.unlinkSync(outTempFile);
   } catch {
-    console.log(`Did not find ${tableName} so an old copy was not removed.`);
+    console.log(`FastLoad local: Did not find ${tableName} so an old copy was not removed.`);
     error = `Did not find ${tableName} so an old copy was not removed.`;
   }
   try {
     fs.writeFileSync(outTempFile, tableTSV);
-    const sql = `COPY "${tableName}" FROM '${outTempFile}';`;
     const set = 'SET session_replication_role = \'replica\';';
+    const sql = `COPY "${tableName}" FROM '${outTempFile}';`;
     const unset = 'SET session_replication_role = \'origin\';';
     await prisma.$queryRawUnsafe(set);
-    console.log('fillTheTable queryRawUnsafe: ', sql);
+    console.log('FastLoad local: fillTheTable queryRawUnsafe: ', set);
     await prisma.$queryRawUnsafe(sql);
-    console.log('fillTheTable queryRawUnsafe: ', set);
+    console.log('FastLoad local: fillTheTable queryRawUnsafe: ', sql);
     await prisma.$queryRawUnsafe(unset);
-    console.log('fillTheTable queryRawUnsafe: ', unset);
+    console.log('FastLoad local: fillTheTable queryRawUnsafe: ', unset);
   } catch (err) {
-    console.error(`Error in writing ${tableName}: ${err}`);
+    console.error(`FastLoad local: Error in writing ${tableName}: ${err}`);
     error += ` -- Error in writing ${tableName}: ${err}`;
   }
   return error;
@@ -160,13 +174,16 @@ const cleanNewLinesOutOfJSON = (tableJSON) => {
 
 
 exports.localReplaceTable = async (req, res) => {
-  if (process.env.SERVER_IS_SOURCE_OF_TRUTH == true) {
+  const isOnSourceOfTruthServer = (process.env.SERVER_IS_SOURCE_OF_TRUTH === true) || (process.env.SERVER_IS_SOURCE_OF_TRUTH === 'true');
+  const { host }  = req;
+  const isOnWeVoteMasterURL = host.toLowerCase().includes('wevote.org') || host.toLowerCase().includes('wevote.us');
+  if (isOnWeVoteMasterURL || isOnSourceOfTruthServer) {
     console.log('localReplaceTable: weconnect-server environment variable SERVER_IS_SOURCE_OF_TRUTH is true, returning null');
     return null;
   }
 
   const { tablePacket: { tableName, tableJSON } } = req.body;
-  console.log('localReplaceTable for table: ', tableName);
+  console.log('FastLoad local: ReplaceTable for table: ', tableName);
   let success = true;
   let didEmpty = false;
   let error;
@@ -189,7 +206,7 @@ exports.localReplaceTable = async (req, res) => {
           `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), coalesce(max(id)+1, 1), false) FROM "${tableName}"`;
         const idsCount = await prisma.$queryRawUnsafe(coalesceSQLCmd);
         const count = idsCount && idsCount.length && idsCount[0] && idsCount[0].setval;
-        console.log(`Coalesce ${tableName} after fillTheTable, ids coalesced: ${count}`);
+        console.log(`FastLoad local: Coalesce ${tableName} after fillTheTable, ids coalesced: ${count}`);
       }
     } else {
       error = 'Empty table';

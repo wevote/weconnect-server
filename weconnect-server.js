@@ -20,6 +20,7 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const useragent = require('express-useragent');
 const { getPersonIdBySessionId } = require('./models/clientSessionModel');
+const { convertTeamDepartmentsToPostgresAcceptableFormat } = require('./controllers/FastLoad/retrieveTables');
 
 process.env.NODE_DEBUG = '';    // Use our custom http logger, that shortens long GET urls
 
@@ -34,10 +35,11 @@ dotenvExpand.expand(dotenv.config());
  * Set config values
  */
 const secureTransfer = (process.env.BASE_URL.startsWith('https'));
+const disableLogColors = (process.env.NO_COLOR || '0') === '1';
 
 const ACCESS_PATHS_ALLOWED_PRE_AUTH = ['/', '/favicon.ico', '/health', '/healthapis/v1/versions', '/we-vote-logo-wordmark-vertical-color-on-white-256x256.png'];
 const ACCESS_APIS_ALLOWED_PRE_AUTH = [
-  'answer-list-save', 'get-auth', 'login', 'logout', 'person-id-retrieve-by-email', 'person-retrieve-by-email',
+  'answer-list-save', 'fast-load-get-allowable-tables', 'fast-load-table-retrieve', 'fast-load-local-table-replace', 'get-auth', 'login', 'logout', 'person-id-retrieve-by-email', 'person-retrieve-by-email',
   'question-list-retrieve', 'questionnaire-list-retrieve', 'save-password', 'send-email-code', 'signup',
   'task-definition-list-retrieve', 'task-group-list-retrieve', 'task-group-team-link-list-retrieve',
   'verify-email-code', 'versions',
@@ -75,7 +77,8 @@ const corsConfig = {
   origin: true,
 };
 weconnectServer.use(cors(corsConfig));
-weconnectServer.use(logger('dev'));
+// if disableLogColors is set, we use a different log format without colors, suitable for production
+weconnectServer.use(disableLogColors ? logger('combined') : logger('dev'));
 // weconnectServer.use(express.bodyParser({limit: '10mb'}));
 weconnectServer.use(bodyParser.json({ limit: '10mb' }));
 weconnectServer.use(bodyParser.urlencoded({ extended: true }));
@@ -294,6 +297,13 @@ serverHttpOrHttps.listen(weconnectServer.get('port'), () => {
   } else if (parseInt(weconnectServer.get('port')) !== port) {
     console.warn(`WARNING: The BASE_URL environment variable and the App have a port mismatch. If you plan to view the app in your browser using the localhost address, you may need to adjust one of the ports to make them match. BASE_URL: ${BASE_URL}\n`);
   }
+
+  // This is a data conversion routine that needs to be run a single time in production
+  // and a single time on each developer instance to convert the data in the Teams table departments column
+  // When rerun on subsequent startups, it will do nothing and will waste a fraction of a second of startup time.
+  // See https://wevoteusa.atlassian.net/browse/WV-2669
+  // TODO: Please delete these comments and the following line in May 2026
+  convertTeamDepartmentsToPostgresAcceptableFormat();
 
   console.log(`App is running on  ${process.env.BASE_URL}  in  ${weconnectServer.get('env')} mode.`);
   console.log('Press CTRL-C to stop.');

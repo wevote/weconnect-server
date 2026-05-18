@@ -39,19 +39,28 @@ function removeProtectedFieldsFromQuestionnaire (questionnaire) {
 }
 
 async function findQuestionnaireById (id, includeAllData = false) {
-  const questionnaire = await prisma.questionnaire.findUnique({
-    where: {
-      id,
-    },
-  });
-  let modifiedQuestionnaire = {};
-  if (includeAllData) {
-    modifiedQuestionnaire = questionnaire;
-  } else {
-    modifiedQuestionnaire = removeProtectedFieldsFromQuestionnaire(questionnaire);
+  try {
+    const questionnaire = await prisma.questionnaire.findUnique({
+      where: {
+        id,
+      },
+    });
+    if (!questionnaire) {
+      console.log(`Questionnaire with id ${id} not found`);
+      return null;
+    }
+    let modifiedQuestionnaire = {};
+    if (includeAllData) {
+      modifiedQuestionnaire = questionnaire;
+    } else {
+      modifiedQuestionnaire = removeProtectedFieldsFromQuestionnaire(questionnaire);
+    }
+    modifiedQuestionnaire.questionnaireId = questionnaire.id;
+    return modifiedQuestionnaire;
+  } catch (err) {
+    console.error('ERROR_IN_findQuestionnaireById:', err);
+    throw err;
   }
-  modifiedQuestionnaire.questionnaireId = questionnaire.id;
-  return modifiedQuestionnaire;
 }
 
 function extractQuestionnaireVariablesToChange (queryParams) {

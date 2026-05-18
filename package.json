@@ -11,7 +11,7 @@
   "scripts": {
     "postinstall": "patch-package",
     "start": "nodemon weconnect-server.js",
-    "prod": "node weconnect-server.js",
+    "prod": "NO_COLOR=1 node weconnect-server.js",
     "test": "nyc mocha --timeout=60000 --exit",
     "lint": "eslint \"**/*.js\"",
     "prepare": "if [ \"$NODE_ENV\" != \"production\" ]; then husky install; fi",
@@ -91,7 +91,7 @@
     "mocha": "^11.4.0",
     "nodemon": "^3.1.9",
     "nyc": "^17.1.0",
-    "prisma": "6.5.0",
+    "prisma": "^6.5.0",
     "sinon": "^16.1.0",
     "supertest": "^6.3.3"
   },

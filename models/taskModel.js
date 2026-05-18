@@ -23,6 +23,7 @@ const TASK_DEFINITION_FIELDS_ACCEPTED = {
   taskActionUrl: 'STRING',
   taskName: 'STRING',
   taskNameCompleted: 'STRING',
+  taskType: 'STRING',
   taskWhatToDo: 'STRING',
   taskWhyWeDoIt: 'STRING',
 };
@@ -47,6 +48,7 @@ const TASK_FIELDS_ACCEPTED = [
   'statusResolvedComment',
   'statusToDoByHuman',
   'taskGroupId',
+  'taskType',
 ];
 
 const TASK_FIELDS_ACCEPTED_DICT = {
@@ -59,6 +61,13 @@ const TASK_FIELDS_ACCEPTED_DICT = {
   statusResolvedComment: 'BOOLEAN',
   statusToDoByHuman: 'BOOLEAN',
   taskGroupId: 'INTEGER',
+  taskType: 'STRING',
+};
+
+const TASK_TYPE_FIELDS_ACCEPTED = {
+  statusActive: 'BOOLEAN',
+  taskTypeDescription: 'STRING',
+  taskTypeName: 'STRING',
 };
 
 const TASK_GROUP_FIELDS_ACCEPTED = {
@@ -396,6 +405,52 @@ async function createTaskGroupTeamLink (updateDict) {
   return taskGroupTeamLink;
 }
 
+function removeProtectedFieldsFromTaskType (taskType) {
+  const modifiedTaskType = { ...taskType };
+  return modifiedTaskType;
+}
+
+async function findTaskTypeById (id) {
+  const taskType = await prisma.taskType.findUnique({
+    where: { id },
+  });
+  const modifiedTaskType = removeProtectedFieldsFromTaskType(taskType);
+  modifiedTaskType.taskTypeId = taskType.id;
+  return modifiedTaskType;
+}
+
+async function findTaskTypeListByParams (params = {}) {
+  const taskTypeList = await prisma.taskType.findMany({
+    where: params,
+  });
+  const modifiedTaskTypeList = [];
+  taskTypeList.forEach((taskType) => {
+    const modifiedTaskType = removeProtectedFieldsFromTaskType(taskType);
+    modifiedTaskType.taskTypeId = taskType.id;
+    modifiedTaskTypeList.push(modifiedTaskType);
+  });
+  return modifiedTaskTypeList;
+}
+
+async function createTaskType (updateDict) {
+  const taskType = await prisma.taskType.create({ data: updateDict });
+  return taskType;
+}
+
+async function saveTaskType (taskType) {
+  const updateTaskType = await prisma.taskType.update({
+    where: { id: taskType.id },
+    data: taskType,
+  });
+  return updateTaskType;
+}
+
+async function deleteOneTaskType (id) {
+  await prisma.taskType.delete({
+    where: { id },
+  });
+}
+
 function updateOrCreateTask (personId, taskDefinitionId, taskGroupId, updateDict) {
   // eslint-disable-next-line prefer-object-spread
   const createDict = Object.assign({}, { personId, taskDefinitionId, taskGroupId }, updateDict);
@@ -444,8 +499,10 @@ module.exports = {
   createTaskDependency,
   createTaskGroup,
   createTaskGroupTeamLink,
+  createTaskType,
   deleteOneTaskGroup,
   deleteOneTaskGroupTeamLink,
+  deleteOneTaskType,
   extractTaskGroupVariablesToChange,
   findTaskDefinitionById,
   findTaskDefinitionListByParams,
@@ -457,20 +514,25 @@ module.exports = {
   findTaskGroupListByIdList,
   findTaskGroupListByParams,
   findOneTaskGroup,
+  findTaskTypeById,
+  findTaskTypeListByParams,
   removeProtectedFieldsFromTask,
   removeProtectedFieldsFromTaskDefinition,
   removeProtectedFieldsFromTaskDependency,
   removeProtectedFieldsFromTaskGroup,
+  removeProtectedFieldsFromTaskType,
   saveTask,
   saveTaskDefinition,
   saveTaskDependency,
   saveTaskGroup,
   saveTaskGroupTeamLink,
+  saveTaskType,
   TASK_DEFINITION_FIELDS_ACCEPTED,
   TASK_DEFINITION_FIELDS_TO_MAP_TO_PERSON_FIELDS,
   TASK_FIELDS_ACCEPTED,
   TASK_FIELDS_ACCEPTED_DICT,
   TASK_GROUP_FIELDS_ACCEPTED,
+  TASK_TYPE_FIELDS_ACCEPTED,
   updateOrCreateTask,
   updateOrCreateTaskGroupTeamLink,
 }; // Export the functions

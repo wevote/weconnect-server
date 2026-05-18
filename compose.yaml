@@ -1,0 +1,51 @@
+name: weconnect-server
+
+services:
+  weconnect-db:
+    environment:
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    image: postgres:16-alpine
+    networks:
+      - wevote
+    user: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  weconnect-api:
+    build:
+      dockerfile: docker/Dockerfile.dev
+      args:
+        - HTTPS_SSL_HOST=${HOST}
+    depends_on:
+      weconnect-db:
+        condition: service_healthy
+    environment:
+      - DATABASE_HOST=weconnect-db                # use db host/port for weconnect-db service (defined above)
+      - DATABASE_PORT=5432
+      - HTTPS_SSL_CERT=/etc/ssl/certs/cert.pem    # use automatically created cert
+      - HTTPS_SSL_KEY=/etc/ssl/private/key.pem    # use automatically created key
+    volumes:
+      - .:/app
+      # Prevent host node_modules from shadowing the container's installed node_modules
+      - /app/node_modules
+    networks:
+      - wevote
+    ports:
+      - "127.0.0.1:4500:4500" # access the WeConnect API at http://localhost:4500
+      - "127.0.0.1:5555:5555" # expose prisma studio running inside container
+
+networks:
+  wevote:
+    name: wevote
+    external: true
+
+volumes:
+  postgres_data:
+

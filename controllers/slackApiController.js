@@ -1,4 +1,6 @@
 const { WebClient } = require('@slack/web-api');
+const { savePerson, findPersonListByParams, findOnePerson } = require('../models/personModel');
+
 
 // Initialize a single instance for the whole app
 const webClient = new WebClient();
@@ -87,6 +89,146 @@ exports.slackGetPresence = async (request, response) => {
   return response.json(result);
 };
 
+/**
+ * get user photos from Slack API and save them to the Person table
+ * @param request
+ * @param request personId, Person.id if for a single person update, otherwise no value
+ * @param response
+ * @returns
+ */
+exports.slackAddPersonImages = async (request, response) => {
+  const { personId: incomingPersonId } = request.body;
+
+  const personsUpdated = [];
+  const singlePersonUpdated = [];
+  let membersNotMatched = [];
+  let errors = '';
+  let success = false;
+  let nextCursor = '';
+  let firstPass = true;
+  let person = null;
+  let pages = 0;
+
+  let incomingPersonIdInt = 0;
+  let matchOnePerson = false;
+  if (incomingPersonId !== undefined) {
+    incomingPersonIdInt = parseInt(incomingPersonId);
+    matchOnePerson = incomingPersonIdInt > 0;
+  }
+
+  try {
+    while (firstPass || nextCursor.length) {
+      firstPass = false;
+      pages += 1;
+
+      // eslint-disable-next-line no-await-in-loop
+      const result = await webClient.users.list({
+        token: process.env.SLACK_BOT_BEARER_TOKEN,
+        cursor: nextCursor,
+        limit: 1000,
+      });
+
+      nextCursor = result?.response_metadata?.next_cursor;
+
+      const { members: membersArray } = result;
+      // eslint-disable-next-line no-restricted-syntax,guard-for-in
+      for (let i = 0; i < membersArray.length; i++) {
+        const member = membersArray[i];
+        // Slack API provides images in 24, 32, 48, 72, 192, 512, 1024 px, and also the original raw image.
+        // TODO: Experiment 3/31/26 load image_192 URL instead of image_48, to see if it makes them clearer in 96px img tags -- Looks good, they load in only 0.1ms each
+        // eslint-disable-next-line camelcase
+        const { id: slackHandle, name, deleted, profile: { real_name, email, image_192: slackImage48 } } = member;
+        let personSaved = false;
+
+        if (deleted) {
+          // console.log('Skipping deleted slack member ', real_name, slackHandle);
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+
+        // First look for a personal email match
+        if (email !== undefined) {
+          if (matchOnePerson) {
+            if (!person) {
+              // eslint-disable-next-line no-await-in-loop
+              person = await findOnePerson({ id: incomingPersonIdInt });
+            }
+          } else {
+            // eslint-disable-next-line no-await-in-loop
+            const personArray = await findPersonListByParams({ OR: [
+              { emailPersonal: email },
+              { emailOfficial: email },
+            ]});
+            if (personArray.length === 0) {
+              person = null;
+            } else if (personArray.length > 1) {
+              errors += `More-than-one-person-matches-${email} `;
+              person = null;
+            } else {
+              [person] = personArray;
+            }
+          }
+        }
+
+        if (person) {
+          success = true;
+          const thisIsMatchingPerson =
+            matchOnePerson && person.id === incomingPersonIdInt && (person.emailPersonal === email || person.emailOfficial === email);
+
+          // Save this updated person if iterating through all persons, or if found a matching person from incomingPersonId param
+          if (!matchOnePerson || thisIsMatchingPerson) {
+            // eslint-disable-next-line no-await-in-loop
+            await savePerson({ id: person.id, slackHandle, slackImage48 });
+            const abbreviatedPerson = `id: ${person.id}, ${name}, slackHandle: ${slackHandle}`;
+            // console.log('saving updated person with slack id and image', abbreviatedPerson);
+            personsUpdated.push(abbreviatedPerson);
+            personSaved = true;
+            if (matchOnePerson && thisIsMatchingPerson) {
+              singlePersonUpdated.push({
+                id: person.id,
+                firstName: person.firstName,
+                lastName: person.lastName,
+                emailPersonal: person.emailPersonal,
+                slackHandle,
+                slackImage48,
+              });
+              // Updated the one incomingPersonId person so we are done
+              nextCursor = '';
+              break;
+            } else {
+              person = null;
+            }
+          }
+        }
+        if (!personSaved) {
+          // console.log('membersNotMatched: ', member);
+          membersNotMatched.push(`slackHandle: ${slackHandle}, name: ${name}, real_name: ${real_name}, email: ${email}`);
+        }
+      }
+      success = true;
+    }
+  } catch (error) {
+    errors += error;
+    success = false;
+    console.error(error);
+  }
+
+  if (personsUpdated.length === 1) {
+    membersNotMatched = {};
+  }
+
+  return response.json({
+    success,
+    incomingPersonId: incomingPersonId || 0,
+    personsUpdatedCount: personsUpdated.length,
+    membersNotMatchedCount: membersNotMatched.length,
+    pages,
+    errors,
+    personsUpdated,
+    singlePersonUpdated,
+    membersNotMatched,
+  });
+};
 
 exports.slackListUsers = async (request, response) => {
   const { daysRange } = request.body;
@@ -139,7 +281,7 @@ exports.slackListUsers = async (request, response) => {
       // console.log(result);
     }
 
-    console.log('Members skipped: ', membersSkipped);
+    // console.log('Members skipped: ', membersSkipped);
     success = true;
   } catch (error) {
     console.error(error);

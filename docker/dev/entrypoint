@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+echo "Running 'prisma generate'"
+npx prisma generate
+
+echo "Running 'prisma migrate deploy'"
+npx prisma migrate dev
+
+echo "Starting weconnect-server"
+exec "$@"

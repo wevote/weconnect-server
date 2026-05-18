@@ -18,24 +18,39 @@ const { isValidUSStateCode } = require('../utils/stateUtils');
 
 
 /**
- * GET /api/v1/answer-list-save
+ * POST /api/v1/answer-list-save
  *
  */
 exports.answerListSave = async (request, response) => {
-  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
-  const queryParams = new URLSearchParams(parsedUrl.search);
+  let queryParams;
+  if (request.method === 'POST') {
+    // POST request - data from body
+    // POST request - convert body to URLSearchParams format
+    queryParams = new URLSearchParams();
+    Object.entries(request.body).forEach(([key, value]) => {
+      queryParams.append(key, value);
+    });
+  } else {
+    // GET request - data from query parameters
+    const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+    queryParams = new URLSearchParams(parsedUrl.search);
+  }
   let personId = convertToInteger(queryParams.get('personId'));
   const questionnaireId = convertToInteger(queryParams.get('questionnaireId'));
+  // console.log('answerListSave personId:', personId, ', questionnaireId:', questionnaireId);
   let personUpdateDict = { id: personId };
   let personUpdatesFound = false;
   // console.log('answerListSave personId:', personId, ', questionnaireId:', questionnaireId);
 
   let answerListSaved = false;
   const answersSavedList = [];
+  let isCreatePersonQuestionnaire;
+  let isOfferQuestionnaire;
+  let questionnaire = {};
+  let requiredFieldsExist = true;
   let stateCodeAlreadyExists = false;
   let status = '';
   let success = true;
-  let requiredFieldsExist = true;
 
   // for change logs
   let targetPersonIdForLog = personId;
@@ -49,25 +64,40 @@ exports.answerListSave = async (request, response) => {
     console.log('answerListSave: missing questionnaireId');
   }
 
-  const questionnaire = await findQuestionnaireById(questionnaireId);
-  const isOfferQuestionnaire = questionnaire && questionnaire.isOfferQuestionnaire === true;
-  const isCreatePersonQuestionnaire = questionnaire && questionnaire.isCreatePersonQuestionnaire === true;
+  if (requiredFieldsExist) {
+    questionnaire = await findQuestionnaireById(questionnaireId);
+    isOfferQuestionnaire = questionnaire && questionnaire.isOfferQuestionnaire === true;
+    isCreatePersonQuestionnaire = questionnaire && questionnaire.isCreatePersonQuestionnaire === true;
+    let personIdRequired = true;
+    if (questionnaire && questionnaire.id) {
+      personIdRequired = !(questionnaire.isCreatePersonQuestionnaire === true);
+    } else {
+      status += 'questionnaire_MISSING ';
+      requiredFieldsExist = false;
+      success = false;
+      console.log('answerListSave: missing questionnaire');
+    }
 
-  let personIdRequired = true;
-  if (questionnaire && questionnaire.id) {
-    personIdRequired = !(questionnaire.isCreatePersonQuestionnaire === true);
-  } else {
-    status += 'questionnaire_MISSING ';
-    requiredFieldsExist = false;
-    success = false;
-    console.log('answerListSave: missing questionnaire');
+    if (personIdRequired && (!personId || personId === -1)) {
+      status += 'personId_MISSING ';
+      requiredFieldsExist = false;
+      success = false;
+      console.log('answerListSave: missing personId');
+    }
   }
 
-  if (personIdRequired && (!personId || personId === -1)) {
-    status += 'personId_MISSING ';
-    requiredFieldsExist = false;
-    success = false;
-    console.log('answerListSave: missing personId');
+  if (!requiredFieldsExist) {
+    const jsonDataError = {
+      answerListSaved,
+      answersSavedList,
+      personId: -1,
+      questionnaireId: -1,
+      status,
+      success,
+      updateErrors: [],
+    };
+
+    response.json(jsonDataError);
   }
 
   if (success && requiredFieldsExist) {

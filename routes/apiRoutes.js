@@ -2,14 +2,18 @@ const meetingApiController = require('../controllers/meetingApiController');
 const personApiController = require('../controllers/personApiController');
 const googleApiController = require('../controllers/googleApiController');
 const questionnaireApiController = require('../controllers/questionnaireApiController');
-const taskApiController = require('../controllers/taskApiController');
+const { taskGroupTeamLinkDelete, taskDefinitionSave, taskStatusListRetrieve, taskDefinitionListRetrieve,
+  taskGroupTeamLinkListRetrieve, taskGroupTeamLinkSave, taskGroupListRetrieve, taskGroupSave, taskSave,
+  taskTypeDelete, taskTypeListRetrieve, taskTypeSave,
+} = require('../controllers/taskApiController');
 const teamApiController = require('../controllers/teamApiController');
-const { slackChannelInvite, slackGetPresence, slackSendMessage, slackListUsers, slackChannelMembers } = require('../controllers/slackApiController');
+const { slackChannelInvite, slackGetPresence, slackSendMessage, slackListUsers, slackChannelMembers,
+  slackAddPersonImages } = require('../controllers/slackApiController');
 const { updateDbFromCsv } = require('../controllers/updateSqlFromCsvController');
 const { jazzGetApplicants, jazzGetUsers } = require('../controllers/jazzHrController');
 const { getStatus } = require('../controllers/statusController');
 const { getAllowableTables } = require('../controllers/FastLoad/allowableTables');
-const { getOneFastLoadTable } = require('../controllers/FastLoad/retrieveTables');
+const { getOneFastLoadTable, getPostgresTableStatistics } = require('../controllers/FastLoad/retrieveTables');
 const { localReplaceTable } = require('../controllers/FastLoad/localReplaceTables');
 
 /**
@@ -17,7 +21,6 @@ const { localReplaceTable } = require('../controllers/FastLoad/localReplaceTable
  */
 module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/add-person-to-team', teamApiController.addPersonToTeam);
-  weconnectServer.get('/apis/v1/answer-list-save', questionnaireApiController.answerListSave);
   weconnectServer.get('/apis/v1/meeting-save', meetingApiController.meetingSave);
   weconnectServer.get('/apis/v1/person-away-save', personApiController.personAwaySave);
   weconnectServer.get('/apis/v1/person-id-retrieve-by-email', personApiController.personIdRetrieveByEmail);
@@ -32,33 +35,38 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.get('/apis/v1/questionnaire-save', questionnaireApiController.questionnaireSave);
   weconnectServer.get('/apis/v1/question-save', questionnaireApiController.questionSave);
   weconnectServer.get('/apis/v1/remove-person-from-team', teamApiController.removePersonFromTeam);
-  weconnectServer.get('/apis/v1/task-definition-list-retrieve', taskApiController.taskDefinitionListRetrieve);
-  weconnectServer.get('/apis/v1/task-definition-save', taskApiController.taskDefinitionSave);
-  weconnectServer.get('/apis/v1/task-group-team-link-delete', taskApiController.taskGroupTeamLinkDelete);
-  weconnectServer.get('/apis/v1/task-group-team-link-list-retrieve', taskApiController.taskGroupTeamLinkListRetrieve);
-  weconnectServer.get('/apis/v1/task-group-team-link-save', taskApiController.taskGroupTeamLinkSave);
-  weconnectServer.get('/apis/v1/task-group-list-retrieve', taskApiController.taskGroupListRetrieve);
-  weconnectServer.get('/apis/v1/task-group-save', taskApiController.taskGroupSave);
-  weconnectServer.get('/apis/v1/task-save', taskApiController.taskSave);
-  weconnectServer.get('/apis/v1/task-status-list-retrieve', taskApiController.taskStatusListRetrieve);
+  weconnectServer.get('/apis/v1/task-definition-list-retrieve', taskDefinitionListRetrieve);
+  weconnectServer.get('/apis/v1/task-definition-save', taskDefinitionSave);
+  weconnectServer.get('/apis/v1/task-group-team-link-delete', taskGroupTeamLinkDelete);
+  weconnectServer.get('/apis/v1/task-group-team-link-list-retrieve', taskGroupTeamLinkListRetrieve);
+  weconnectServer.get('/apis/v1/task-group-team-link-save', taskGroupTeamLinkSave);
+  weconnectServer.get('/apis/v1/task-group-list-retrieve', taskGroupListRetrieve);
+  weconnectServer.get('/apis/v1/task-group-save', taskGroupSave);
+  weconnectServer.get('/apis/v1/task-save', taskSave);
+  weconnectServer.get('/apis/v1/task-type-delete', taskTypeDelete);
+  weconnectServer.get('/apis/v1/task-type-list-retrieve', taskTypeListRetrieve);
+  weconnectServer.get('/apis/v1/task-type-save', taskTypeSave);
   weconnectServer.get('/apis/v1/team-list-retrieve', teamApiController.teamListRetrieve);
   weconnectServer.get('/apis/v1/team-save', teamApiController.teamSave);
   weconnectServer.get('/apis/v1/team-delete', teamApiController.teamDelete);
   weconnectServer.get('/apis/v1/team-retrieve', teamApiController.teamRetrieve);
   weconnectServer.get('/apis/v1/versions', getStatus);
 
+  weconnectServer.post('/apis/v1/answer-list-save', questionnaireApiController.answerListSave);
+  weconnectServer.post('/apis/v1/donations-add-status', personApiController.donationsAddStatus);
   weconnectServer.post('/apis/v1/fast-load-get-allowable-tables', getAllowableTables);
   weconnectServer.post('/apis/v1/fast-load-local-table-replace', localReplaceTable);
   weconnectServer.post('/apis/v1/fast-load-table-retrieve', getOneFastLoadTable);
+  weconnectServer.post('/apis/v1/fast-load-table-statistics', getPostgresTableStatistics);
   weconnectServer.post('/apis/v1/get-auth', personApiController.getAuth);
   weconnectServer.post('/apis/v1/google-create-user', googleApiController.googleCreateUserAccount);
   weconnectServer.post('/apis/v1/google-delete-user', googleApiController.googleDeleteUserAccount);
+  weconnectServer.post('/apis/v1/google-drive-list-files', googleApiController.googleDriveListFiles);
   weconnectServer.post('/apis/v1/google-get-user-info', googleApiController.googleGetUserInfo);
   weconnectServer.post('/apis/v1/google-get-user-list', googleApiController.googleGetUserList);
   weconnectServer.post('/apis/v1/google-reset-user-password', googleApiController.googleResetUserPassword);
   weconnectServer.post('/apis/v1/google-revoke-sharing', googleApiController.googleDriveRevokeShare);
   weconnectServer.post('/apis/v1/google-share-drive-access', googleApiController.googleShareDriveAccess);
-  weconnectServer.post('/apis/v1/google-drive-list-files', googleApiController.googleDriveListFiles);
   weconnectServer.post('/apis/v1/google-transfer-drive-access', googleApiController.googleDriveTransferOwnership);
   weconnectServer.post('/apis/v1/jazz-get-applicants', jazzGetApplicants);
   weconnectServer.post('/apis/v1/jazz-get-users', jazzGetUsers);
@@ -67,11 +75,13 @@ module.exports = function setupWeConnectRoutes (weconnectServer) {
   weconnectServer.post('/apis/v1/save-password', personApiController.savePassword);
   weconnectServer.post('/apis/v1/send-email-code', personApiController.sendEmailCode);
   weconnectServer.post('/apis/v1/signup', personApiController.signup);
+  weconnectServer.post('/apis/v1/slack-add-person-images', slackAddPersonImages);
   weconnectServer.post('/apis/v1/slack-channel-invite', slackChannelInvite);
   weconnectServer.post('/apis/v1/slack-channel-members', slackChannelMembers);
   weconnectServer.post('/apis/v1/slack-get-presence', slackGetPresence);
   weconnectServer.post('/apis/v1/slack-list-users', slackListUsers);
   weconnectServer.post('/apis/v1/slack-send-message', slackSendMessage);
+  weconnectServer.post('/apis/v1/task-status-list-retrieve', taskStatusListRetrieve);
   weconnectServer.post('/apis/v1/update-db-from-csv', updateDbFromCsv);
   weconnectServer.post('/apis/v1/verify-email-code', personApiController.verifyEmailCode);
   weconnectServer.get('/apis/v1/profile-change-log-retrieve', personApiController.retrieveProfileChangeLog);

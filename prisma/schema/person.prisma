@@ -98,6 +98,9 @@ model Person {
   // knowing that we will replace them with the authoritative copy when we encounter them.  This is in the DB in case the import crashes and we lose track
   nonAuthoritativeImport            Boolean   @default(false)
 
+  slackImage48                      String?
+  isMonthlyDonor                    Boolean   @default(false)
+
   QuestionAnswer QuestionAnswer[]
   TeamMember     TeamMember[]
 }
