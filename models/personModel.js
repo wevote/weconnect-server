@@ -558,6 +558,88 @@ const updatePersonWhoAreNotActiveDonors = async (donorsArray) => {
   return personsRemovedAsDonors;
 };
 
+/**
+ * Create a single change log entry which contains a person (personId), an actor performing change (changeId), and
+ * change description (changeDescription)
+ */
+const createProfileChangeLogEntry = async ({ personId, changedById, changeDescription, teamName }) => {
+  try {
+    return await prisma.profileChangeLog.create({
+      data: {
+        personId: parseInt(personId),
+        changedById: parseInt(changedById),
+        changeDescription,
+        teamName,
+        // dateCreated defaults to now() in Prisma schema
+      },
+    });
+  } catch (error) {
+    console.error('Error in createProfileChangeLogEntry:', error);
+    throw error;
+  }
+};
+
+/**
+ * Retrieve profile change log rows where the person is either the subject or the actor
+ */
+const retrieveProfileChangeLogsFromDb = async (personId) => {
+  try {
+    const id = parseInt(personId);
+    const logs = await prisma.profileChangeLog.findMany({
+      where: {
+        OR: [{ personId: id }, { changedById: id }],
+      },
+      orderBy: { dateCreated: 'desc' },
+    });
+
+    // get unique IDs to fetch names
+    const uniquePersonIds = [...new Set([
+      ...logs.map((l) => l.personId),
+      ...logs.map((l) => l.changedById),
+    ])];
+
+    // fetch names from Person table
+    const people = await prisma.person.findMany({
+      where: { id: { in: uniquePersonIds } },
+      select: { id: true, firstName: true, lastName: true },
+    });
+
+    // create map for quick lookup
+    const peopleMap = people.reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+
+    // attach map to logs and return
+    return logs.map((log) => ({
+      ...log,
+      person: peopleMap[log.personId] || { firstName: 'Unknown', lastName: '' },
+      changer: peopleMap[log.changedById] || { firstName: 'System', lastName: '' },
+    }));
+
+  } catch (error) {
+    console.error('Error in retrieveProfileChangeLogsFromDb:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create multiple log entries at once
+ * @param {Array} logRows - Array of objects { personId, changedById, changeDescription }
+ */
+const createProfileChangeLogEntriesBulk = async (logRows) => {
+  try {
+    return await prisma.profileChangeLog.createMany({
+      data: logRows.map((row) => ({
+        personId: parseInt(row.personId),
+        changedById: parseInt(row.changedById),
+        changeDescription: row.changeDescription,
+        teamName: row.teamName || null,
+      })),
+    });
+  } catch (error) {
+    console.error('Error in createProfileChangeLogEntriesBulk:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   comparePassword,
   createPerson,
@@ -584,4 +666,7 @@ module.exports = {
   SITE_SUPER_USERS,
   updatePersonByPersonId,
   updatePersonWhoAreNotActiveDonors,
+  createProfileChangeLogEntry,
+  retrieveProfileChangeLogsFromDb,
+  createProfileChangeLogEntriesBulk,
 }; // Export the functions

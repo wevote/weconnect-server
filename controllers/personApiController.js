@@ -10,7 +10,8 @@ const {
   findOnePerson, findPersonById, savePerson, savePersonAway,
   SITE_SUPER_USERS, getUniqueKeyEmail,
   manuallyConfirmEmailUniqueness,
-  updatePersonWhoAreNotActiveDonors,
+  updatePersonWhoAreNotActiveDonors, retrieveProfileChangeLogsFromDb, createProfileChangeLogEntry,
+  createProfileChangeLogEntriesBulk,
 } = require('../models/personModel');
 
 const { extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
@@ -397,6 +398,11 @@ exports.personSave = async (request, response) => {
     jsonData.status += err.message;
     jsonData.success = false;
   }
+  // Create a snapshot of the person BEFORE update for comparison
+  let personBeforeUpdate = null;
+  if (personId >= 0) {
+    personBeforeUpdate = await findPersonById(personId);
+  }
 
   try {
     if (personId >= 0) {
@@ -438,6 +444,16 @@ exports.personSave = async (request, response) => {
           personUpdateDict.password = await bcrypt.hash(tempPassword, 10);
           const person = await createPerson(personUpdateDict);
           personId = person.id;
+
+          // Change Log for Create Person
+          const creatorId = request.user?.id || -1;
+          const personName = `${person.firstName} ${person.lastName}`;
+          await createProfileChangeLogEntry({
+            personId: person.id,
+            changedById: creatorId,
+            changeDescription: `ADDED [Person]: ${personName}`,
+          });
+
           // console.log('Created new person:', person);
           jsonData.personCreated = true;
           jsonData.personId = person.id;
@@ -463,6 +479,63 @@ exports.personSave = async (request, response) => {
         jsonData.personUpdated = true;
         jsonData.personId = person.id;
         jsonData.status += 'PERSON_UPDATED ';
+
+        // Change Log for Updating Person
+        if (personBeforeUpdate) {
+          const actorId = request.user?.id || -1;
+          const logRows = [];
+
+          // Compare only fields that were actually passed in personUpdateDict
+          Object.keys(personUpdateDict).forEach((field) => {
+            if (field === 'id' || field === 'password') return; // Skip metadata
+
+            let prevValue = personBeforeUpdate[field];
+            let newValue = personUpdateDict[field];
+
+            // Check if the field name suggests it's a date (e.g., dateStartDate, dateEndDate)
+            if (field.toLowerCase().includes('date') && prevValue && newValue) {
+              const prevDateString = new Date(prevValue).toISOString().split('T')[0];
+              const newDateString = new Date(newValue).toISOString().split('T')[0];
+
+              // If the calendar days match, skip the log
+              if (prevDateString === newDateString) return;
+
+              // If they don't match, use the cleaner YYYY-MM-DD format for the log
+              prevValue = prevDateString;
+              newValue = newDateString;
+            }
+
+            if (prevValue !== newValue) {
+              if (!prevValue && newValue) {
+                // Case 2a: Was empty, now has value
+                logRows.push({
+                  personId,
+                  changedById: actorId,
+                  changeDescription: `ADDED [${field}]: ${newValue}`,
+                });
+              } else if (prevValue && newValue) {
+                // Case 2b: replaced value
+                logRows.push({
+                  personId,
+                  changedById: actorId,
+                  changeDescription: `REPLACED [${field}]: ${prevValue}`,
+                });
+              } else if (prevValue && !newValue) {
+                // Case 2c: Cleared value
+                logRows.push({
+                  personId,
+                  changedById: actorId,
+                  changeDescription: `CLEARED [${field}]: ${prevValue}`,
+                });
+              }
+            }
+          });
+
+          if (logRows.length > 0) {
+            await createProfileChangeLogEntriesBulk(logRows);
+          }
+        }
+
         const modifiedPersonDict = removeProtectedFieldsFromPerson(person);
         const personKeys = Object.keys(modifiedPersonDict);
         const personValues = Object.values(modifiedPersonDict);
@@ -508,6 +581,62 @@ exports.personSave = async (request, response) => {
   }
 
   response.json(jsonData);
+};
+
+/**
+ * GET /api/v1/profile-change-log-retrieve
+ */
+exports.retrieveProfileChangeLog = async (request, response) => {
+  const queryString = request.url.split('?')[1];
+  const queryParams = new URLSearchParams(queryString);
+  const personId = convertToInteger(queryParams.get('personId'));
+
+  const jsonData = {
+    success: false,
+    status: '',
+    personId,
+    changeLogList: [],
+  };
+
+  if (personId < 0) {
+    jsonData.status = 'MISSING_OR_INVALID_PERSON_ID';
+    return response.json(jsonData);
+  }
+
+  try {
+    // Call the function from personModel
+    const logs = await retrieveProfileChangeLogsFromDb(personId);
+
+    jsonData.changeLogList = logs.map((log) => {
+      const firstName = log.changer?.firstName || '';
+      const lastName = log.changer?.lastName || '';
+      const targetName = `${log.person?.firstName || ''} ${log.person?.lastName || ''}`.trim();
+
+      return {
+        id: log.id,
+        changeDescription: log.changeDescription,
+        changedByPersonName: `${firstName} ${lastName}`.trim() || 'Unknown',
+        targetPersonName: targetName || 'Unknown',
+        teamName: log.teamName || null,
+        dateCreatedFormatted: new Intl.DateTimeFormat('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        }).format(new Date(log.dateCreated)),
+      };
+    });
+
+    jsonData.success = true;
+    jsonData.status = 'PROFILE_CHANGE_LOG_RETRIEVED';
+  } catch (err) {
+    console.error('Error in retrieveProfileChangeLog:', err);
+    jsonData.status = `ERROR_RETRIEVING_LOG: ${err.message}`;
+  }
+
+  return response.json(jsonData);
 };
 
 /**

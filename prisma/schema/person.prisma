@@ -125,3 +125,12 @@ model PersonAway {
   isVacation       Boolean?
   isWorkTrip       Boolean?
 }
+
+model ProfileChangeLog {
+  id                Int      @id @default(autoincrement())
+  personId          Int      // The person whose profile was changed
+  changedById       Int      // The person who performed the action (Admin or Self)
+  changeDescription String   // e.g., "ADDED [Team]: Ads Team"
+  dateCreated       DateTime @default(now())
+  teamName          String?   // Name of team if applicable
+}

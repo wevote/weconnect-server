@@ -1,12 +1,15 @@
 // weconnect-server/controllers/questionnaireApiController.js
 const bcrypt = require('@node-rs/bcrypt');
-const { findOnePerson, PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE, savePerson, createPerson } = require('../models/personModel');
+const { findOnePerson, PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE, savePerson, createPerson, createProfileChangeLogEntry,
+  findPersonById,
+} = require('../models/personModel');
 const { retrieveQuestionnaireResponseListByPersonIdList } =  require('./questionnaireController');
 const { createQuestion, createQuestionnaire, findQuestionListByIdList,
   findQuestionListByParams, findQuestionnaireById, findQuestionnaireListByParams,
   QUESTION_FIELDS_ACCEPTED, QUESTIONNAIRE_FIELDS_ACCEPTED,
   removeProtectedFieldsFromQuestion, removeProtectedFieldsFromQuestionnaire,
-  saveQuestion, saveQuestionnaire, updateOrCreateQuestionAnswer } = require('../models/questionnaireModel');
+  saveQuestion, saveQuestionnaire, updateOrCreateQuestionAnswer, findQuestionAnswerListByParams,
+} = require('../models/questionnaireModel');
 const { extractQuestionAnswersFromIncomingParams, extractQuestionOrderDictFromIncomingParams, extractVariablesToChangeFromIncomingParams } = require('./dataTransformationUtils');
 const { convertToInteger } = require('../utils/convertToInteger');
 const { generateRandomString } = require('../utils/generateRandomString');
@@ -48,6 +51,11 @@ exports.answerListSave = async (request, response) => {
   let stateCodeAlreadyExists = false;
   let status = '';
   let success = true;
+
+  // for change logs
+  let targetPersonIdForLog = personId;
+  let isNewPersonCreated = false;
+  let alreadyAnsweredBeforeSave = false;
 
   if (!questionnaireId || questionnaireId === -1) {
     status += 'questionnaireId_MISSING ';
@@ -108,6 +116,11 @@ exports.answerListSave = async (request, response) => {
     // Validate the answerType and questionVersion
     // console.log('questionIdList:', questionIdList);
     if (questionIdList.length > 0) {
+      const existingAnswers = await findQuestionAnswerListByParams({
+        personId: targetPersonIdForLog,
+        questionnaireId,
+      });
+      alreadyAnsweredBeforeSave = existingAnswers && existingAnswers.length > 0;
       const questionList = await findQuestionListByIdList(questionIdList);
 
       // Cycle through the questions we expect answers to, clean the data, and put it into answerUpdateDict
@@ -240,6 +253,7 @@ exports.answerListSave = async (request, response) => {
             console.log('Updating existing person:', personUpdateDict);
             const person = await savePerson(personUpdateDict);
             personId = person.id;
+            targetPersonIdForLog = personId;
           } catch (err) {
             console.log('Error saving existing person: ', err);
           }
@@ -252,6 +266,8 @@ exports.answerListSave = async (request, response) => {
             console.log('Creating new person:', personUpdateDict);
             const person = await createPerson(personUpdateDict);
             personId = person.id;
+            targetPersonIdForLog = personId;
+            isNewPersonCreated = true;
             personUpdateDict.id = personId;
             // Now loop through answerUpdateDictByQuestionId and add this new personId to answerUpdateDict
           } catch (err) {
@@ -318,6 +334,46 @@ exports.answerListSave = async (request, response) => {
     }
   } else {
     status += 'NO_PERSON_UPDATES_FOUND ';
+  }
+
+  // track profile change log on questionnaire completion
+  if (success && answerListSaved) {
+    try {
+      // Determine IDs
+      // For CreatePerson: personId is the target, actorId is the person filling it out
+      // For Standard: personId and actorId are the same
+      const actorId = request.user?.id || -1;
+
+      // consider add/replaced scenarios
+      const questionnaireName = questionnaire?.questionnaireName || 'Questionnaire';
+
+      let prefix = 'REPLACED';
+
+      if (isCreatePersonQuestionnaire) {
+        if (isNewPersonCreated) {
+          prefix = 'ADDED';
+        }
+      } else if (!alreadyAnsweredBeforeSave) {
+        prefix = 'ADDED';
+      }
+
+      // set final description for change log
+      let finalDescription = '';
+      if (isCreatePersonQuestionnaire) {
+        finalDescription = `${prefix} [QuestionnaireResponse]: ${questionnaireName}`;
+      } else {
+        finalDescription = `${prefix} [QuestionnaireResponse]: ${questionnaireName}`;
+      }
+
+      // create log entry
+      await createProfileChangeLogEntry({
+        personId: targetPersonIdForLog,
+        changedById: actorId,
+        changeDescription: finalDescription,
+      });
+    } catch (logErr) {
+      console.error('Non-blocking Change Log Error:', logErr);
+    }
   }
 
   // Set up the default JSON response.
