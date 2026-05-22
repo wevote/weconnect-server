@@ -472,10 +472,12 @@ exports.personSave = async (request, response) => {
         jsonData.success = false;
       }
     } else if (shouldUpdatePerson) {
+      // console.log('shouldUpdatePerson TRUE, canEditPerson:', canEditPerson, ', Updating person:', personUpdateDict);
       if (canEditPerson || ('password' in personUpdateDict)) {   // Have to let a person change their password
         personUpdateDict.id = personId;
         // console.log('Updating person:', personUpdateDict);
         const person = await savePerson(personUpdateDict);
+        // console.log('Updated person:', person);
         jsonData.personUpdated = true;
         jsonData.personId = person.id;
         jsonData.status += 'PERSON_UPDATED ';
@@ -518,7 +520,7 @@ exports.personSave = async (request, response) => {
                 logRows.push({
                   personId,
                   changedById: actorId,
-                  changeDescription: `REPLACED [${field}]: ${prevValue}`,
+                  changeDescription: `ADDED [${field}]: ${newValue} || REPLACED [${field}]: ${prevValue}`,
                 });
               } else if (prevValue && !newValue) {
                 // Case 2c: Cleared value
