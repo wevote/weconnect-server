@@ -313,6 +313,18 @@ async function deleteOneTaskGroupTeamLink (taskGroupId, teamId) {
   });
 }
 
+
+async function deleteTask (personId, taskDefinitionId) {
+  await prisma.task.delete({
+    where: {
+      taskDefinitionIdPersonId: {
+        taskDefinitionId: Number(taskDefinitionId),
+        personId: Number(personId),
+      },
+    },
+  });
+}
+
 async function saveTask (task) {
   // console.log('saveTask task:', task);
   const updateTask = await prisma.task.update({
@@ -503,6 +515,7 @@ module.exports = {
   deleteOneTaskGroup,
   deleteOneTaskGroupTeamLink,
   deleteOneTaskType,
+  deleteTask,
   extractTaskGroupVariablesToChange,
   findTaskDefinitionById,
   findTaskDefinitionListByParams,

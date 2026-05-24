@@ -1,6 +1,6 @@
 // weconnect-server/controllers/taskApiController.js
 const { retrieveTaskStatusListByPersonIdList } =  require('./taskController');
-const { createTaskDefinition, createTaskGroup, createTaskType, deleteOneTaskGroupTeamLink, deleteOneTaskType,
+const { createTaskDefinition, createTaskGroup, createTaskType, deleteOneTaskGroupTeamLink, deleteOneTaskType, deleteTask,
   findTaskDefinitionById, findTaskDefinitionListByParams, findTaskGroupById, findTaskGroupTeamLinkListByParams,
   findTaskGroupListByParams, findTaskTypeListByParams,
   TASK_DEFINITION_FIELDS_ACCEPTED, TASK_DEFINITION_FIELDS_TO_MAP_TO_PERSON_FIELDS,
@@ -428,6 +428,44 @@ exports.taskGroupTeamLinkDelete = async (request, response) => {
 
   response.json(jsonData);
 };
+
+
+/**
+ * GET /api/v1/task-delete
+ */
+exports.taskDelete = async (request, response) => {
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const queryParams = new URLSearchParams(parsedUrl.search);
+  const personId = convertToInteger(queryParams.get('personId'));
+  const taskDefinitionId = convertToInteger(queryParams.get('taskDefinitionId'));
+
+  // Set up the default JSON response.
+  const jsonData = {
+    personId,
+    taskDeleted: false,
+    taskDefinitionId,
+    status: '',
+    success: true,
+    updateErrors: [],
+  };
+
+  try {
+    if (parseInt(personId) >= 0) {
+      jsonData.status += 'TASK_TO_BE_DELETED ';
+      await deleteTask(personId, taskDefinitionId);
+      console.log('Deleted Task:', personId, ', taskDefinitionId:', taskDefinitionId);
+      jsonData.taskDeleted = true;
+      jsonData.status += 'TASK_DELETED ';
+    }
+  } catch (err) {
+    console.error('Error while deleting Task:', err);
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+
+  response.json(jsonData);
+};
+
 
 /**
  * GET /api/v1/task-group-team-link-save
