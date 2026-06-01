@@ -4,7 +4,7 @@ const validator = require('validator');
 const passport = require('passport');
 const { getAllAccessRightsForPerson, personCanSeeOrDo } = require('./personController');
 const {
-  createPerson, createPersonAway, findPersonListByParams, getAccessRightsForPerson, PERSON_AWAY_FIELDS_ACCEPTED,
+  createPerson, createPersonAway, deleteOne, findPersonListByParams, getAccessRightsForPerson, PERSON_AWAY_FIELDS_ACCEPTED,
   PERSON_FIELDS_ACCEPTED_ADMIN, PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE,
   removeProtectedFieldsFromPerson, removeProtectedFieldsFromPersonAway,
   findOnePerson, findPersonById, savePerson, savePersonAway,
@@ -133,7 +133,59 @@ exports.personAwaySave = async (request, response) => {
   }
   response.json(jsonData);
 };
+/**
+ * GET /api/v1/person-delete
+ * Delete a profile of person.
+ */
 
+exports.personDelete = async(request, response) => {
+  let shouldRemovePerson = false;
+
+  const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
+  const queryParams = new URLSearchParams(parsedUrl.search);
+  const personId = convertToInteger(queryParams.get('personId'));
+  // Set up the default JSON response.
+  const jsonData = {
+    removePersonSuccessful: false,
+    personId: -1,
+    status: '',
+    success: true,
+    updateErrors: [],
+  };
+  try {
+    jsonData.personId = personId;
+    jsonData.success = true;
+  } catch (err) {
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+
+  try {
+    if (personId >= 0) {
+      jsonData.status += 'PERSON_CAN_BE_REMOVED ';
+      shouldRemovePerson = true;
+    } else {
+      jsonData.status += 'MISSING_REQUIRED_VARIABLES: personId ';
+      if (personId < 0) {
+        jsonData.updateErrors.push('Missing required variable: personId');
+      }
+    }
+    if (shouldRemovePerson) {
+      // Note: This doesn't return a teamMember object
+      await deleteOne(personId);
+      jsonData.removePersonSuccessful = true;
+      jsonData.personId = personId;
+      jsonData.success = true;
+    }
+  } catch (err) {
+    console.error('Error while removing person from team:', err);
+    jsonData.status += 'ERROR_REMOVING_PERSON_FROM_TEAM: ';
+    jsonData.status += err.message;
+    jsonData.success = false;
+  }
+
+  response.json(jsonData);
+};
 
 /**
  * GET /api/v1/person-list-retrieve
