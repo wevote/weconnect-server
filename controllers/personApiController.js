@@ -138,7 +138,7 @@ exports.personAwaySave = async (request, response) => {
  * Delete a profile of person.
  */
 
-exports.personDelete = async(request, response) => {
+exports.personDelete = async (request, response) => {
   let shouldRemovePerson = false;
 
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
