@@ -869,16 +869,34 @@ exports.savePassword = async (req, res) => {
  * Log out.
  */
 exports.logout = async (req, res) => {
-  await deleteOneSessionRecord(req.sessionID);
   req.logout((err) => {
-    if (err) console.log('Error : Failed to logout req.logout: ', err);
-  });
-  // This might be unnecessary (or harmful in the future) https://stackoverflow.com/a/14277819/1893089
-  req.session.destroy((err) => {
-    if (err) console.log('Error : Failed to logout req.session.destroy: ', err);
-  });
-  return res.json({
-    authenticated: req.isAuthenticated(),
+    if (err) {
+      console.log('Error : Failed to logout req.logout: ', err);
+      return res.json({
+        authenticated: req.isAuthenticated(),
+      });
+    }
+
+    // Only destroy session if it exists
+    if (req.session) {
+      req.session.destroy((err2) => {
+        if (err2) console.log('Error : Failed to logout req.session.destroy: ', err2);
+        deleteOneSessionRecord(req.sessionID).catch((err3) => {
+          console.log('Error : Failed to delete session record: ', err3);
+        });
+        return res.json({
+          authenticated: req.isAuthenticated(),
+        });
+      });
+    } else {
+      // Session was already cleared, just delete the record
+      deleteOneSessionRecord(req.sessionID).catch((err2) => {
+        console.log('Error : Failed to delete session record: ', err2);
+      });
+      return res.json({
+        authenticated: req.isAuthenticated(),
+      });
+    }
   });
 };
 
