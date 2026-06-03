@@ -32,6 +32,11 @@ const isLocal = async (req) => {
   // Linux ip-10-0-182-109.us-west-2.compute.internal 5.10.235-227.919.amzn2.x86_64 #1 SMP Sat Apr 5 16:59:05 UTC 2025 x86_64 GNU/Linux
   try {
     const { stdout } = await exec('uname -a ');
+    // Check for WSL2 first - this is a valid local environment
+    if (stdout.includes('microsoft-standard-WSL2')) {
+      console.log('FastLoad local: Running on WSL2: ', stdout);
+      return true;
+    }
     if (stdout.startsWith('Linux') || stdout.endsWith('x86_64 GNU/Linux') || stdout.includes('.amzn2.')) {
       console.log('FastLoad local: uname: ', stdout);
       console.error('FastLoad local: Attempted to run localReplaceTable on an AWS instance!');
