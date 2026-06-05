@@ -4,7 +4,7 @@ const validator = require('validator');
 const passport = require('passport');
 const { getAllAccessRightsForPerson, personCanSeeOrDo } = require('./personController');
 const {
-  createPerson, createPersonAway, deleteOne, findPersonListByParams, getAccessRightsForPerson, PERSON_AWAY_FIELDS_ACCEPTED,
+  createPerson, createPersonAway, deleteOne, deletemanyassociations, findPersonListByParams, getAccessRightsForPerson, PERSON_AWAY_FIELDS_ACCEPTED,
   PERSON_FIELDS_ACCEPTED_ADMIN, PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE,
   removeProtectedFieldsFromPerson, removeProtectedFieldsFromPersonAway,
   findOnePerson, findPersonById, savePerson, savePersonAway,
@@ -152,17 +152,12 @@ exports.personDelete = async (request, response) => {
     success: true,
     updateErrors: [],
   };
-  try {
-    jsonData.personId = personId;
-    jsonData.success = true;
-  } catch (err) {
-    jsonData.status += err.message;
-    jsonData.success = false;
-  }
 
   try {
     if (personId >= 0) {
-      jsonData.status += 'PERSON_CAN_BE_REMOVED ';
+      jsonData.personId = personId;
+      await deletemanyassociations(personId);
+      jsonData.status += 'PERSON_CAN_BE_REMOVED_FROM_FROM_ORGANIZATION ';
       shouldRemovePerson = true;
     } else {
       jsonData.status += 'MISSING_REQUIRED_VARIABLES: personId ';
@@ -171,16 +166,15 @@ exports.personDelete = async (request, response) => {
       }
     }
     if (shouldRemovePerson) {
-      // Note: This doesn't return a teamMember object
       await deleteOne(personId);
       jsonData.removePersonSuccessful = true;
       jsonData.personId = personId;
       jsonData.success = true;
     }
   } catch (err) {
-    console.error('Error while removing person from team:', err);
-    jsonData.status += 'ERROR_REMOVING_PERSON_FROM_TEAM: ';
-    jsonData.status += err.message;
+    console.error('Error while removing person from orgnaization:', err);
+    jsonData.status += 'ERROR_REMOVING_PERSON_FROM_ORGANIZATION: ';
+    jsonData.updateErrors.push(err.message);
     jsonData.success = false;
   }
 
