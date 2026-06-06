@@ -280,6 +280,45 @@ async function findOnePerson (params, includeAllData = false) {   // Find one wi
   return modifiedPerson;
 }
 
+async function deletemanyassociations (id) {
+  await prisma.clientSession.deleteMany({
+    where: {
+      personId: {
+        contains: id,
+      },
+    },
+  });
+
+  await prisma.meetingAttendee.deleteMany({
+    where: {
+      personId: {
+        equals: id,
+      },
+    },
+  });
+  await prisma.task.deleteMany({
+    where: {
+      doneByPersonId: {
+        equals: id,
+      },
+    },
+  });
+  await prisma.taskChangeLog.deleteMany({
+    where: {
+      doneByPersonId: {
+        equals: id,
+      },
+    },
+  });
+  await prisma.teamMember.deleteMany({
+    where: {
+      personId: {
+        equals: id,
+      },
+    },
+  });
+}
+
 async function deleteOne (id) {
   await prisma.person.delete({
     where: {
@@ -613,7 +652,6 @@ const retrieveProfileChangeLogsFromDb = async (personId) => {
       person: peopleMap[log.personId] || { firstName: 'Unknown', lastName: '' },
       changer: peopleMap[log.changedById] || { firstName: 'System', lastName: '' },
     }));
-
   } catch (error) {
     console.error('Error in retrieveProfileChangeLogsFromDb:', error);
     throw error;
@@ -645,6 +683,7 @@ module.exports = {
   createPerson,
   createPersonAway,
   deleteOne,
+  deletemanyassociations,
   doesPersonHaveIsAdmin,
   extractPersonVariablesToChange,
   findOnePerson,
