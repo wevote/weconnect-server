@@ -173,7 +173,7 @@ exports.personDelete = async (request, response) => {
     }
   } catch (err) {
     console.error('Error while removing person data from other tables:', err);
-    jsonData.status += 'ERROR_REMOVING_PERSON_DATA_FROM_ORGANIZATION: ';
+    jsonData.status += 'ERROR_REMOVING_PERSON_DATA_FROM_OTHER_TABLES: ';
     jsonData.updateErrors.push(err.message);
     jsonData.success = false;
   }
