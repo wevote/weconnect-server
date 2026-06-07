@@ -4,7 +4,7 @@ const validator = require('validator');
 const passport = require('passport');
 const { getAllAccessRightsForPerson, personCanSeeOrDo } = require('./personController');
 const {
-  createPerson, createPersonAway, deleteOne, deletemanyassociations, findPersonListByParams, getAccessRightsForPerson, PERSON_AWAY_FIELDS_ACCEPTED,
+  createPerson, createPersonAway, deleteOne, deletePersonDataFromOtherTables, findPersonListByParams, getAccessRightsForPerson, PERSON_AWAY_FIELDS_ACCEPTED,
   PERSON_FIELDS_ACCEPTED_ADMIN, PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE,
   removeProtectedFieldsFromPerson, removeProtectedFieldsFromPersonAway,
   findOnePerson, findPersonById, savePerson, savePersonAway,
@@ -156,8 +156,8 @@ exports.personDelete = async (request, response) => {
   try {
     if (personId >= 0) {
       jsonData.personId = personId;
-      await deletemanyassociations(personId);
-      jsonData.status += 'PERSON_CAN_BE_REMOVED_FROM_FROM_ORGANIZATION ';
+      await deletePersonDataFromOtherTables(personId);
+      jsonData.status += 'PERSON_DATA_CAN_BE_REMOVED_FROM_OTHER_TABLES ';
       shouldRemovePerson = true;
     } else {
       jsonData.status += 'MISSING_REQUIRED_VARIABLES: personId ';
@@ -172,8 +172,8 @@ exports.personDelete = async (request, response) => {
       jsonData.success = true;
     }
   } catch (err) {
-    console.error('Error while removing person from orgnaization:', err);
-    jsonData.status += 'ERROR_REMOVING_PERSON_FROM_ORGANIZATION: ';
+    console.error('Error while removing person data from other tables:', err);
+    jsonData.status += 'ERROR_REMOVING_PERSON_DATA_FROM_ORGANIZATION: ';
     jsonData.updateErrors.push(err.message);
     jsonData.success = false;
   }

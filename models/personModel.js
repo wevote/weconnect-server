@@ -280,11 +280,11 @@ async function findOnePerson (params, includeAllData = false) {   // Find one wi
   return modifiedPerson;
 }
 
-async function deletemanyassociations (id) {
+async function deletePersonDataFromOtherTables (id) {
   await prisma.clientSession.deleteMany({
     where: {
       personId: {
-        contains: id,
+        equals: id,
       },
     },
   });
@@ -683,7 +683,7 @@ module.exports = {
   createPerson,
   createPersonAway,
   deleteOne,
-  deletemanyassociations,
+  deletePersonDataFromOtherTables,
   doesPersonHaveIsAdmin,
   extractPersonVariablesToChange,
   findOnePerson,
