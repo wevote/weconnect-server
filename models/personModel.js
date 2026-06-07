@@ -1,6 +1,6 @@
 // weconnect-server/models/personModel.js, parallel to /prisma/schema/person.prisma
 const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('@node-rs/bcrypt');
+const bcrypt = require('bcrypt');
 const validator = require('validator');
 
 const prisma = new PrismaClient();
