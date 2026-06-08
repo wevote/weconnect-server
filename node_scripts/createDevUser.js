@@ -1,4 +1,4 @@
-const bcrypt = require('@node-rs/bcrypt');
+const bcrypt = require('bcrypt');
 const dotenv = require('dotenv');
 const { createPerson } = require('../models/personModel');
 

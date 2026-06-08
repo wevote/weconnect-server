@@ -1,7 +1,6 @@
 // weconnect-server/controllers/questionnaireApiController.js
-const bcrypt = require('@node-rs/bcrypt');
+const bcrypt = require('bcrypt');
 const { findOnePerson, PERSON_FIELDS_ACCEPTED_FROM_QUESTIONNAIRE, savePerson, createPerson, createProfileChangeLogEntry,
-  findPersonById,
 } = require('../models/personModel');
 const { retrieveQuestionnaireResponseListByPersonIdList } =  require('./questionnaireController');
 const { createQuestion, createQuestionnaire, findQuestionListByIdList,

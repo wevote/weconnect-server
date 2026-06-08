@@ -29,8 +29,8 @@ services:
     environment:
       - DATABASE_HOST=weconnect-db                # use db host/port for weconnect-db service (defined above)
       - DATABASE_PORT=5432
-      - HTTPS_SSL_CERT=/etc/ssl/certs/cert.pem    # use automatically created cert
-      - HTTPS_SSL_KEY=/etc/ssl/private/key.pem    # use automatically created key
+      - HTTPS_SSL_CERT=${HTTPS_SSL_CERT:-/etc/ssl/certs/cert.pem}    # use automatically created cert as a fallback
+      - HTTPS_SSL_KEY=${HTTPS_SSL_KEY:-/etc/ssl/private/key.pem}     # use automatically created key as a fallback
     volumes:
       - .:/app
       # Prevent host node_modules from shadowing the container's installed node_modules
@@ -38,8 +38,9 @@ services:
     networks:
       - wevote
     ports:
-      - "127.0.0.1:4500:4500" # access the WeConnect API at http://localhost:4500
+      - "0.0.0.0:4500:4500"   # access the WeConnect API at https://wevotedeveloper.com:4500
       - "127.0.0.1:5555:5555" # expose prisma studio running inside container
+      - "0.0.0.0:9229:9229"   # The WebStorm Node debugger port
 
 networks:
   wevote:

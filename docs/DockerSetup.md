@@ -17,7 +17,7 @@ All WeVote services (WeVoteServer, WebApp, weconnect-server) share a Docker netw
 docker network create wevote
 ```
 
-### 2. Configure environment variables
+### 2. Configure environment variables and install the SSL certificates
 
 Copy the template and fill in your values:
 
@@ -25,15 +25,25 @@ Copy the template and fill in your values:
 cp .env-template .env
 ```
 
-If you want to customize the database username and password used by weconnect-server, update the settings in the .env file:
+We have real commercial SSL certs from 'Sectigo' for wevotedeveloper.com
+
+You can download them from https://drive.google.com/drive/folders/1q0KB2B8HB-AGTMLXrYq7x96McaEJ9_od?usp=drive_link
+
+If you don't have access to this drive, talk to your team leader.
+
+The two files are wevotedeveloper.com_key.txt and wevotedeveloper.com.crt
+
+Copy them to your cert directory  WeVoteServer/cert
+
+Then change your .env file to be
 
 ```sh
 # .env
-DATABASE_USERNAME=your_username_here
-DATABASE_PASSWORD=your_password_here
+DATABASE_USER=postgres
+DATABASE_PASSWORD=devpg
+HTTPS_SSL_CERT=./cert/wevotedeveloper.com.crt
+HTTPS_SSL_KEY=./cert/wevotedeveloper.com_key.txt
 ```
-
-The Docker Compose file overrides `DATABASE_HOST`, `DATABASE_PORT`, `HTTPS_SSL_CERT`, and `HTTPS_SSL_KEY` automatically, so you do not need to set those in `.env` for Docker.
 
 ### 3. Build and start the services
 
@@ -47,7 +57,7 @@ This will:
 3. Run `prisma generate` and `prisma migrate deploy` to apply all migrations
 4. Start the weconnect-server with nodemon (auto-reloads on file changes)
 
-The API will be available at **https://localhost:4500**.
+The API will be available at **https://wevotedeveloper.com:4500/**.
 
 To run in the background:
 
@@ -107,6 +117,8 @@ docker compose logs -f weconnect-api    # follow api logs
 docker compose logs -f weconnect-db     # follow database logs
 ```
 
+You can also see these logs in docker.desktop, and in a terminal (possibly within WebStorm) in which you ran the `docker compose up` command.  
+
 ## Troubleshooting
 
 **`docker network create wevote` fails with "already exists"**
@@ -122,3 +134,37 @@ Rebuild the image to reinstall dependencies:
 docker compose build --no-cache 
 docker compose up
 ```
+
+## Running and Debugging in WebStorm
+* Make sure your WebStorm is updated to the latest version, at least to "WebStorm 2025.2.6.1"
+* The WebStorm Docker plugin is bundled with this version and later.
+
+### 1. Connect WebStorm to your Docker Daemon
+
+1) Open settings using **Ctrl + Alt + S* (Windows/Linux) or **Cmd +** , (macOS).
+2) Navigate to **Build, Execution, Deployment | Docker**.
+3) Click the **+** icon to add a Docker server.   (This is what it looks like on macOS)
+
+<img src="./docs/images/WebStormDockerForMacSetup.png" alt="PyCharm Docker plugin" width="900" style="padding-left: 5%">
+
+4) Press **Ok** to save the docker server connection.
+
+### 2. Create an "Attach to Node" Run Configuration
+
+1) Go to the main menu and select **Run | Edit Configurations**.
+2) Click the **+ (Add New Configuration)** button and select **Attach to Node.js/Chrome**.
+3) Name the run configuration something like `Attach to Docker API`
+3) Host needs to be `localhost`
+4) Port needs to be `9229`
+5) DO NOT CHECK "Reconnect automatically"  
+4) Setup a Remote URLs of local files, Press the **+** to open a blank URL mapping line.
+5) A file selection dialog will appear.  Select the `weconnect-server.js` file.  (Leave the default `http://localhost:9229` Remote URL as is.)
+5) Click **OK** to save the configuration
+6) Start the Docker setup with the `docker compose up` command in a terminal.
+6) Once the `Container weconnect-server-weconnect-db-1` starts up, you can press the Debug "bug" icon, in Webstorm for the "Attach to Docker API", and you will be debugging.  Set a breakpoint, run your API call and execution should stop at the breakpoint.
+<img src="./docs/images/DockerAttachNodeForDocker.png" alt="PyCharm Docker plugin" width="900" style="padding-left: 1%">
+
+
+**Note about ephemeral containers:** In Docker.desktop, under `weconnect-server`, you will see the `weconnect-api-1` container and the `weconnect-db-1` container, and while
+debugging you may see ephemeral (temporary anonymous) containers like `unruffled_shannon` while debugging -- these 
+containers are debugging related and can be ignored.
