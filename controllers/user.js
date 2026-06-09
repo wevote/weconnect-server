@@ -7,7 +7,7 @@
 // const _ = require('lodash');
 // const validator = require('validator');
 // const mailChecker = require('mailchecker');
-// const bcrypt = require('bcrypt');
+// const bcrypt = require('@node-rs/bcrypt');
 // const { findUserById, deleteOne, findOneByEmail,
 //   saveUser, findOneUser, createUser } = require('../models/prismaUserModel');
 //

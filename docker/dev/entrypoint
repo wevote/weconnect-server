@@ -8,4 +8,5 @@ echo "Running 'prisma migrate deploy'"
 npx prisma migrate dev
 
 echo "Starting weconnect-server"
+# 2. Hand over PID 1 execution to the main container command (CMD) in Dockerfile
 exec "$@"

@@ -11,7 +11,24 @@ We dump the db into a text file in the root of the project
 Use pgAdmin 4 to drop the database Servers/WeVoteServer/Databases/WeConnectDB  -- right click on it and choose 'Delete (Force)'
 Use pgAdmin 4 to reinitialize an empty database -- Servers/WeVoteServer/Databases  -- right click on it and choose Create/Database and enter 'WeConnectDB' and save.
 Select a database dump that was before you started debugging, and should have the full data set
-     psql -X -f WeConnectDBdumpfile.2025-05-20T20:03:55.sql WeConnectDB
+     // psql -X -f WeConnectDBdumpfile.2025-05-20T20:03:55.sql WeConnectDB
+stevepodell@Steves-MBP-M1-Dec2021 weconnect-server % docker compose exec weconnect-db sh
+/ $ bash
+a98ca9d2ef92:/$ psql
+psql (16.14)
+Type "help" for help.
+
+postgres=# CREATE DATABASE "weconnect-db";
+CREATE DATABASE
+postgres=# CREATE ROLE rdsadmin WITH SUPERUSER LOGIN PASSWORD 'admin';
+CREATE ROLE
+postgres=# CREATE ROLE dbadmin WITH SUPERUSER LOGIN PASSWORD 'admin';
+CREATE ROLE
+postgres=# \q
+a98ca9d2ef92:/$
+a98ca9d2ef92:/$ psql -X -f /tmp/backupJun8-454pmPlain  "weconnect-db"
+a98ca9d2ef92:/$
+
 That's it, your data is restored.
 */
 

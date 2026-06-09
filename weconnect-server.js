@@ -20,6 +20,7 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const useragent = require('express-useragent');
 const { getPersonIdBySessionId } = require('./models/clientSessionModel');
+const { createDevPersonIfTheyDontExist } = require('./models/personModel');
 
 process.env.NODE_DEBUG = '';    // Use our custom http logger, that shortens long GET urls
 
@@ -286,7 +287,7 @@ if (process.env.PROTOCOL.includes('https')) {
 /**
  * Start Express server.
  */
-serverHttpOrHttps.listen(weconnectServer.get('port'), () => {
+serverHttpOrHttps.listen(weconnectServer.get('port'), async () => {
   const { BASE_URL } = process.env;
   const colonIndex = BASE_URL.lastIndexOf(':');
   const port = parseInt(BASE_URL.slice(colonIndex + 1), 10);
@@ -296,6 +297,8 @@ serverHttpOrHttps.listen(weconnectServer.get('port'), () => {
   } else if (parseInt(weconnectServer.get('port')) !== port) {
     console.warn(`WARNING: The BASE_URL environment variable and the App have a port mismatch. If you plan to view the app in your browser using the localhost address, you may need to adjust one of the ports to make them match. BASE_URL: ${BASE_URL}\n`);
   }
+
+  await createDevPersonIfTheyDontExist();
 
   console.log(`App is running on  ${process.env.BASE_URL}  in  ${weconnectServer.get('env')} mode.`);
   console.log('Press CTRL-C to stop.');

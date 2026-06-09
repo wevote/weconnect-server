@@ -24,3 +24,4 @@ EXPOSE 4500
 
 ENTRYPOINT ["docker-entrypoint"]
 CMD ["npm", "run", "start"]
+#CMD ["npm", "run", "start-no-debug"]
