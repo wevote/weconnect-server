@@ -17,7 +17,7 @@ services:
     user: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - /tmp/docker:/tmp                 # Needed to get backfiles into psql to test fastback
+      - /tmp/docker:/tmp                 # Needed to get backup files into psql to test fastback
 
   weconnect-api:
     build:
