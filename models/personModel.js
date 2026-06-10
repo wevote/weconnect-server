@@ -1,7 +1,8 @@
 // weconnect-server/models/personModel.js, parallel to /prisma/schema/person.prisma
 const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcrypt');
+const bcrypt = require('@node-rs/bcrypt');
 const validator = require('validator');
+const { exec } = require('child_process');
 
 const prisma = new PrismaClient();
 
@@ -678,8 +679,31 @@ const createProfileChangeLogEntriesBulk = async (logRows) => {
   }
 };
 
+const createDevPersonIfTheyDontExist = async () => {
+  const { DEV_PERSON_INITIAL_USER, SERVER_IS_SOURCE_OF_TRUTH } = process.env;
+  if (SERVER_IS_SOURCE_OF_TRUTH === 'true') {
+    // Do not run this in production
+    return;
+  }
+
+  try {
+    if (DEV_PERSON_INITIAL_USER && DEV_PERSON_INITIAL_USER.length > 0) {
+      const person = await findOnePerson({ emailPersonal: DEV_PERSON_INITIAL_USER.split(' ')[2] });
+      if (Object.keys(person).length === 0) {
+        exec(`node ./node_scripts/createDevUser ${DEV_PERSON_INITIAL_USER}`);  // Force the exercising of the script, instead of copying code
+        console.log(`createDevPersonIfTheyDontExist: ${DEV_PERSON_INITIAL_USER} created`);
+      } else {
+        console.log(`createDevPersonIfTheyDontExist: ${DEV_PERSON_INITIAL_USER} already exists`);
+      }
+    }
+  } catch (error) {
+    console.log('createDevPersonIfTheyDontExist error:', error);
+  }
+};
+
 module.exports = {
   comparePassword,
+  createDevPersonIfTheyDontExist,
   createPerson,
   createPersonAway,
   deleteOne,

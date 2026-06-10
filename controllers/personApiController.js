@@ -1,5 +1,5 @@
 // weconnect-server/controllers/personApiController.js
-const bcrypt = require('bcrypt');
+const bcrypt = require('@node-rs/bcrypt');
 const validator = require('validator');
 const passport = require('passport');
 const { getAllAccessRightsForPerson, personCanSeeOrDo } = require('./personController');

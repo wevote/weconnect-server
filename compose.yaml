@@ -17,6 +17,7 @@ services:
     user: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - /tmp/docker:/tmp                 # Needed to get backup files into psql to test fastback
 
   weconnect-api:
     build:
@@ -42,6 +43,21 @@ services:
       - "127.0.0.1:5555:5555" # expose prisma studio running inside container
       - "0.0.0.0:9229:9229"   # The WebStorm Node debugger port
 
+  pgadmin:
+    image: dpage/pgadmin4:8.4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PG_ADMIN_EMAIL:-fake_email@wevoteeducation.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PG_ADMIN_PASSWORD:-admin}
+      DATABASE_USER: ${DATABASE_USER:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-admin}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "8080:80"
+    networks:
+      - wevote
+
+
 networks:
   wevote:
     name: wevote
@@ -49,4 +65,5 @@ networks:
 
 volumes:
   postgres_data:
+  pgadmin_data:
 

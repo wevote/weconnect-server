@@ -31,7 +31,7 @@ You can download them from https://drive.google.com/drive/folders/1q0KB2B8HB-AGT
 
 If you don't have access to this drive, talk to your team leader.
 
-The two files are wevotedeveloper.com_key.txt and wevotedeveloper.com.crt
+The two files are `wevotedeveloper.com_key.txt` and `wevotedeveloper.com.crt`
 
 Copy them to your cert directory  WeVoteServer/cert
 
@@ -54,8 +54,10 @@ docker compose up --build
 This will:
 1. Start a PostgreSQL database
 2. Wait for the database to be healthy
+4. Start pgAdmin4 running on http://localhost:8080/browser/
 3. Run `prisma generate` and `prisma migrate deploy` to apply all migrations
-4. Start the weconnect-server with nodemon (auto-reloads on file changes)
+4. Run `npm install` to get the configured library versions into the Docker layer.
+5. Start the weconnect-server with nodemon (auto-reloads on file changes)
 
 The API will be available at **https://wevotedeveloper.com:4500/**.
 
@@ -91,6 +93,9 @@ To run Prisma commands inside the running container:
 # Open a shell in the api container
 docker compose exec weconnect-api sh
 
+# Open a shell in the db container (rarely needed, to run psql)
+docker compose exec weconnect-db sh
+
 # Then run Prisma commands
 npx prisma studio          # visual database browser at http://localhost:5555
 npx prisma migrate dev     # create a new migration
@@ -121,13 +126,12 @@ You can also see these logs in docker.desktop, and in a terminal (possibly withi
 
 ## Troubleshooting
 
-**`docker network create wevote` fails with "already exists"**
-The network already exists — this is fine, proceed to the next step.
+* **If `docker network create wevote` fails with "already exists"**, the network already exists — this is fine, proceed to the next step.
 
-**Prisma migration fails on startup**
+* **Prisma migration fails on startup**
 Check that the database settings are correct in `.env`. Run `docker compose logs weconnect-db` to inspect database errors.
 
-**`node_modules` issues or package errors**
+* If you see **`node_modules` issues or package errors**
 Rebuild the image to reinstall dependencies:
 
 ```sh
@@ -145,7 +149,7 @@ docker compose up
 2) Navigate to **Build, Execution, Deployment | Docker**.
 3) Click the **+** icon to add a Docker server.   (This is what it looks like on macOS)
 
-<img src="./docs/images/WebStormDockerForMacSetup.png" alt="PyCharm Docker plugin" width="900" style="padding-left: 5%">
+<img src="./images/WebStormDockerForMacSetup.png" alt="PyCharm Docker plugin" width="900" style="padding-left: 5%">
 
 4) Press **Ok** to save the docker server connection.
 
@@ -157,7 +161,7 @@ docker compose up
 3) Host needs to be `localhost`
 4) Port needs to be `9229`
 5) DO NOT CHECK "Reconnect automatically"  
-4) Setup a Remote URLs of local files, Press the **+** to open a blank URL mapping line.
+4) Setup a "Remote URLs of local files" entry.  Press the **+** to open a blank URL mapping line.
 5) A file selection dialog will appear.  Select the `weconnect-server.js` file.  (Leave the default `http://localhost:9229` Remote URL as is.)
 5) Click **OK** to save the configuration
 6) Start the Docker setup with the `docker compose up` command in a terminal.
@@ -168,3 +172,47 @@ docker compose up
 **Note about ephemeral containers:** In Docker.desktop, under `weconnect-server`, you will see the `weconnect-api-1` container and the `weconnect-db-1` container, and while
 debugging you may see ephemeral (temporary anonymous) containers like `unruffled_shannon` while debugging -- these 
 containers are debugging related and can be ignored.
+
+## PgAdmin
+### 1. Access PgAdmin Container
+Go to `localhost:8080` in your local web browser to access the `PgAdmin` container UI.  If you used all the default environment_variables: on PgAdmin login screen, your "Email Address/Username" will be `fake_email@wevoteeducation.org` and your password will be `admin`.
+### 2. Register New Server
+1. Right-click on 'Servers' in the left pane, and select Register/Server.
+
+[//]: # (<img width="692" height="135" alt="582966431-c6ad5816-26dc-4b5d-a745-c2bbcb0cefbc" src="https://github.com/user-attachments/assets/c0772396-ac83-4537-9a10-8bcfcf5a7c7c" />)
+
+3. Set the Server **Name** to `wevoteserverdb` (unless you overrode it in the `environment_variables.json` value for `DATABASE_NAME`.)
+
+<img src="./images/RegisterServerGeneral.png" alt="Register Server General Screenshot" width="600" style="padding-left: 10%">
+
+5. Set up the server connection (click the second tab 'Connection')
+* Host name/address: `weconnect-db`
+* Port: `5432`
+* Maintenance database: `postgres`
+* Username: `postgres`
+* Password: `admin`
+
+[//]: # (https://github.com/wevote/WeVoteServer/blob/develop/docs/README_API_INSTALL_POSTGRES_MAC.md)
+
+[//]: # (<img width="704" height="560" alt="image" src="https://github.com/user-attachments/assets/b94a3349-2bb7-40c4-b38c-994223dd93c7" />)
+
+<img src="./images/RegisterServerConnection.png" alt="Register Server General Screenshot" width="600" style="margin-left: 10%">
+
+
+6. **Only if pgadmin does not recognize your password for 'Register New Server'**, see the following section titled <ins>If 'Add New Server' does not accept the password for your postgres user</ins>, to do a password reset for the maintenance database user 'postgres'.
+
+6. Click Save
+
+## If 'Add New Server' does not accept the password for your postgres user
+
+Open a terminal in the `db` container:
+
+```sh
+docker compose exec weconnect-db sh
+```
+
+In the terminal
+1. Enter the bash shell, by entering 'bash'
+2. Start the PSQL command line app, by entering 'psql'
+3. Enter the SQL command to change the password by entering `ALTER USER postgres WITH PASSWORD 'admin';`
+4. Then exit PSQL by entering 'exit'
