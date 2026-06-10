@@ -455,7 +455,7 @@ async function createPersonAway (updateDict) {
 
 async function comparePassword (person, candidatePassword, cb) {
   try {
-    const verified = await bcrypt.verify(candidatePassword, person.password);
+    const verified = await bcrypt.compare(candidatePassword, person.password);
     cb(null, verified, person.password);
   } catch (err) {
     cb(err);
@@ -557,7 +557,7 @@ const doesPersonHaveIsAdmin = async (email, password) => {
     return isAdmin;
   }
 
-  const verified = await bcrypt.verify(password, person.password);
+  const verified = await bcrypt.compare(password, person.password);
   return verified;
 };
 
