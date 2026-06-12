@@ -36,6 +36,8 @@ services:
       - .:/app
       # Prevent host node_modules from shadowing the container's installed node_modules
       - /app/node_modules
+      - /tmp/docker:/tmp                 # Needed to get backfiles into psql to test fastback
+
     networks:
       - wevote
     ports:
