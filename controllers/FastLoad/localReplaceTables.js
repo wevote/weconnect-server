@@ -11,31 +11,18 @@ We dump the db into a text file in the root of the project
 Use pgAdmin 4 to drop the database Servers/WeVoteServer/Databases/WeConnectDB  -- right click on it and choose 'Delete (Force)'
 Use pgAdmin 4 to reinitialize an empty database -- Servers/WeVoteServer/Databases  -- right click on it and choose Create/Database and enter 'WeConnectDB' and save.
 Select a database dump that was before you started debugging, and should have the full data set
-     // psql -X -f WeConnectDBdumpfile.2025-05-20T20:03:55.sql WeConnectDB
-stevepodell@Steves-MBP-M1-Dec2021 weconnect-server % docker compose exec weconnect-db sh
-/ $ bash
-a98ca9d2ef92:/$ psql
-psql (16.14)
-Type "help" for help.
-
-postgres=# CREATE DATABASE "weconnect-db";
-CREATE DATABASE
-postgres=# CREATE ROLE rdsadmin WITH SUPERUSER LOGIN PASSWORD 'admin';
-CREATE ROLE
-postgres=# CREATE ROLE dbadmin WITH SUPERUSER LOGIN PASSWORD 'admin';
-CREATE ROLE
-postgres=# \q
-a98ca9d2ef92:/$
-a98ca9d2ef92:/$ psql -X -f /tmp/backupJun8-454pmPlain  "weconnect-db"
-a98ca9d2ef92:/$
-
+     // psql -X -f WeConnectDBdumpfile-2025-05-20T20-03-55.sql WeConnectDB
 That's it, your data is restored.
+stevepodell@Steves-MBP-M1-Dec2021 weconnect-server % docker compose exec weconnect-db sh
+
+For DebuggingFastLoad see the file docs/DebuggingFastLoad.md
 */
 
 
-// eslint-disable-next-line no-unused-vars
 const prisma = new PrismaClient();
+const dbString = (process.env.DATABASE_URL || 'WeConnectDB').replace(/\?schema=public$/, '');
 
+// eslint-disable-next-line no-unused-vars
 const isLocal = async (req) => {
   try {
     const { stdout } = await exec('ver');
@@ -107,9 +94,9 @@ const backupTheDatabase = async () => {
   const priorFastLoadDate = await getMostRecentDumpFileCreationTime();
   if (priorFastLoadDate.plus({ minutes: 5 }) < DateTime.now()) {
     let date = DateTime.now().toISO();
-    date = date.slice(0, -10);
-    const file = `WeConnectDBdumpfile.${date}.sql`;  // example: WeConnectDBdumpfile.2025-05-20T16:27:27.sql
-    const command = `pg_dump WeConnectDB > ${file}`;
+    date = date.slice(0, -10).replace(':', '-');
+    const file = `WeConnectDBdumpfile-${date}.sql`;  // example: WeConnectDBdumpfile-2025-05-20T16-27-27.sql
+    const command = `pg_dump "${dbString}" > ${file}`;
     console.log('FastLoad local: ', command);
     await exec(command);
     return true;
@@ -164,15 +151,29 @@ const fillTheTable = async (tableName, tableJSON) => {
   }
   try {
     fs.writeFileSync(outTempFile, tableTSV);
+    // Disable all constraints and triggers for this table during bulk load
+    const disableConstraints = `ALTER TABLE "${tableName}" DISABLE TRIGGER ALL;`;
+    const enableConstraints = `ALTER TABLE "${tableName}" ENABLE TRIGGER ALL;`;
+
     const set = 'SET session_replication_role = \'replica\';';
-    const sql = `COPY "${tableName}" FROM '${outTempFile}';`;
     const unset = 'SET session_replication_role = \'origin\';';
+
+    await prisma.$queryRawUnsafe(disableConstraints);
+    console.log('FastLoad local: fillTheTable queryRawUnsafe: ', disableConstraints);
+
     await prisma.$queryRawUnsafe(set);
     console.log('FastLoad local: fillTheTable queryRawUnsafe: ', set);
-    await prisma.$queryRawUnsafe(sql);
-    console.log('FastLoad local: fillTheTable queryRawUnsafe: ', sql);
+
+    // Use psql \copy for client-side file reading, since Prisma's COPY reads from the DB server's filesystem
+    const copyCommand = `psql "${dbString}" -c "\\copy \\"${tableName}\\" FROM '${outTempFile}'"`;
+    console.log('FastLoad local: fillTheTable exec: ', copyCommand);
+    await exec(copyCommand);
+
     await prisma.$queryRawUnsafe(unset);
     console.log('FastLoad local: fillTheTable queryRawUnsafe: ', unset);
+
+    await prisma.$queryRawUnsafe(enableConstraints);
+    console.log('FastLoad local: fillTheTable queryRawUnsafe: ', enableConstraints);
   } catch (err) {
     console.error(`FastLoad local: Error in writing ${tableName}: ${err}`);
     error += ` -- Error in writing ${tableName}: ${err}`;

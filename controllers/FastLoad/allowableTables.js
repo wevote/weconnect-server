@@ -6,11 +6,15 @@ exports.allowableTables = [         // Row counts in production DB on 4/17/26
   // 'ClientSession',               // 449, do not copy to developer's instance
   // 'Meeting',                     // 0
   // 'MeetingAttendee',             // 0
+  // *** The following tables, need to be loaded before the dependent tables that follow
+  'QuestionAnswer',                 // 5407
+  'QuestionnaireQuestion',          // 40
+  'Questionnaire',                  // 4
+  'TaskGroupTeamLink',              // 210
+  'TeamMember',                     // 748
+  // *** End of the list of tables that need to be loaded before the dependent tables that follow
   'Person',                         // 588
   'PersonAway',                     // 2
-  'QuestionAnswer',                 // 5407
-  'Questionnaire',                  // 4
-  'QuestionnaireQuestion',          // 40
   // 'QuestionnaireQuestionFormer', // 0
   // 'RecurringMeeting',            // 0
   'Task',                           // 8992
@@ -18,11 +22,9 @@ exports.allowableTables = [         // Row counts in production DB on 4/17/26
   'TaskDefinition',                 // 79
   // 'TaskDependency',              // 0
   'TaskGroup',                      // 50
-  'TaskGroupTeamLink',              // 210
   'Team',                           // 45
   // 'TeamChangeLog',               // 0
   // 'TeamGroup',                   // 0
-  'TeamMember',                     // 748
   // 'TeamMemberAway',              // 0
   // 'TeamMemberFormer',            // 0
   // 'TeamRole',                    // 0

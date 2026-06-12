@@ -27,15 +27,16 @@ exports.makeTempTable = async (tableName, tempTableName) => {
     console.log(`FastLoad: makeTempTable: Table ${tempTableName} is required for the operation of weconnect. Not allowed to drop.`);
     return false;
   }
-  let query = `DROP TABLE "${tempTableName}";`;
+  let query = `DROP TABLE IF EXISTS "${tempTableName}";`;
   try {
     try {
       await prisma.$queryRawUnsafe(query);
       console.log(`FastLoad: Table ${tempTableName} was dropped`);
     } catch (error) {
-      console.log(`FastLoad: Table ${tempTableName} was not dropped since it did not exist (not a problem!)`);
+      console.log(`FastLoad: Table ${tempTableName} was not dropped, probably a problem!`);
     }
     query = `CREATE TEMP TABLE "${tempTableName}" AS TABLE "${tableName}";`;
+    // console.log('makeTempTable query: ', query);
     await prisma.$queryRawUnsafe(query);
     return true;
   } catch (error) {
@@ -95,10 +96,10 @@ const getTempTableAsJSON = async (tempTableName) => {
       query += ' ORDER BY id';
     }
     // test stuff
-    if (tempTableName.includes('TeamMember')) {
-      const results =  await prisma.$queryRawUnsafe('SELECT * FROM "TeamMember"');
-      console.log(`FastLoad: dumpDatabaseTableToTmp TeamMember dumped ${results.length} rows`);
-    }
+    // if (tempTableName.includes('QuestionnaireQuestion')) {
+    //   const results =  await prisma.$queryRawUnsafe('SELECT * FROM "QuestionnaireQuestion"');
+    //   console.log(`FastLoad: dumpDatabaseTableToTmp QuestionnaireQuestion dumped ${results.length} rows`);
+    // }
 
     console.log(`FastLoad: dumpDatabaseTableToTmp query: ${query}`);
     const results =  await prisma.$queryRawUnsafe(query);
@@ -121,7 +122,7 @@ const getUniqueFirstName = () => {
 
 const getSubstitution = (originalFirst, originalLast, originalPersonalEmail) => {
   if (globalSubstitutions.length) {
-    const subEntry = globalSubstitutions.find((sub) => originalFirst === sub.originalFirst && originalLast === sub.originalLast);
+    const subEntry = globalSubstitutions.find((sub) => sub.originalPersonalEmail === originalPersonalEmail);
     if (subEntry) {
       return subEntry;
     }
@@ -287,7 +288,7 @@ const anonymizeTempTable = async (tempTableName) => {
       // console.log(sql);
       try {
         await prisma.$executeRawUnsafe(sql);
-        console.log('FastLoad: Row UPDATE successful', sql);
+        // console.log('FastLoad: Row UPDATE successful', sql);
       } catch (error) {
         console.error('FastLoad: Row UPDATE error', JSON.stringify(error), sql);    // add sql
       }

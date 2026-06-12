@@ -40,7 +40,7 @@ Then change your .env file to be
 ```sh
 # .env
 DATABASE_USER=postgres
-DATABASE_PASSWORD=devpg
+DATABASE_PASSWORD=admin
 HTTPS_SSL_CERT=./cert/wevotedeveloper.com.crt
 HTTPS_SSL_KEY=./cert/wevotedeveloper.com_key.txt
 ```
@@ -50,14 +50,16 @@ HTTPS_SSL_KEY=./cert/wevotedeveloper.com_key.txt
 ```sh
 docker compose up --build
 ```
+This command is needed for initial startup, and after any changes to the Docker configuration files {compose.yaml, Dockerfile.dev, entrypoint, etc} and
+after any changes to package.json -- it rebuilds the Docker Containers that are used to load the app and postgres.
 
 This will:
 1. Start a PostgreSQL database
 2. Wait for the database to be healthy
-4. Start pgAdmin4 running on http://localhost:8080/browser/
-3. Run `prisma generate` and `prisma migrate deploy` to apply all migrations
-4. Run `npm install` to get the configured library versions into the Docker layer.
-5. Start the weconnect-server with nodemon (auto-reloads on file changes)
+3. Start pgAdmin4 running on http://localhost:8080/browser/
+4. Run `prisma generate` and `prisma migrate deploy` to apply all migrations
+5. Run `npm install` to get the configured library versions into the Docker layer.
+6. Start the weconnect-server with nodemon (auto-reloads on file changes)
 
 The API will be available at **https://wevotedeveloper.com:4500/**.
 
