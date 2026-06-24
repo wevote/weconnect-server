@@ -11,7 +11,6 @@ exports.allowableTables = [         // Row counts in production DB on 4/17/26
   'QuestionnaireQuestion',          // 40
   'Questionnaire',                  // 4
   'TaskGroupTeamLink',              // 210
-  'TeamMember',                     // 748
   // *** End of the list of tables that need to be loaded before the dependent tables that follow
   'Person',                         // 588
   'PersonAway',                     // 2
@@ -23,6 +22,7 @@ exports.allowableTables = [         // Row counts in production DB on 4/17/26
   // 'TaskDependency',              // 0
   'TaskGroup',                      // 50
   'Team',                           // 45
+  'TeamMember',                     // 748
   // 'TeamChangeLog',               // 0
   // 'TeamGroup',                   // 0
   // 'TeamMemberAway',              // 0
