@@ -38,9 +38,13 @@ const secureTransfer = (process.env.BASE_URL.startsWith('https'));
 const disableLogColors = (process.env.NO_COLOR || '0') === '1';
 
 const ACCESS_PATHS_ALLOWED_PRE_AUTH = ['/', '/favicon.ico', '/health', '/healthapis/v1/versions', '/we-vote-logo-wordmark-vertical-color-on-white-256x256.png'];
-const ACCESS_APIS_ALLOWED_PRE_AUTH = [
-  'answer-list-save', 'fast-load-get-allowable-tables', 'fast-load-table-retrieve', 'fast-load-local-table-replace', 'get-auth', 'login', 'logout', 'person-id-retrieve-by-email', 'person-retrieve-by-email',
-  'question-list-retrieve', 'questionnaire-list-retrieve', 'save-password', 'send-email-code', 'signup',
+const ACCESS_APIS_ALLOWED_PRE_AUTH = ['answer-list-save',
+  'fast-load-get-allowable-tables', 'fast-load-local-table-replace', 'fast-load-table-retrieve', 'fast-load-table-statistics',
+  'get-auth',
+  'login', 'logout',
+  'person-id-retrieve-by-email', 'person-retrieve-by-email',
+  'question-list-retrieve', 'questionnaire-list-retrieve',
+  'save-password', 'send-email-code', 'signup',
   'task-definition-list-retrieve', 'task-group-list-retrieve', 'task-group-team-link-list-retrieve',
   'verify-email-code', 'versions',
 ];
