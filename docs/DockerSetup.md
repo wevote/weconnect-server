@@ -177,13 +177,13 @@ containers are debugging related and can be ignored.
 
 ## PgAdmin
 ### 1. Access PgAdmin Container
-Go to `localhost:8080` in your local web browser to access the `PgAdmin` container UI.  If you used all the default environment_variables: on PgAdmin login screen, your "Email Address/Username" will be `fake_email@wevoteeducation.org` and your password will be `admin`.
+Go to `localhost:8080` in your local web browser to access the `PgAdmin` container UI.  If you used all the default environment variables (in the `.env` file): on PgAdmin login screen, your "Email Address/Username" will be `fake_email@wevoteeducation.org` and your password will be `admin`.
 ### 2. Register New Server
 1. Right-click on 'Servers' in the left pane, and select Register/Server.
 
 [//]: # (<img width="692" height="135" alt="582966431-c6ad5816-26dc-4b5d-a745-c2bbcb0cefbc" src="https://github.com/user-attachments/assets/c0772396-ac83-4537-9a10-8bcfcf5a7c7c" />)
 
-3. Set the Server **Name** to `wevoteserverdb` (unless you overrode it in the `environment_variables.json` value for `DATABASE_NAME`.)
+3. Set the Server **Name** to `wevoteserverdb` (unless you overrode it in the `.env` value for `DATABASE_NAME`.)
 
 <img src="./images/RegisterServerGeneral.png" alt="Register Server General Screenshot" width="600" style="padding-left: 10%">
 

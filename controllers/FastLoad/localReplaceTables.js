@@ -1,5 +1,6 @@
 const { Prisma, PrismaClient } = require('@prisma/client');
 const util = require('util');
+const os = require('os');
 const exec = util.promisify(require('child_process').exec);
 const fs = require('fs');
 const { DateTime } = require('luxon');
@@ -33,15 +34,19 @@ const isLocal = async (req) => {
   } catch (error) {
     console.log('FastLoad local: Not running on Microsoft Windows');
   }
-  // Linux ip-10-0-182-109.us-west-2.compute.internal 5.10.235-227.919.amzn2.x86_64 #1 SMP Sat Apr 5 16:59:05 UTC 2025 x86_64 GNU/Linux
+  // Local Docker: Linux 1ac8f11ee132 6.12.76-linuxkit #1 SMP Thu Apr 30 11:19:05 UTC 2026 aarch64 GNU/Linux
+  // Production: Linux ip-10-0-182-109.us-west-2.compute.internal 5.10.235-227.919.amzn2.x86_64 #1 SMP Sat Apr 5 16:59:05 UTC 2025 x86_64 GNU/Linux
   try {
     const { stdout } = await exec('uname -a ');
+    console.log('FastLoad local "uname -a": ', stdout);
+    console.log('FastLoad local os.hostname(): ', os.hostname());
     // Check for WSL2 first - this is a valid local environment
     if (stdout.includes('microsoft-standard-WSL2')) {
       console.log('FastLoad local: Running on WSL2: ', stdout);
       return true;
     }
-    if (stdout.startsWith('Linux') || stdout.endsWith('x86_64 GNU/Linux') || stdout.includes('.amzn2.')) {
+
+    if (stdout.includes('.amzn2.')) {
       console.log('FastLoad local: uname: ', stdout);
       console.error('FastLoad local: Attempted to run localReplaceTable on an AWS instance!');
       return false;
@@ -167,13 +172,15 @@ const fillTheTable = async (tableName, tableJSON) => {
     // Use psql \copy for client-side file reading, since Prisma's COPY reads from the DB server's filesystem
     const copyCommand = `psql "${dbString}" -c "\\copy \\"${tableName}\\" FROM '${outTempFile}'"`;
     console.log('FastLoad local: fillTheTable exec: ', copyCommand);
-    await exec(copyCommand);
+    const execPromise = util.promisify(exec);
+    const { stdout, stderr } = await execPromise(copyCommand);
+    console.log(`FastLoad local: fillTheTable exec stdout: '${stdout.trim()}', stderr: '${stderr}'`);
 
     await prisma.$queryRawUnsafe(unset);
     console.log('FastLoad local: fillTheTable queryRawUnsafe: ', unset);
 
     await prisma.$queryRawUnsafe(enableConstraints);
-    console.log('FastLoad local: fillTheTable queryRawUnsafe: ', enableConstraints);
+    console.log('FastLoad local: fillTheTable queryRawUnsafe enableConstraints: ', enableConstraints);
   } catch (err) {
     console.error(`FastLoad local: Error in writing ${tableName}: ${err}`);
     error += ` -- Error in writing ${tableName}: ${err}`;

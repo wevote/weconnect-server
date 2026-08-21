@@ -586,18 +586,16 @@ exports.taskTypeSave = async (request, response) => {
       jsonData.status += 'TASK_TYPE_UPDATED ';
       const modifiedTaskTypeDict = removeProtectedFieldsFromTaskType(taskType);
       Object.entries(modifiedTaskTypeDict).forEach(([k, v]) => { jsonData[k] = v; });
+    } else if (!taskTypeChangeDict.taskTypeName || taskTypeChangeDict.taskTypeName.length === 0) {
+      jsonData.status += 'taskTypeName_MISSING ';
+      jsonData.success = false;
     } else {
-      if (!taskTypeChangeDict.taskTypeName || taskTypeChangeDict.taskTypeName.length === 0) {
-        jsonData.status += 'taskTypeName_MISSING ';
-        jsonData.success = false;
-      } else {
-        const taskType = await createTaskType(taskTypeChangeDict);
-        jsonData.taskTypeCreated = true;
-        jsonData.taskTypeId = taskType.id;
-        jsonData.status += 'TASK_TYPE_CREATED ';
-        const modifiedTaskTypeDict = removeProtectedFieldsFromTaskType(taskType);
-        Object.entries(modifiedTaskTypeDict).forEach(([k, v]) => { jsonData[k] = v; });
-      }
+      const taskType = await createTaskType(taskTypeChangeDict);
+      jsonData.taskTypeCreated = true;
+      jsonData.taskTypeId = taskType.id;
+      jsonData.status += 'TASK_TYPE_CREATED ';
+      const modifiedTaskTypeDict = removeProtectedFieldsFromTaskType(taskType);
+      Object.entries(modifiedTaskTypeDict).forEach(([k, v]) => { jsonData[k] = v; });
     }
   } catch (err) {
     console.error('Error while saving taskType:', err);

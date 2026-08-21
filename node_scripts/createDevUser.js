@@ -6,7 +6,6 @@ dotenv.config({ path: '../.env' });   // use the weconnect-server's .env file
 const args = process.argv.slice(2);
 
 
-// python manage.py create_dev_user Samuel Adams samuel@adams.com ale
 // node createDevUser Samuel Adams samuel@adams.com ale
 // node ./node_scripts/createDevUser Samuel Adams samuel@adams.com ale
 // node --inspect-brk ./node_scripts/createDevUser Samuel Adams samuel@adams.com ale
