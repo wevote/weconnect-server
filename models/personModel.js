@@ -266,9 +266,23 @@ async function findPersonListByParams (params = {}, includeAllData = false) {
 }
 
 async function findOnePerson (params, includeAllData = false) {   // Find one with array
-  const person = await prisma.person.findUnique({
-    where: params,
-  });
+  let person;
+  if (Object.hasOwn(params, 'emailPersonal') && Object.keys(params).length === 1) {
+    // Special case for a password that has been saved with capital letters like Tommy@gmail.com
+    person = await prisma.person.findFirst({
+      where: {
+        emailPersonal: {
+          equals: params.emailPersonal,
+          mode: 'insensitive',           // This makes the lookup case-insensitive
+        },
+      },
+    });
+  } else {
+    person = await prisma.person.findUnique({
+      where: params,
+    });
+  }
+
   let modifiedPerson;
   if (includeAllData) {
     modifiedPerson = person;
@@ -329,30 +343,30 @@ async function deleteOne (id) {
 }
 
 // eslint-disable-next-line no-unused-vars
-const setStatusFieldsIfNotInitialized = (person) => {
-  /* eslint-disable no-param-reassign */
-  if (person.isAdmin === null) person.isAdmin = false;
-  if (person.isHiringManager === null) person.isHiringManager = false;
-  if (person.isIntern === null) person.isIntern = false;
-  if (person.isTeamLead === null) person.isTeamLead = false;
-  if (person.statusEmailCreated === null) person.statusEmailCreated = false;
-  if (person.statusActive === null) person.statusActive = false;
-  if (person.statusOfferDecisionNeeded === null) person.statusOfferDecisionNeeded = true;
-  if (person.statusOfferLetterCreated === null) person.statusOfferLetterCreated = false;
-  if (person.statusOfferLetterSigned === null) person.statusOfferLetterSigned = false;
-  if (person.statusOnLeave === null) person.statusOnLeave = false;
-  if (person.statusResigned === null) person.statusResigned = false;
-  if (person.statusNonresponsive === null) person.statusNonresponsive = false;
-  if (person.statusOfferApproved === null) person.statusOfferApproved = false;
-  if (person.statusOfferWillNotBeMade === null) person.statusOfferWillNotBeMade = false;
-  if (person.isHRAdmin === null) person.isHRAdmin = false;
-  if (person.isHRGeneralist1 === null) person.isHRGeneralist1 = false;
-  if (person.isHRGeneralist2 === null) person.isHRGeneralist2 = false;
-  if (person.isHROfferAdmin === null) person.isHROfferAdmin = false;
-  if (person.statusAvailableForSpecialProjects === null) person.statusAvailableForSpecialProjects = false;
-  /* eslint-enable no-param-reassign */
-  return person;
-};
+// const setStatusFieldsIfNotInitialized = (person) => {
+//   /* eslint-disable no-param-reassign */
+//   if (person.isAdmin === null) person.isAdmin = false;
+//   if (person.isHiringManager === null) person.isHiringManager = false;
+//   if (person.isIntern === null) person.isIntern = false;
+//   if (person.isTeamLead === null) person.isTeamLead = false;
+//   if (person.statusEmailCreated === null) person.statusEmailCreated = false;
+//   if (person.statusActive === null) person.statusActive = false;
+//   if (person.statusOfferDecisionNeeded === null) person.statusOfferDecisionNeeded = true;
+//   if (person.statusOfferLetterCreated === null) person.statusOfferLetterCreated = false;
+//   if (person.statusOfferLetterSigned === null) person.statusOfferLetterSigned = false;
+//   if (person.statusOnLeave === null) person.statusOnLeave = false;
+//   if (person.statusResigned === null) person.statusResigned = false;
+//   if (person.statusNonresponsive === null) person.statusNonresponsive = false;
+//   if (person.statusOfferApproved === null) person.statusOfferApproved = false;
+//   if (person.statusOfferWillNotBeMade === null) person.statusOfferWillNotBeMade = false;
+//   if (person.isHRAdmin === null) person.isHRAdmin = false;
+//   if (person.isHRGeneralist1 === null) person.isHRGeneralist1 = false;
+//   if (person.isHRGeneralist2 === null) person.isHRGeneralist2 = false;
+//   if (person.isHROfferAdmin === null) person.isHROfferAdmin = false;
+//   if (person.statusAvailableForSpecialProjects === null) person.statusAvailableForSpecialProjects = false;
+//   /* eslint-enable no-param-reassign */
+//   return person;
+// };
 
 async function savePerson (incomingPersonChangeDict) {
   // 2025-04-30 This use of setStatusFieldsIfNotInitialized here can be destructive because
@@ -496,6 +510,7 @@ const manuallyConfirmEmailUniqueness = async (email) => {
 /**
  * Allow users to login with emailOfficial or emailPreferred in addition to with emailPersonal (the unique key)
  * @param emailSubmitted
+ * @param returnFullPerson
  * @returns {Promise<*>}
  */
 const getUniqueKeyEmail = async (emailSubmitted, returnFullPerson = false) => {
@@ -504,14 +519,14 @@ const getUniqueKeyEmail = async (emailSubmitted, returnFullPerson = false) => {
   if (Object.keys(person).length === 0) {
     let personList = await findPersonListByParams({ emailOfficial: emailSubmittedCleaned }, true);
     if (personList.length === 1) {
-      person = personList[0];
+      [person] = personList;
       if (personList.length > 1) {
         console.error(`getUniqueKeyEmail found more than one matching emailOfficial '${emailSubmittedCleaned}' rows, this is a data corruption error`);
       }
     } else if (Object.keys(person).length === 0) {
       personList = await findPersonListByParams({ emailPreferred: emailSubmittedCleaned }, true);
       if (personList.length === 1) {
-        person = personList[0];
+        [person] = personList;
       }
       if (personList.length > 1) {
         console.error(`getUniqueKeyEmail found more than one matching emailPreferred '${emailSubmittedCleaned}' rows, this is a data corruption error`);
@@ -546,7 +561,7 @@ const doesPersonHaveIsAdmin = async (email, password) => {
   } else {
     const personList = await findPersonListByParams({ emailOfficial: emailSubmittedCleaned }, true);
     if (personList && personList.length === 1) {
-      person = personList[0];
+      [person] = personList;
       isAdmin = person.isAdmin;
     } else if (personList && personList.length > 1) {
       console.error(`doesPersonHaveIsAdmin found more than one matching emailOfficial '${emailSubmittedCleaned}' rows, this is a data corruption error`);

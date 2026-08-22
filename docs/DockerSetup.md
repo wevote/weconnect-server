@@ -56,7 +56,7 @@ after any changes to package.json -- it rebuilds the Docker Containers that are 
 This will:
 1. Start a PostgreSQL database
 2. Wait for the database to be healthy
-3. Start pgAdmin4 running on http://localhost:8080/browser/
+3. Start pgAdmin4 running on http://localhost:7000/browser/  (On a Mac, you may need to open this with Safari)
 4. Run `prisma generate` and `prisma migrate deploy` to apply all migrations
 5. Run `npm install` to get the configured library versions into the Docker layer.
 6. Start the weconnect-server with nodemon (auto-reloads on file changes)
@@ -177,7 +177,7 @@ containers are debugging related and can be ignored.
 
 ## PgAdmin
 ### 1. Access PgAdmin Container
-Go to `localhost:8080` in your local web browser to access the `PgAdmin` container UI.  If you used all the default environment variables (in the `.env` file): on PgAdmin login screen, your "Email Address/Username" will be `fake_email@wevoteeducation.org` and your password will be `admin`.
+Go to `http://localhost:7000/browser/` in your local web browser to access the `PgAdmin` container UI.  If you used all the default environment variables (in the `.env` file): on PgAdmin login screen, your "Email Address/Username" will be `fake_email@wevoteeducation.org` and your password will be `admin`.  (Note from August 2026: I needed to use Safari on my Mac to connect to pgAdmin, consider this as a workaround if you are having trouble connecting.)
 ### 2. Register New Server
 1. Right-click on 'Servers' in the left pane, and select Register/Server.
 
