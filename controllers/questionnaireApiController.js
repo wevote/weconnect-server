@@ -555,9 +555,13 @@ exports.questionnaireResponsesListRetrieve = async (request, response) => {
   const parsedUrl = new URL(request.url, `${process.env.BASE_URL}`);
   const queryParams = new URLSearchParams(parsedUrl.search);
   // console.log('questionnaireResponsesListRetrieve queryParams:', queryParams);
-  const personIdListIncoming = queryParams.getAll('personIdList[]');
+  let personIdListIncoming = queryParams.getAll('personIdList[]');
+  // console.log('questionnaireResponsesListRetrieve personIdListIncoming:', personIdListIncoming);
+  if (personIdListIncoming.length === 0) {
+    personIdListIncoming = [queryParams.get('personIdList')];
+  }
   const personIdList = personIdListIncoming.map(convertToInteger);
-  // console.log('=== questionnaireResponsesListRetrieve personIdList:', personIdList);
+  // console.log('questionnaireResponsesListRetrieve personIdList:', personIdList);
 
   const jsonData = {
     isSearching: false,

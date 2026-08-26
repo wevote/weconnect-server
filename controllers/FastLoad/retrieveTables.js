@@ -318,12 +318,27 @@ exports.makeATempTableAndReturnJSON = async (tableName, anonymizeSensitiveData) 
   return getTempTableAsJSON(tempTableName);
 };
 
+const analyzeTables = async () => {
+  // PostgreSQL relies on its internal statistics collector to generate estimates.
+  // If a table was recently created or a large batch of data was loaded, the query planner won't know
+  // the rows exist until an ANALYZE is run.
+  for (let i = 0; i < allowableTables.length; i++) {
+    const tableName = allowableTables[i];
+    const sql = `ANALYZE "${tableName}";`;
+    // eslint-disable-next-line no-await-in-loop
+    console.log('analyzeTables sql: ', sql);
+    await prisma.$queryRawUnsafe(sql);
+  }
+};
+
 exports.getPostgresTableStatistics = async (req, res) => {
   const sqlTables = [];
   try {
+    await analyzeTables();
     const sql = 'SELECT schemaname, relname AS table_name, n_live_tup AS estimated_row_count ' +
       'FROM pg_stat_user_tables ' +
       'ORDER BY n_live_tup DESC;';
+//    console.log('getPostgresTableStatistics sql: ', sql);
     const results = await prisma.$queryRawUnsafe(sql);
     // eslint-disable-next-line guard-for-in,no-restricted-syntax
     for (let i = 0; i < results.length; i++) {

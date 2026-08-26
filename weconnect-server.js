@@ -248,7 +248,7 @@ require('./routes/futureApiAndPugRoutes')(weconnectServer);
 weconnectServer.use((req, res) => {
   const err = new Error('Not Found');
   err.status = 404;
-  res.status(404).send('Page Not Found');
+  res.status(404).send('WeConnect Server Page Not Found');
 });
 
 if (process.env.NODE_ENV === 'development') {
