@@ -10,7 +10,7 @@
   "author": "WeVote Team (https://github.com/wevote)",
   "scripts": {
     "postinstall": "patch-package",
-    "start": "nodemon --inspect=127.0.0.1:9229 weconnect-server.js",
+    "start": "nodemon --inspect=0.0.0.0:9229 weconnect-server.js",
     "start-no-debug": "nodemon weconnect-server.js",
     "prod": "NO_COLOR=1 node weconnect-server.js",
     "test": "nyc mocha --timeout=60000 --exit",

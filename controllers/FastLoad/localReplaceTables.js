@@ -162,6 +162,11 @@ const fillTheTable = async (tableName, tableJSON) => {
 
     const set = 'SET session_replication_role = \'replica\';';
     const unset = 'SET session_replication_role = \'origin\';';
+    // if (tableName === "QuestionAnswer") {
+    //   console.log('FastLoad local: fillTheTable queryRawUnsafe: DROP CONSTRAINTs');
+    //   await prisma.$queryRawUnsafe('ALTER TABLE "QuestionAnswer" DROP CONSTRAINT IF EXISTS "QuestionAnswer_personId_fkey";');
+    //   await prisma.$queryRawUnsafe('ALTER TABLE "QuestionAnswer" DROP CONSTRAINT IF EXISTS "QuestionAnswer_questionId_fkey";');
+    // }
 
     await prisma.$queryRawUnsafe(disableConstraints);
     console.log('FastLoad local: fillTheTable queryRawUnsafe: ', disableConstraints);
@@ -179,6 +184,19 @@ const fillTheTable = async (tableName, tableJSON) => {
     await prisma.$queryRawUnsafe(unset);
     console.log('FastLoad local: fillTheTable queryRawUnsafe: ', unset);
 
+    // if (tableName === "QuestionAnswer") {
+    //   console.log('FastLoad local: fillTheTable queryRawUnsafe: ADD CONSTRAINTs');
+    //   await prisma.$queryRawUnsafe(
+    //     'ALTER TABLE "QuestionAnswer" ' +
+    //     'ADD CONSTRAINT "QuestionAnswer_personId_fkey" ' +
+    //     'FOREIGN KEY ("personId") ' +
+    //     'REFERENCES "Person" (id);');
+    //   await prisma.$queryRawUnsafe(
+    //     'ALTER TABLE "QuestionAnswer" ' +
+    //     'ADD CONSTRAINT "QuestionAnswer_questionId_fkey" ' +
+    //     'FOREIGN KEY ("questionId") ' +
+    //     'REFERENCES "QuestionnaireQuestion" (id);');
+    // }
     await prisma.$queryRawUnsafe(enableConstraints);
     console.log('FastLoad local: fillTheTable queryRawUnsafe enableConstraints: ', enableConstraints);
   } catch (err) {

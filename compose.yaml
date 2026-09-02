@@ -43,6 +43,7 @@ services:
     ports:
       - "0.0.0.0:4500:4500"   # access the WeConnect API at https://wevotedeveloper.com:4500
       - "127.0.0.1:5555:5555" # expose prisma studio running inside container
+        # 8/26/26:  This MUST BE "0.0.0.0:9229:9229" -- Don't change it unless you have confirmed your change using WebStorm
       - "0.0.0.0:9229:9229"   # The WebStorm Node debugger port
 
   pgadmin:
