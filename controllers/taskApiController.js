@@ -649,6 +649,16 @@ exports.taskSave = async (request, response) => {
   const taskDefinitionId = convertToInteger(queryParams.get('taskDefinitionId'));
   const taskGroupId = convertToInteger(queryParams.get('taskGroupId'));
   const taskChangeDict = extractVariablesToChangeFromIncomingParams(queryParams, TASK_FIELDS_ACCEPTED_DICT);
+  if (!taskChangeDict.taskType && taskDefinitionId > 0) {
+    try {
+      const taskDefinitionList = await findTaskDefinitionListByParams({ id: taskDefinitionId });
+      if (taskDefinitionList && taskDefinitionList.length > 0 && taskDefinitionList[0].taskType) {
+        taskChangeDict.taskType = taskDefinitionList[0].taskType;
+      }
+    } catch (err) {
+      console.error('Error fetching taskDefinition for taskType fallback:', err);
+    }
+  }
   // console.log('== AFTER extractVariablesToChangeFromIncomingParams taskChangeDict:', taskChangeDict);
   // Set up the default JSON response.
   const jsonData = {
